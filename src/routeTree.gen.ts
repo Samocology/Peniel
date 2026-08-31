@@ -16,6 +16,8 @@ import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as StoreSlugRouteImport } from './routes/store.$slug'
+import { Route as StoreSlugProductIdRouteImport } from './routes/store.$slug.product.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +54,16 @@ const CategorySlugRoute = CategorySlugRouteImport.update({
   path: '/category/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoreSlugRoute = StoreSlugRouteImport.update({
+  id: '/store/$slug',
+  path: '/store/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoreSlugProductIdRoute = StoreSlugProductIdRouteImport.update({
+  id: '/product/$id',
+  path: '/product/$id',
+  getParentRoute: () => StoreSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/store/$slug': typeof StoreSlugRouteWithChildren
+  '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +84,8 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/store/$slug': typeof StoreSlugRouteWithChildren
+  '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +96,8 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/store/$slug': typeof StoreSlugRouteWithChildren
+  '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +109,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/search'
     | '/category/$slug'
+    | '/store/$slug'
+    | '/store/$slug/product/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/search'
     | '/category/$slug'
+    | '/store/$slug'
+    | '/store/$slug/product/$id'
   id:
     | '__root__'
     | '/'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/search'
     | '/category/$slug'
+    | '/store/$slug'
+    | '/store/$slug/product/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +143,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   SearchRoute: typeof SearchRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  StoreSlugRoute: typeof StoreSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -172,8 +197,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategorySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/store/$slug': {
+      id: '/store/$slug'
+      path: '/store/$slug'
+      fullPath: '/store/$slug'
+      preLoaderRoute: typeof StoreSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/store/$slug/product/$id': {
+      id: '/store/$slug/product/$id'
+      path: '/product/$id'
+      fullPath: '/store/$slug/product/$id'
+      preLoaderRoute: typeof StoreSlugProductIdRouteImport
+      parentRoute: typeof StoreSlugRoute
+    }
   }
 }
+
+interface StoreSlugRouteChildren {
+  StoreSlugProductIdRoute: typeof StoreSlugProductIdRoute
+}
+
+const StoreSlugRouteChildren: StoreSlugRouteChildren = {
+  StoreSlugProductIdRoute: StoreSlugProductIdRoute,
+}
+
+const StoreSlugRouteWithChildren = StoreSlugRoute._addFileChildren(
+  StoreSlugRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -183,6 +234,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   SearchRoute: SearchRoute,
   CategorySlugRoute: CategorySlugRoute,
+  StoreSlugRoute: StoreSlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
