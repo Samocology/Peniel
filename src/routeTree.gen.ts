@@ -15,6 +15,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ForBusinessesRouteImport } from './routes/for-businesses'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
+import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
@@ -51,6 +52,11 @@ const MarketplaceRoute = MarketplaceRouteImport.update({
   path: '/marketplace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaymentRoute = PaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
+  '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
+  '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
+  '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/for-businesses'
     | '/marketplace'
+    | '/payment'
     | '/pricing'
     | '/search'
     | '/category/$slug'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/for-businesses'
     | '/marketplace'
+    | '/payment'
     | '/pricing'
     | '/search'
     | '/category/$slug'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/for-businesses'
     | '/marketplace'
+    | '/payment'
     | '/pricing'
     | '/search'
     | '/category/$slug'
@@ -166,6 +178,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ForBusinessesRoute: typeof ForBusinessesRoute
   MarketplaceRoute: typeof MarketplaceRoute
+  PaymentRoute: typeof PaymentRoute
   PricingRoute: typeof PricingRoute
   SearchRoute: typeof SearchRoute
   CategorySlugRoute: typeof CategorySlugRoute
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/marketplace'
       fullPath: '/marketplace'
       preLoaderRoute: typeof MarketplaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment': {
+      id: '/payment'
+      path: '/payment'
+      fullPath: '/payment'
+      preLoaderRoute: typeof PaymentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -273,6 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ForBusinessesRoute: ForBusinessesRoute,
   MarketplaceRoute: MarketplaceRoute,
+  PaymentRoute: PaymentRoute,
   PricingRoute: PricingRoute,
   SearchRoute: SearchRoute,
   CategorySlugRoute: CategorySlugRoute,
