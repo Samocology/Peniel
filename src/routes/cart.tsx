@@ -1,0 +1,140 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Minus, Plus, ShieldCheck, Store, Tag, Trash2 } from "lucide-react";
+import { SiteHeader } from "@/components/site/site-header";
+import { SiteFooter } from "@/components/site/site-footer";
+import { cartLines, cartTotals, naira } from "@/lib/data";
+
+export const Route = createFileRoute("/cart")({
+  head: () => ({
+    meta: [
+      { title: "Your cart — Vendra" },
+      { name: "description", content: "Review items from every Vendra business in one cart and check out securely with Vendra Pay." },
+      { property: "og:title", content: "Your cart — Vendra" },
+      { property: "og:description", content: "Review items from every Vendra business in one cart and check out securely." },
+    ],
+  }),
+  component: CartPage,
+});
+
+function CartPage() {
+  const totals = cartTotals();
+  const groups = Array.from(new Set(cartLines.map((l) => l.vendorSlug)));
+
+  return (
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <h1 className="font-display text-3xl font-bold">Your cart</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {cartLines.length} items from {groups.length} businesses · one checkout, one payment
+        </p>
+
+        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-6">
+            {groups.map((slug) => {
+              const lines = cartLines.filter((l) => l.vendorSlug === slug);
+              const first = lines[0]!;
+              return (
+                <div key={slug} className="rounded-2xl border border-border bg-card">
+                  <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Store className="size-4 shrink-0 text-primary" />
+                      <Link to="/store/$slug" params={{ slug }} className="truncate text-sm font-semibold hover:text-primary">
+                        {first.vendor}
+                      </Link>
+                    </div>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {lines.length} item{lines.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {lines.map((l) => (
+                      <div key={l.item} className="grid grid-cols-[64px_minmax(0,1fr)] gap-4 p-5 sm:grid-cols-[72px_minmax(0,1fr)_auto]">
+                        <div className="size-16 shrink-0 rounded-xl bg-primary-soft sm:size-18" />
+                        <div className="min-w-0">
+                          <p className="font-semibold">{l.item}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{l.meta}</p>
+                          <div className="mt-3 flex items-center gap-4">
+                            <div className="flex items-center gap-3 rounded-lg border border-border px-2 py-1">
+                              <button aria-label="Decrease quantity" className="grid size-6 place-items-center text-muted-foreground">
+                                <Minus className="size-3.5" />
+                              </button>
+                              <span className="w-4 text-center text-sm font-semibold">{l.qty}</span>
+                              <button aria-label="Increase quantity" className="grid size-6 place-items-center text-muted-foreground">
+                                <Plus className="size-3.5" />
+                              </button>
+                            </div>
+                            <button className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive">
+                              <Trash2 className="size-3.5" /> Remove
+                            </button>
+                          </div>
+                        </div>
+                        <p className="col-span-2 font-display font-bold sm:col-span-1 sm:text-right">{naira(l.price * l.qty)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            <Link to="/marketplace" className="inline-block text-sm font-semibold text-primary">
+              ← Continue shopping
+            </Link>
+          </div>
+
+          <aside className="space-y-4 self-start lg:sticky lg:top-24">
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <p className="font-display text-lg font-bold">Order summary</p>
+              <dl className="mt-4 space-y-2.5 text-sm">
+                {[
+                  ["Subtotal", totals.subtotal],
+                  ["Delivery", totals.delivery],
+                  ["Platform fee (2%)", totals.platformFee],
+                ].map(([l, v]) => (
+                  <div key={l as string} className="flex justify-between">
+                    <dt className="text-muted-foreground">{l as string}</dt>
+                    <dd>{naira(v as number)}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="mt-4 flex justify-between border-t border-border pt-4">
+                <span className="font-semibold">Total</span>
+                <span className="font-display text-xl font-bold text-primary">{naira(totals.total)}</span>
+              </div>
+              <Link
+                to="/checkout"
+                className="mt-5 block rounded-xl bg-primary py-3.5 text-center text-sm font-bold text-primary-foreground transition hover:opacity-90"
+              >
+                Proceed to checkout
+              </Link>
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                <ShieldCheck className="size-3.5 text-success" /> Secured by Vendra Pay
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <Tag className="size-4 text-gold" /> Promo code
+              </p>
+              <div className="mt-3 flex gap-2">
+                <input
+                  placeholder="Enter code"
+                  className="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                />
+                <button className="shrink-0 rounded-lg border border-border px-4 text-sm font-semibold">Apply</button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-primary/20 bg-primary-soft p-5 text-sm">
+              <p className="font-semibold">One cart, many businesses</p>
+              <p className="mt-1 text-muted-foreground">
+                Each business is paid separately after fulfilment. You only make one payment.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
