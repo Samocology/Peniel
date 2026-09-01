@@ -15,10 +15,13 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ForBusinessesRouteImport } from './routes/for-businesses'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
+import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as BookingsIdRouteImport } from './routes/bookings.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as OrdersIdRouteImport } from './routes/orders.$id'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
 import { Route as StoreSlugProductIdRouteImport } from './routes/store.$slug.product.$id'
 
@@ -52,6 +55,11 @@ const MarketplaceRoute = MarketplaceRouteImport.update({
   path: '/marketplace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PaymentRoute = PaymentRouteImport.update({
   id: '/payment',
   path: '/payment',
@@ -67,10 +75,20 @@ const SearchRoute = SearchRouteImport.update({
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookingsIdRoute = BookingsIdRouteImport.update({
+  id: '/bookings/$id',
+  path: '/bookings/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersIdRoute = OrdersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => OrdersRoute,
 } as any)
 const StoreSlugRoute = StoreSlugRouteImport.update({
   id: '/store/$slug',
@@ -90,10 +108,13 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
+  '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/orders/$id': typeof OrdersIdRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
@@ -104,10 +125,13 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
+  '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/orders/$id': typeof OrdersIdRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
@@ -119,10 +143,13 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
+  '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/orders/$id': typeof OrdersIdRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
@@ -135,10 +162,13 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/for-businesses'
     | '/marketplace'
+    | '/orders'
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/bookings/$id'
     | '/category/$slug'
+    | '/orders/$id'
     | '/store/$slug'
     | '/store/$slug/product/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -149,10 +179,13 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/for-businesses'
     | '/marketplace'
+    | '/orders'
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/bookings/$id'
     | '/category/$slug'
+    | '/orders/$id'
     | '/store/$slug'
     | '/store/$slug/product/$id'
   id:
@@ -163,10 +196,13 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/for-businesses'
     | '/marketplace'
+    | '/orders'
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/bookings/$id'
     | '/category/$slug'
+    | '/orders/$id'
     | '/store/$slug'
     | '/store/$slug/product/$id'
   fileRoutesById: FileRoutesById
@@ -178,9 +214,11 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ForBusinessesRoute: typeof ForBusinessesRoute
   MarketplaceRoute: typeof MarketplaceRoute
+  OrdersRoute: typeof OrdersRouteWithChildren
   PaymentRoute: typeof PaymentRoute
   PricingRoute: typeof PricingRoute
   SearchRoute: typeof SearchRoute
+  BookingsIdRoute: typeof BookingsIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
   StoreSlugRoute: typeof StoreSlugRouteWithChildren
 }
@@ -229,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketplaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/payment': {
       id: '/payment'
       path: '/payment'
@@ -250,12 +295,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bookings/$id': {
+      id: '/bookings/$id'
+      path: '/bookings/$id'
+      fullPath: '/bookings/$id'
+      preLoaderRoute: typeof BookingsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/category/$slug': {
       id: '/category/$slug'
       path: '/category/$slug'
       fullPath: '/category/$slug'
       preLoaderRoute: typeof CategorySlugRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/orders/$id': {
+      id: '/orders/$id'
+      path: '/$id'
+      fullPath: '/orders/$id'
+      preLoaderRoute: typeof OrdersIdRouteImport
+      parentRoute: typeof OrdersRoute
     }
     '/store/$slug': {
       id: '/store/$slug'
@@ -273,6 +332,17 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface OrdersRouteChildren {
+  OrdersIdRoute: typeof OrdersIdRoute
+}
+
+const OrdersRouteChildren: OrdersRouteChildren = {
+  OrdersIdRoute: OrdersIdRoute,
+}
+
+const OrdersRouteWithChildren =
+  OrdersRoute._addFileChildren(OrdersRouteChildren)
 
 interface StoreSlugRouteChildren {
   StoreSlugProductIdRoute: typeof StoreSlugProductIdRoute
@@ -293,9 +363,11 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ForBusinessesRoute: ForBusinessesRoute,
   MarketplaceRoute: MarketplaceRoute,
+  OrdersRoute: OrdersRouteWithChildren,
   PaymentRoute: PaymentRoute,
   PricingRoute: PricingRoute,
   SearchRoute: SearchRoute,
+  BookingsIdRoute: BookingsIdRoute,
   CategorySlugRoute: CategorySlugRoute,
   StoreSlugRoute: StoreSlugRouteWithChildren,
 }
