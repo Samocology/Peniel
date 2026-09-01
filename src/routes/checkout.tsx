@@ -19,8 +19,6 @@ export const Route = createFileRoute("/checkout")({
 const field = "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary";
 const label = "mb-1.5 block text-xs font-semibold tracking-wide uppercase text-muted-foreground";
 
-export default function noop() {}
-
 function CheckoutPage() {
   const totals = cartTotals();
 
