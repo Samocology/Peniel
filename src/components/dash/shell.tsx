@@ -77,7 +77,7 @@ export function DashShell({
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:px-6">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="lg:hidden">
-                  <Logo compact />
+                  <Logo />
                 </span>
                 <div className="hidden min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 md:flex">
                   <Search className="size-4 shrink-0 text-muted-foreground" />
