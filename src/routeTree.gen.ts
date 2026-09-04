@@ -25,7 +25,10 @@ import { Route as OrdersIdRouteImport } from './routes/orders.$id'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
 import { Route as VendorIndexRouteImport } from './routes/vendor.index'
 import { Route as VendorOnboardingRouteImport } from './routes/vendor.onboarding'
+import { Route as VendorOrdersRouteImport } from './routes/vendor.orders'
+import { Route as VendorProductsRouteImport } from './routes/vendor.products'
 import { Route as VendorVerificationRouteImport } from './routes/vendor.verification'
+import { Route as VendorProductsNewRouteImport } from './routes/vendor.products.new'
 import { Route as StoreSlugProductIdRouteImport } from './routes/store.$slug.product.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -108,10 +111,25 @@ const VendorOnboardingRoute = VendorOnboardingRouteImport.update({
   path: '/vendor/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VendorOrdersRoute = VendorOrdersRouteImport.update({
+  id: '/vendor/orders',
+  path: '/vendor/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorProductsRoute = VendorProductsRouteImport.update({
+  id: '/vendor/products',
+  path: '/vendor/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorVerificationRoute = VendorVerificationRouteImport.update({
   id: '/vendor/verification',
   path: '/vendor/verification',
   getParentRoute: () => rootRouteImport,
+} as any)
+const VendorProductsNewRoute = VendorProductsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => VendorProductsRoute,
 } as any)
 const StoreSlugProductIdRoute = StoreSlugProductIdRouteImport.update({
   id: '/product/$id',
@@ -135,8 +153,11 @@ export interface FileRoutesByFullPath {
   '/orders/$id': typeof OrdersIdRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
   '/vendor/onboarding': typeof VendorOnboardingRoute
+  '/vendor/orders': typeof VendorOrdersRoute
+  '/vendor/products': typeof VendorProductsRouteWithChildren
   '/vendor/verification': typeof VendorVerificationRoute
   '/vendor/': typeof VendorIndexRoute
+  '/vendor/products/new': typeof VendorProductsNewRoute
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
 export interface FileRoutesByTo {
@@ -155,8 +176,11 @@ export interface FileRoutesByTo {
   '/orders/$id': typeof OrdersIdRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
   '/vendor/onboarding': typeof VendorOnboardingRoute
+  '/vendor/orders': typeof VendorOrdersRoute
+  '/vendor/products': typeof VendorProductsRouteWithChildren
   '/vendor/verification': typeof VendorVerificationRoute
   '/vendor': typeof VendorIndexRoute
+  '/vendor/products/new': typeof VendorProductsNewRoute
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
 export interface FileRoutesById {
@@ -176,8 +200,11 @@ export interface FileRoutesById {
   '/orders/$id': typeof OrdersIdRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
   '/vendor/onboarding': typeof VendorOnboardingRoute
+  '/vendor/orders': typeof VendorOrdersRoute
+  '/vendor/products': typeof VendorProductsRouteWithChildren
   '/vendor/verification': typeof VendorVerificationRoute
   '/vendor/': typeof VendorIndexRoute
+  '/vendor/products/new': typeof VendorProductsNewRoute
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
 export interface FileRouteTypes {
@@ -198,8 +225,11 @@ export interface FileRouteTypes {
     | '/orders/$id'
     | '/store/$slug'
     | '/vendor/onboarding'
+    | '/vendor/orders'
+    | '/vendor/products'
     | '/vendor/verification'
     | '/vendor/'
+    | '/vendor/products/new'
     | '/store/$slug/product/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -218,8 +248,11 @@ export interface FileRouteTypes {
     | '/orders/$id'
     | '/store/$slug'
     | '/vendor/onboarding'
+    | '/vendor/orders'
+    | '/vendor/products'
     | '/vendor/verification'
     | '/vendor'
+    | '/vendor/products/new'
     | '/store/$slug/product/$id'
   id:
     | '__root__'
@@ -238,8 +271,11 @@ export interface FileRouteTypes {
     | '/orders/$id'
     | '/store/$slug'
     | '/vendor/onboarding'
+    | '/vendor/orders'
+    | '/vendor/products'
     | '/vendor/verification'
     | '/vendor/'
+    | '/vendor/products/new'
     | '/store/$slug/product/$id'
   fileRoutesById: FileRoutesById
 }
@@ -258,6 +294,8 @@ export interface RootRouteChildren {
   CategorySlugRoute: typeof CategorySlugRoute
   StoreSlugRoute: typeof StoreSlugRouteWithChildren
   VendorOnboardingRoute: typeof VendorOnboardingRoute
+  VendorOrdersRoute: typeof VendorOrdersRoute
+  VendorProductsRoute: typeof VendorProductsRouteWithChildren
   VendorVerificationRoute: typeof VendorVerificationRoute
   VendorIndexRoute: typeof VendorIndexRoute
 }
@@ -376,12 +414,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorOnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vendor/orders': {
+      id: '/vendor/orders'
+      path: '/vendor/orders'
+      fullPath: '/vendor/orders'
+      preLoaderRoute: typeof VendorOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/products': {
+      id: '/vendor/products'
+      path: '/vendor/products'
+      fullPath: '/vendor/products'
+      preLoaderRoute: typeof VendorProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendor/verification': {
       id: '/vendor/verification'
       path: '/vendor/verification'
       fullPath: '/vendor/verification'
       preLoaderRoute: typeof VendorVerificationRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/vendor/products/new': {
+      id: '/vendor/products/new'
+      path: '/new'
+      fullPath: '/vendor/products/new'
+      preLoaderRoute: typeof VendorProductsNewRouteImport
+      parentRoute: typeof VendorProductsRoute
     }
     '/store/$slug/product/$id': {
       id: '/store/$slug/product/$id'
@@ -416,6 +475,18 @@ const StoreSlugRouteWithChildren = StoreSlugRoute._addFileChildren(
   StoreSlugRouteChildren,
 )
 
+interface VendorProductsRouteChildren {
+  VendorProductsNewRoute: typeof VendorProductsNewRoute
+}
+
+const VendorProductsRouteChildren: VendorProductsRouteChildren = {
+  VendorProductsNewRoute: VendorProductsNewRoute,
+}
+
+const VendorProductsRouteWithChildren = VendorProductsRoute._addFileChildren(
+  VendorProductsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
@@ -431,6 +502,8 @@ const rootRouteChildren: RootRouteChildren = {
   CategorySlugRoute: CategorySlugRoute,
   StoreSlugRoute: StoreSlugRouteWithChildren,
   VendorOnboardingRoute: VendorOnboardingRoute,
+  VendorOrdersRoute: VendorOrdersRoute,
+  VendorProductsRoute: VendorProductsRouteWithChildren,
   VendorVerificationRoute: VendorVerificationRoute,
   VendorIndexRoute: VendorIndexRoute,
 }
