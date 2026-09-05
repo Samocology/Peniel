@@ -24,9 +24,12 @@ import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
 import { Route as VendorIndexRouteImport } from './routes/vendor.index'
+import { Route as VendorBookingsRouteImport } from './routes/vendor.bookings'
+import { Route as VendorCustomersRouteImport } from './routes/vendor.customers'
 import { Route as VendorOnboardingRouteImport } from './routes/vendor.onboarding'
 import { Route as VendorOrdersRouteImport } from './routes/vendor.orders'
 import { Route as VendorProductsRouteImport } from './routes/vendor.products'
+import { Route as VendorServicesRouteImport } from './routes/vendor.services'
 import { Route as VendorVerificationRouteImport } from './routes/vendor.verification'
 import { Route as VendorProductsNewRouteImport } from './routes/vendor.products.new'
 import { Route as StoreSlugProductIdRouteImport } from './routes/store.$slug.product.$id'
@@ -106,6 +109,16 @@ const VendorIndexRoute = VendorIndexRouteImport.update({
   path: '/vendor/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VendorBookingsRoute = VendorBookingsRouteImport.update({
+  id: '/vendor/bookings',
+  path: '/vendor/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorCustomersRoute = VendorCustomersRouteImport.update({
+  id: '/vendor/customers',
+  path: '/vendor/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorOnboardingRoute = VendorOnboardingRouteImport.update({
   id: '/vendor/onboarding',
   path: '/vendor/onboarding',
@@ -119,6 +132,11 @@ const VendorOrdersRoute = VendorOrdersRouteImport.update({
 const VendorProductsRoute = VendorProductsRouteImport.update({
   id: '/vendor/products',
   path: '/vendor/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorServicesRoute = VendorServicesRouteImport.update({
+  id: '/vendor/services',
+  path: '/vendor/services',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendorVerificationRoute = VendorVerificationRouteImport.update({
@@ -152,9 +170,12 @@ export interface FileRoutesByFullPath {
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
+  '/vendor/bookings': typeof VendorBookingsRoute
+  '/vendor/customers': typeof VendorCustomersRoute
   '/vendor/onboarding': typeof VendorOnboardingRoute
   '/vendor/orders': typeof VendorOrdersRoute
   '/vendor/products': typeof VendorProductsRouteWithChildren
+  '/vendor/services': typeof VendorServicesRoute
   '/vendor/verification': typeof VendorVerificationRoute
   '/vendor/': typeof VendorIndexRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
@@ -175,9 +196,12 @@ export interface FileRoutesByTo {
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
+  '/vendor/bookings': typeof VendorBookingsRoute
+  '/vendor/customers': typeof VendorCustomersRoute
   '/vendor/onboarding': typeof VendorOnboardingRoute
   '/vendor/orders': typeof VendorOrdersRoute
   '/vendor/products': typeof VendorProductsRouteWithChildren
+  '/vendor/services': typeof VendorServicesRoute
   '/vendor/verification': typeof VendorVerificationRoute
   '/vendor': typeof VendorIndexRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
@@ -199,9 +223,12 @@ export interface FileRoutesById {
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
+  '/vendor/bookings': typeof VendorBookingsRoute
+  '/vendor/customers': typeof VendorCustomersRoute
   '/vendor/onboarding': typeof VendorOnboardingRoute
   '/vendor/orders': typeof VendorOrdersRoute
   '/vendor/products': typeof VendorProductsRouteWithChildren
+  '/vendor/services': typeof VendorServicesRoute
   '/vendor/verification': typeof VendorVerificationRoute
   '/vendor/': typeof VendorIndexRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
@@ -224,9 +251,12 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/orders/$id'
     | '/store/$slug'
+    | '/vendor/bookings'
+    | '/vendor/customers'
     | '/vendor/onboarding'
     | '/vendor/orders'
     | '/vendor/products'
+    | '/vendor/services'
     | '/vendor/verification'
     | '/vendor/'
     | '/vendor/products/new'
@@ -247,9 +277,12 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/orders/$id'
     | '/store/$slug'
+    | '/vendor/bookings'
+    | '/vendor/customers'
     | '/vendor/onboarding'
     | '/vendor/orders'
     | '/vendor/products'
+    | '/vendor/services'
     | '/vendor/verification'
     | '/vendor'
     | '/vendor/products/new'
@@ -270,9 +303,12 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/orders/$id'
     | '/store/$slug'
+    | '/vendor/bookings'
+    | '/vendor/customers'
     | '/vendor/onboarding'
     | '/vendor/orders'
     | '/vendor/products'
+    | '/vendor/services'
     | '/vendor/verification'
     | '/vendor/'
     | '/vendor/products/new'
@@ -293,9 +329,12 @@ export interface RootRouteChildren {
   BookingsIdRoute: typeof BookingsIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
   StoreSlugRoute: typeof StoreSlugRouteWithChildren
+  VendorBookingsRoute: typeof VendorBookingsRoute
+  VendorCustomersRoute: typeof VendorCustomersRoute
   VendorOnboardingRoute: typeof VendorOnboardingRoute
   VendorOrdersRoute: typeof VendorOrdersRoute
   VendorProductsRoute: typeof VendorProductsRouteWithChildren
+  VendorServicesRoute: typeof VendorServicesRoute
   VendorVerificationRoute: typeof VendorVerificationRoute
   VendorIndexRoute: typeof VendorIndexRoute
 }
@@ -407,6 +446,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vendor/bookings': {
+      id: '/vendor/bookings'
+      path: '/vendor/bookings'
+      fullPath: '/vendor/bookings'
+      preLoaderRoute: typeof VendorBookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/customers': {
+      id: '/vendor/customers'
+      path: '/vendor/customers'
+      fullPath: '/vendor/customers'
+      preLoaderRoute: typeof VendorCustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendor/onboarding': {
       id: '/vendor/onboarding'
       path: '/vendor/onboarding'
@@ -426,6 +479,13 @@ declare module '@tanstack/react-router' {
       path: '/vendor/products'
       fullPath: '/vendor/products'
       preLoaderRoute: typeof VendorProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/services': {
+      id: '/vendor/services'
+      path: '/vendor/services'
+      fullPath: '/vendor/services'
+      preLoaderRoute: typeof VendorServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendor/verification': {
@@ -501,9 +561,12 @@ const rootRouteChildren: RootRouteChildren = {
   BookingsIdRoute: BookingsIdRoute,
   CategorySlugRoute: CategorySlugRoute,
   StoreSlugRoute: StoreSlugRouteWithChildren,
+  VendorBookingsRoute: VendorBookingsRoute,
+  VendorCustomersRoute: VendorCustomersRoute,
   VendorOnboardingRoute: VendorOnboardingRoute,
   VendorOrdersRoute: VendorOrdersRoute,
   VendorProductsRoute: VendorProductsRouteWithChildren,
+  VendorServicesRoute: VendorServicesRoute,
   VendorVerificationRoute: VendorVerificationRoute,
   VendorIndexRoute: VendorIndexRoute,
 }
