@@ -20,6 +20,12 @@ import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminPayoutsRouteImport } from './routes/admin.payouts'
+import { Route as AdminTransactionsRouteImport } from './routes/admin.transactions'
+import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as BookingsIdRouteImport } from './routes/bookings.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
@@ -96,6 +102,36 @@ const PricingRoute = PricingRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCustomersRoute = AdminCustomersRouteImport.update({
+  id: '/admin/customers',
+  path: '/admin/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminOrdersRoute = AdminOrdersRouteImport.update({
+  id: '/admin/orders',
+  path: '/admin/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPayoutsRoute = AdminPayoutsRouteImport.update({
+  id: '/admin/payouts',
+  path: '/admin/payouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTransactionsRoute = AdminTransactionsRouteImport.update({
+  id: '/admin/transactions',
+  path: '/admin/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminVendorsRoute = AdminVendorsRouteImport.update({
+  id: '/admin/vendors',
+  path: '/admin/vendors',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookingsIdRoute = BookingsIdRouteImport.update({
@@ -221,6 +257,11 @@ export interface FileRoutesByFullPath {
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/payouts': typeof AdminPayoutsRoute
+  '/admin/transactions': typeof AdminTransactionsRoute
+  '/admin/vendors': typeof AdminVendorsRoute
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -240,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/vendor/support': typeof VendorSupportRoute
   '/vendor/transactions': typeof VendorTransactionsRoute
   '/vendor/verification': typeof VendorVerificationRoute
+  '/admin/': typeof AdminIndexRoute
   '/vendor/': typeof VendorIndexRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
@@ -256,6 +298,11 @@ export interface FileRoutesByTo {
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/payouts': typeof AdminPayoutsRoute
+  '/admin/transactions': typeof AdminTransactionsRoute
+  '/admin/vendors': typeof AdminVendorsRoute
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -275,6 +322,7 @@ export interface FileRoutesByTo {
   '/vendor/support': typeof VendorSupportRoute
   '/vendor/transactions': typeof VendorTransactionsRoute
   '/vendor/verification': typeof VendorVerificationRoute
+  '/admin': typeof AdminIndexRoute
   '/vendor': typeof VendorIndexRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
@@ -292,6 +340,11 @@ export interface FileRoutesById {
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/payouts': typeof AdminPayoutsRoute
+  '/admin/transactions': typeof AdminTransactionsRoute
+  '/admin/vendors': typeof AdminVendorsRoute
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -311,6 +364,7 @@ export interface FileRoutesById {
   '/vendor/support': typeof VendorSupportRoute
   '/vendor/transactions': typeof VendorTransactionsRoute
   '/vendor/verification': typeof VendorVerificationRoute
+  '/admin/': typeof AdminIndexRoute
   '/vendor/': typeof VendorIndexRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
@@ -329,6 +383,11 @@ export interface FileRouteTypes {
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/admin/customers'
+    | '/admin/orders'
+    | '/admin/payouts'
+    | '/admin/transactions'
+    | '/admin/vendors'
     | '/bookings/$id'
     | '/category/$slug'
     | '/orders/$id'
@@ -348,6 +407,7 @@ export interface FileRouteTypes {
     | '/vendor/support'
     | '/vendor/transactions'
     | '/vendor/verification'
+    | '/admin/'
     | '/vendor/'
     | '/vendor/products/new'
     | '/store/$slug/product/$id'
@@ -364,6 +424,11 @@ export interface FileRouteTypes {
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/admin/customers'
+    | '/admin/orders'
+    | '/admin/payouts'
+    | '/admin/transactions'
+    | '/admin/vendors'
     | '/bookings/$id'
     | '/category/$slug'
     | '/orders/$id'
@@ -383,6 +448,7 @@ export interface FileRouteTypes {
     | '/vendor/support'
     | '/vendor/transactions'
     | '/vendor/verification'
+    | '/admin'
     | '/vendor'
     | '/vendor/products/new'
     | '/store/$slug/product/$id'
@@ -399,6 +465,11 @@ export interface FileRouteTypes {
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/admin/customers'
+    | '/admin/orders'
+    | '/admin/payouts'
+    | '/admin/transactions'
+    | '/admin/vendors'
     | '/bookings/$id'
     | '/category/$slug'
     | '/orders/$id'
@@ -418,6 +489,7 @@ export interface FileRouteTypes {
     | '/vendor/support'
     | '/vendor/transactions'
     | '/vendor/verification'
+    | '/admin/'
     | '/vendor/'
     | '/vendor/products/new'
     | '/store/$slug/product/$id'
@@ -435,6 +507,11 @@ export interface RootRouteChildren {
   PaymentRoute: typeof PaymentRoute
   PricingRoute: typeof PricingRoute
   SearchRoute: typeof SearchRoute
+  AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminOrdersRoute: typeof AdminOrdersRoute
+  AdminPayoutsRoute: typeof AdminPayoutsRoute
+  AdminTransactionsRoute: typeof AdminTransactionsRoute
+  AdminVendorsRoute: typeof AdminVendorsRoute
   BookingsIdRoute: typeof BookingsIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
   StoreSlugRoute: typeof StoreSlugRouteWithChildren
@@ -453,6 +530,7 @@ export interface RootRouteChildren {
   VendorSupportRoute: typeof VendorSupportRoute
   VendorTransactionsRoute: typeof VendorTransactionsRoute
   VendorVerificationRoute: typeof VendorVerificationRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   VendorIndexRoute: typeof VendorIndexRoute
 }
 
@@ -533,6 +611,48 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/customers': {
+      id: '/admin/customers'
+      path: '/admin/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/orders': {
+      id: '/admin/orders'
+      path: '/admin/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AdminOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/payouts': {
+      id: '/admin/payouts'
+      path: '/admin/payouts'
+      fullPath: '/admin/payouts'
+      preLoaderRoute: typeof AdminPayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/transactions': {
+      id: '/admin/transactions'
+      path: '/admin/transactions'
+      fullPath: '/admin/transactions'
+      preLoaderRoute: typeof AdminTransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/vendors': {
+      id: '/admin/vendors'
+      path: '/admin/vendors'
+      fullPath: '/admin/vendors'
+      preLoaderRoute: typeof AdminVendorsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bookings/$id': {
@@ -739,6 +859,11 @@ const rootRouteChildren: RootRouteChildren = {
   PaymentRoute: PaymentRoute,
   PricingRoute: PricingRoute,
   SearchRoute: SearchRoute,
+  AdminCustomersRoute: AdminCustomersRoute,
+  AdminOrdersRoute: AdminOrdersRoute,
+  AdminPayoutsRoute: AdminPayoutsRoute,
+  AdminTransactionsRoute: AdminTransactionsRoute,
+  AdminVendorsRoute: AdminVendorsRoute,
   BookingsIdRoute: BookingsIdRoute,
   CategorySlugRoute: CategorySlugRoute,
   StoreSlugRoute: StoreSlugRouteWithChildren,
@@ -757,6 +882,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorSupportRoute: VendorSupportRoute,
   VendorTransactionsRoute: VendorTransactionsRoute,
   VendorVerificationRoute: VendorVerificationRoute,
+  AdminIndexRoute: AdminIndexRoute,
   VendorIndexRoute: VendorIndexRoute,
 }
 export const routeTree = rootRouteImport
