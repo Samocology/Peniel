@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ForBusinessesRouteImport } from './routes/for-businesses'
@@ -35,6 +36,8 @@ import { Route as VendorProductsRouteImport } from './routes/vendor.products'
 import { Route as VendorPromotionsRouteImport } from './routes/vendor.promotions'
 import { Route as VendorReviewsRouteImport } from './routes/vendor.reviews'
 import { Route as VendorServicesRouteImport } from './routes/vendor.services'
+import { Route as VendorSettingsRouteImport } from './routes/vendor.settings'
+import { Route as VendorSupportRouteImport } from './routes/vendor.support'
 import { Route as VendorTransactionsRouteImport } from './routes/vendor.transactions'
 import { Route as VendorVerificationRouteImport } from './routes/vendor.verification'
 import { Route as VendorProductsNewRouteImport } from './routes/vendor.products.new'
@@ -48,6 +51,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CartRoute = CartRouteImport.update({
@@ -170,6 +178,16 @@ const VendorServicesRoute = VendorServicesRouteImport.update({
   path: '/vendor/services',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VendorSettingsRoute = VendorSettingsRouteImport.update({
+  id: '/vendor/settings',
+  path: '/vendor/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorSupportRoute = VendorSupportRouteImport.update({
+  id: '/vendor/support',
+  path: '/vendor/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorTransactionsRoute = VendorTransactionsRouteImport.update({
   id: '/vendor/transactions',
   path: '/vendor/transactions',
@@ -194,6 +212,7 @@ const StoreSlugProductIdRoute = StoreSlugProductIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/account': typeof AccountRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
@@ -217,6 +236,8 @@ export interface FileRoutesByFullPath {
   '/vendor/promotions': typeof VendorPromotionsRoute
   '/vendor/reviews': typeof VendorReviewsRoute
   '/vendor/services': typeof VendorServicesRoute
+  '/vendor/settings': typeof VendorSettingsRoute
+  '/vendor/support': typeof VendorSupportRoute
   '/vendor/transactions': typeof VendorTransactionsRoute
   '/vendor/verification': typeof VendorVerificationRoute
   '/vendor/': typeof VendorIndexRoute
@@ -226,6 +247,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/account': typeof AccountRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
@@ -249,6 +271,8 @@ export interface FileRoutesByTo {
   '/vendor/promotions': typeof VendorPromotionsRoute
   '/vendor/reviews': typeof VendorReviewsRoute
   '/vendor/services': typeof VendorServicesRoute
+  '/vendor/settings': typeof VendorSettingsRoute
+  '/vendor/support': typeof VendorSupportRoute
   '/vendor/transactions': typeof VendorTransactionsRoute
   '/vendor/verification': typeof VendorVerificationRoute
   '/vendor': typeof VendorIndexRoute
@@ -259,6 +283,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/account': typeof AccountRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
@@ -282,6 +307,8 @@ export interface FileRoutesById {
   '/vendor/promotions': typeof VendorPromotionsRoute
   '/vendor/reviews': typeof VendorReviewsRoute
   '/vendor/services': typeof VendorServicesRoute
+  '/vendor/settings': typeof VendorSettingsRoute
+  '/vendor/support': typeof VendorSupportRoute
   '/vendor/transactions': typeof VendorTransactionsRoute
   '/vendor/verification': typeof VendorVerificationRoute
   '/vendor/': typeof VendorIndexRoute
@@ -293,6 +320,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/account'
     | '/cart'
     | '/checkout'
     | '/for-businesses'
@@ -316,6 +344,8 @@ export interface FileRouteTypes {
     | '/vendor/promotions'
     | '/vendor/reviews'
     | '/vendor/services'
+    | '/vendor/settings'
+    | '/vendor/support'
     | '/vendor/transactions'
     | '/vendor/verification'
     | '/vendor/'
@@ -325,6 +355,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/account'
     | '/cart'
     | '/checkout'
     | '/for-businesses'
@@ -348,6 +379,8 @@ export interface FileRouteTypes {
     | '/vendor/promotions'
     | '/vendor/reviews'
     | '/vendor/services'
+    | '/vendor/settings'
+    | '/vendor/support'
     | '/vendor/transactions'
     | '/vendor/verification'
     | '/vendor'
@@ -357,6 +390,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/account'
     | '/cart'
     | '/checkout'
     | '/for-businesses'
@@ -380,6 +414,8 @@ export interface FileRouteTypes {
     | '/vendor/promotions'
     | '/vendor/reviews'
     | '/vendor/services'
+    | '/vendor/settings'
+    | '/vendor/support'
     | '/vendor/transactions'
     | '/vendor/verification'
     | '/vendor/'
@@ -390,6 +426,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AccountRoute: typeof AccountRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   ForBusinessesRoute: typeof ForBusinessesRoute
@@ -412,6 +449,8 @@ export interface RootRouteChildren {
   VendorPromotionsRoute: typeof VendorPromotionsRoute
   VendorReviewsRoute: typeof VendorReviewsRoute
   VendorServicesRoute: typeof VendorServicesRoute
+  VendorSettingsRoute: typeof VendorSettingsRoute
+  VendorSupportRoute: typeof VendorSupportRoute
   VendorTransactionsRoute: typeof VendorTransactionsRoute
   VendorVerificationRoute: typeof VendorVerificationRoute
   VendorIndexRoute: typeof VendorIndexRoute
@@ -431,6 +470,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cart': {
@@ -601,6 +647,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vendor/settings': {
+      id: '/vendor/settings'
+      path: '/vendor/settings'
+      fullPath: '/vendor/settings'
+      preLoaderRoute: typeof VendorSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/support': {
+      id: '/vendor/support'
+      path: '/vendor/support'
+      fullPath: '/vendor/support'
+      preLoaderRoute: typeof VendorSupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendor/transactions': {
       id: '/vendor/transactions'
       path: '/vendor/transactions'
@@ -670,6 +730,7 @@ const VendorProductsRouteWithChildren = VendorProductsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AccountRoute: AccountRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   ForBusinessesRoute: ForBusinessesRoute,
@@ -692,6 +753,8 @@ const rootRouteChildren: RootRouteChildren = {
   VendorPromotionsRoute: VendorPromotionsRoute,
   VendorReviewsRoute: VendorReviewsRoute,
   VendorServicesRoute: VendorServicesRoute,
+  VendorSettingsRoute: VendorSettingsRoute,
+  VendorSupportRoute: VendorSupportRoute,
   VendorTransactionsRoute: VendorTransactionsRoute,
   VendorVerificationRoute: VendorVerificationRoute,
   VendorIndexRoute: VendorIndexRoute,
