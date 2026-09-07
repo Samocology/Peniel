@@ -21,12 +21,15 @@ import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminDisputesRouteImport } from './routes/admin.disputes'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminPayoutsRouteImport } from './routes/admin.payouts'
+import { Route as AdminPromotionsRouteImport } from './routes/admin.promotions'
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminTransactionsRouteImport } from './routes/admin.transactions'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminVerificationRouteImport } from './routes/admin.verification'
@@ -113,6 +116,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/admin/analytics',
+  path: '/admin/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   id: '/admin/categories',
   path: '/admin/categories',
@@ -138,9 +146,19 @@ const AdminPayoutsRoute = AdminPayoutsRouteImport.update({
   path: '/admin/payouts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPromotionsRoute = AdminPromotionsRouteImport.update({
+  id: '/admin/promotions',
+  path: '/admin/promotions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminReviewsRoute = AdminReviewsRouteImport.update({
   id: '/admin/reviews',
   path: '/admin/reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/admin/settings',
+  path: '/admin/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminTransactionsRoute = AdminTransactionsRouteImport.update({
@@ -281,12 +299,15 @@ export interface FileRoutesByFullPath {
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/disputes': typeof AdminDisputesRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payouts': typeof AdminPayoutsRoute
+  '/admin/promotions': typeof AdminPromotionsRoute
   '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/verification': typeof AdminVerificationRoute
@@ -326,12 +347,15 @@ export interface FileRoutesByTo {
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/disputes': typeof AdminDisputesRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payouts': typeof AdminPayoutsRoute
+  '/admin/promotions': typeof AdminPromotionsRoute
   '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/verification': typeof AdminVerificationRoute
@@ -372,12 +396,15 @@ export interface FileRoutesById {
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/disputes': typeof AdminDisputesRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payouts': typeof AdminPayoutsRoute
+  '/admin/promotions': typeof AdminPromotionsRoute
   '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/verification': typeof AdminVerificationRoute
@@ -419,12 +446,15 @@ export interface FileRouteTypes {
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/admin/analytics'
     | '/admin/categories'
     | '/admin/customers'
     | '/admin/disputes'
     | '/admin/orders'
     | '/admin/payouts'
+    | '/admin/promotions'
     | '/admin/reviews'
+    | '/admin/settings'
     | '/admin/transactions'
     | '/admin/vendors'
     | '/admin/verification'
@@ -464,12 +494,15 @@ export interface FileRouteTypes {
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/admin/analytics'
     | '/admin/categories'
     | '/admin/customers'
     | '/admin/disputes'
     | '/admin/orders'
     | '/admin/payouts'
+    | '/admin/promotions'
     | '/admin/reviews'
+    | '/admin/settings'
     | '/admin/transactions'
     | '/admin/vendors'
     | '/admin/verification'
@@ -509,12 +542,15 @@ export interface FileRouteTypes {
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/admin/analytics'
     | '/admin/categories'
     | '/admin/customers'
     | '/admin/disputes'
     | '/admin/orders'
     | '/admin/payouts'
+    | '/admin/promotions'
     | '/admin/reviews'
+    | '/admin/settings'
     | '/admin/transactions'
     | '/admin/vendors'
     | '/admin/verification'
@@ -555,12 +591,15 @@ export interface RootRouteChildren {
   PaymentRoute: typeof PaymentRoute
   PricingRoute: typeof PricingRoute
   SearchRoute: typeof SearchRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminDisputesRoute: typeof AdminDisputesRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPayoutsRoute: typeof AdminPayoutsRoute
+  AdminPromotionsRoute: typeof AdminPromotionsRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
   AdminTransactionsRoute: typeof AdminTransactionsRoute
   AdminVendorsRoute: typeof AdminVendorsRoute
   AdminVerificationRoute: typeof AdminVerificationRoute
@@ -672,6 +711,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/admin/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/categories': {
       id: '/admin/categories'
       path: '/admin/categories'
@@ -707,11 +753,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPayoutsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/promotions': {
+      id: '/admin/promotions'
+      path: '/admin/promotions'
+      fullPath: '/admin/promotions'
+      preLoaderRoute: typeof AdminPromotionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/reviews': {
       id: '/admin/reviews'
       path: '/admin/reviews'
       fullPath: '/admin/reviews'
       preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/admin/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/transactions': {
@@ -939,12 +999,15 @@ const rootRouteChildren: RootRouteChildren = {
   PaymentRoute: PaymentRoute,
   PricingRoute: PricingRoute,
   SearchRoute: SearchRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminDisputesRoute: AdminDisputesRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPayoutsRoute: AdminPayoutsRoute,
+  AdminPromotionsRoute: AdminPromotionsRoute,
   AdminReviewsRoute: AdminReviewsRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
   AdminTransactionsRoute: AdminTransactionsRoute,
   AdminVendorsRoute: AdminVendorsRoute,
   AdminVerificationRoute: AdminVerificationRoute,
