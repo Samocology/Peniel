@@ -21,11 +21,15 @@ import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminDisputesRouteImport } from './routes/admin.disputes'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminPayoutsRouteImport } from './routes/admin.payouts'
+import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminTransactionsRouteImport } from './routes/admin.transactions'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
+import { Route as AdminVerificationRouteImport } from './routes/admin.verification'
 import { Route as BookingsIdRouteImport } from './routes/bookings.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
@@ -109,9 +113,19 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/admin/categories',
+  path: '/admin/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/admin/customers',
   path: '/admin/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDisputesRoute = AdminDisputesRouteImport.update({
+  id: '/admin/disputes',
+  path: '/admin/disputes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
@@ -124,6 +138,11 @@ const AdminPayoutsRoute = AdminPayoutsRouteImport.update({
   path: '/admin/payouts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminReviewsRoute = AdminReviewsRouteImport.update({
+  id: '/admin/reviews',
+  path: '/admin/reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminTransactionsRoute = AdminTransactionsRouteImport.update({
   id: '/admin/transactions',
   path: '/admin/transactions',
@@ -132,6 +151,11 @@ const AdminTransactionsRoute = AdminTransactionsRouteImport.update({
 const AdminVendorsRoute = AdminVendorsRouteImport.update({
   id: '/admin/vendors',
   path: '/admin/vendors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminVerificationRoute = AdminVerificationRouteImport.update({
+  id: '/admin/verification',
+  path: '/admin/verification',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookingsIdRoute = BookingsIdRouteImport.update({
@@ -257,11 +281,15 @@ export interface FileRoutesByFullPath {
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/disputes': typeof AdminDisputesRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payouts': typeof AdminPayoutsRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/vendors': typeof AdminVendorsRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -298,11 +326,15 @@ export interface FileRoutesByTo {
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/disputes': typeof AdminDisputesRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payouts': typeof AdminPayoutsRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/vendors': typeof AdminVendorsRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -340,11 +372,15 @@ export interface FileRoutesById {
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
   '/search': typeof SearchRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
+  '/admin/disputes': typeof AdminDisputesRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payouts': typeof AdminPayoutsRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/vendors': typeof AdminVendorsRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -383,11 +419,15 @@ export interface FileRouteTypes {
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/admin/categories'
     | '/admin/customers'
+    | '/admin/disputes'
     | '/admin/orders'
     | '/admin/payouts'
+    | '/admin/reviews'
     | '/admin/transactions'
     | '/admin/vendors'
+    | '/admin/verification'
     | '/bookings/$id'
     | '/category/$slug'
     | '/orders/$id'
@@ -424,11 +464,15 @@ export interface FileRouteTypes {
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/admin/categories'
     | '/admin/customers'
+    | '/admin/disputes'
     | '/admin/orders'
     | '/admin/payouts'
+    | '/admin/reviews'
     | '/admin/transactions'
     | '/admin/vendors'
+    | '/admin/verification'
     | '/bookings/$id'
     | '/category/$slug'
     | '/orders/$id'
@@ -465,11 +509,15 @@ export interface FileRouteTypes {
     | '/payment'
     | '/pricing'
     | '/search'
+    | '/admin/categories'
     | '/admin/customers'
+    | '/admin/disputes'
     | '/admin/orders'
     | '/admin/payouts'
+    | '/admin/reviews'
     | '/admin/transactions'
     | '/admin/vendors'
+    | '/admin/verification'
     | '/bookings/$id'
     | '/category/$slug'
     | '/orders/$id'
@@ -507,11 +555,15 @@ export interface RootRouteChildren {
   PaymentRoute: typeof PaymentRoute
   PricingRoute: typeof PricingRoute
   SearchRoute: typeof SearchRoute
+  AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminDisputesRoute: typeof AdminDisputesRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPayoutsRoute: typeof AdminPayoutsRoute
+  AdminReviewsRoute: typeof AdminReviewsRoute
   AdminTransactionsRoute: typeof AdminTransactionsRoute
   AdminVendorsRoute: typeof AdminVendorsRoute
+  AdminVerificationRoute: typeof AdminVerificationRoute
   BookingsIdRoute: typeof BookingsIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
   StoreSlugRoute: typeof StoreSlugRouteWithChildren
@@ -620,11 +672,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/admin/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/customers': {
       id: '/admin/customers'
       path: '/admin/customers'
       fullPath: '/admin/customers'
       preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/disputes': {
+      id: '/admin/disputes'
+      path: '/admin/disputes'
+      fullPath: '/admin/disputes'
+      preLoaderRoute: typeof AdminDisputesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/orders': {
@@ -641,6 +707,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPayoutsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/reviews': {
+      id: '/admin/reviews'
+      path: '/admin/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/transactions': {
       id: '/admin/transactions'
       path: '/admin/transactions'
@@ -653,6 +726,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/vendors'
       fullPath: '/admin/vendors'
       preLoaderRoute: typeof AdminVendorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/verification': {
+      id: '/admin/verification'
+      path: '/admin/verification'
+      fullPath: '/admin/verification'
+      preLoaderRoute: typeof AdminVerificationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bookings/$id': {
@@ -859,11 +939,15 @@ const rootRouteChildren: RootRouteChildren = {
   PaymentRoute: PaymentRoute,
   PricingRoute: PricingRoute,
   SearchRoute: SearchRoute,
+  AdminCategoriesRoute: AdminCategoriesRoute,
   AdminCustomersRoute: AdminCustomersRoute,
+  AdminDisputesRoute: AdminDisputesRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPayoutsRoute: AdminPayoutsRoute,
+  AdminReviewsRoute: AdminReviewsRoute,
   AdminTransactionsRoute: AdminTransactionsRoute,
   AdminVendorsRoute: AdminVendorsRoute,
+  AdminVerificationRoute: AdminVerificationRoute,
   BookingsIdRoute: BookingsIdRoute,
   CategorySlugRoute: CategorySlugRoute,
   StoreSlugRoute: StoreSlugRouteWithChildren,
