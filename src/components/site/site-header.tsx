@@ -45,7 +45,7 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
         </div>
 
         <button
-          className="inline-flex size-10 items-center justify-center rounded-lg border border-border sm:hidden"
+          className="inline-flex size-10 items-center justify-center rounded-lg border border-border lg:hidden"
           onClick={() => setOpen((o) => !o)}
           aria-label="Open menu"
         >
@@ -67,7 +67,7 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
       )}
 
       {open && (
-        <div className="border-t border-border bg-card px-4 py-3 sm:hidden">
+        <div className="border-t border-border bg-card px-4 py-3 lg:hidden">
           <div className="flex flex-col gap-1">
             {nav.map((n) => (
               <Link key={n.to} to={n.to} className="rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
@@ -79,6 +79,15 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
             </Link>
             <Link to="/account" className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
               <Heart className="size-4" /> My account
+            </Link>
+            <Link to="/search" className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
+              <Search className="size-4" /> Search
+            </Link>
+            <Link to="/vendor" className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
+              <LayoutGrid className="size-4" /> Business console
+            </Link>
+            <Link to="/admin" className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
+              <MapPin className="size-4" /> Platform admin
             </Link>
             <Button asChild className="mt-2">
               <Link to="/vendor/onboarding">Start selling</Link>
