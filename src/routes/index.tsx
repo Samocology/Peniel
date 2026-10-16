@@ -156,7 +156,7 @@ function Landing() {
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 p-3">
-                {vendors[0].products.slice(0, 3).map((p) => (
+                {vendors[0]!.products.slice(0, 3).map((p) => (
                   <div key={p.id} className="rounded-xl border border-border p-2">
                     <div className="brand-gradient mb-2 h-14 rounded-lg" />
                     <p className="truncate text-[11px] font-semibold">{p.name}</p>

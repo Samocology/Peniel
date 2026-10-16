@@ -58,7 +58,7 @@ function AdminOverview() {
                 ["6 reviews flagged", "/admin/reviews"],
               ].map(([t, to]) => (
                 <li key={t}>
-                  <Link to={to} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3.5 py-3 transition hover:border-primary/40">
+                  <Link to={to as string} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3.5 py-3 transition hover:border-primary/40">
                     <span className="min-w-0 truncate font-medium">{t}</span>
                     <span className="shrink-0 text-xs font-semibold text-primary">Review</span>
                   </Link>
