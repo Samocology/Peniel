@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
+import { vendors } from "@/lib/data";
+import { TemplatePicker } from "@/components/store/template-picker";
 import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, PartyPopper, Store } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { categories, naira } from "@/lib/data";
@@ -9,6 +11,7 @@ const steps = [
   "Business category",
   "Location",
   "Branding",
+  "Storefront design",
   "Products or services",
   "Pricing",
   "Delivery & booking",
@@ -17,7 +20,7 @@ const steps = [
 ];
 
 export const Route = createFileRoute("/vendor/onboarding")({
-  validateSearch: z.object({ step: z.number().int().min(1).max(9).default(1) }),
+  validateSearch: z.object({ step: z.number().int().min(1).max(10).default(1) }),
   head: () => ({
     meta: [
       { title: "Create your storefront — Vendra onboarding" },
@@ -157,6 +160,16 @@ function Onboarding() {
           )}
 
           {step === 5 && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Pick how your storefront looks. We start you on a default that fits your category. On the free plan you
+                can choose once; paid plans can switch any time.
+              </p>
+              <TemplatePicker vendor={vendors[0]!} />
+            </div>
+          )}
+
+          {step === 6 && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Add your first few items. You can add more any time.</p>
               {["Jollof Rice (Party Size)", "Native Soup & Pounded Yam"].map((n) => (
@@ -171,7 +184,7 @@ function Onboarding() {
             </div>
           )}
 
-          {step === 6 && (
+          {step === 7 && (
             <div className="space-y-4">
               <div className="rounded-xl border border-primary/20 bg-primary-soft p-4 text-sm">
                 <p className="font-semibold">Payments are handled securely by Vendra</p>
@@ -203,7 +216,7 @@ function Onboarding() {
             </div>
           )}
 
-          {step === 7 && (
+          {step === 8 && (
             <div className="space-y-4">
               {[
                 ["Delivery", ["I deliver myself", "Vendra riders", "Customer pickup only"]],
@@ -230,7 +243,7 @@ function Onboarding() {
             </div>
           )}
 
-          {step === 8 && (
+          {step === 9 && (
             <div>
               <p className="text-sm text-muted-foreground">This is what your customers will see.</p>
               <div className="mt-4 overflow-hidden rounded-2xl border border-border">
@@ -257,7 +270,7 @@ function Onboarding() {
             </div>
           )}
 
-          {step === 9 && (
+          {step === 10 && (
             <div className="text-center">
               <div className="mx-auto grid size-14 place-items-center rounded-full bg-success/12">
                 <PartyPopper className="size-7 text-success" />
@@ -288,7 +301,7 @@ function Onboarding() {
           )}
         </div>
 
-        {step < 9 && (
+        {step < 10 && (
           <div className="mt-6 flex items-center justify-between gap-3">
             <Link
               to="/vendor/onboarding"
