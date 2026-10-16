@@ -285,7 +285,7 @@ function CatalogBlock({ vendor: v, tpl }: P) {
       return (
         <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
           {items.map((p, i) => (
-            <ItemLink key={p.id} vendor={v} product={p} className="block bg-white p-2.5 pb-4 text-neutral-900 shadow-lg transition hover:rotate-0" style={{ transform: `rotate(${((i % 3) - 1) * 2}deg)` }}>
+            <ItemLink key={p.id} vendor={v} product={p} className="block p-2.5 pb-4 shadow-lg transition hover:rotate-0" style={{ background: t(v).bg, color: t(v).ink, border: `1px solid ${t(v).line}`, transform: `rotate(${((i % 3) - 1) * 2}deg)` }}>
               <ItemArt vendor={v} seed={i} className="aspect-square" />
               <p className="mt-2 truncate text-center text-lg" style={{ fontFamily: t(v).heading }}>{p.name}</p>
               <p className="text-center text-sm font-bold" style={{ color: t(v).accent }}>{naira(p.price)}</p>

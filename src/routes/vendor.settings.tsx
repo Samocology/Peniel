@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Copy, ImagePlus, ShieldCheck } from "lucide-react";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
+import { vendors } from "@/lib/data";
+import { TemplatePicker } from "@/components/store/template-picker";
 
 export const Route = createFileRoute("/vendor/settings")({
   head: () => ({
@@ -80,6 +82,10 @@ function VendorSettings() {
                 ))}
               </div>
             </div>
+          </Panel>
+
+          <Panel title="Storefront design">
+            <TemplatePicker vendor={vendors[0]!} />
           </Panel>
 
           <Panel title="Opening hours">

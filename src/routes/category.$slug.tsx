@@ -50,7 +50,7 @@ function CategoryPage() {
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[280px_1fr] lg:items-center">
           <div className="relative h-40 overflow-hidden rounded-2xl">
-            <img src={shown[0].cover} alt={category.name} loading="lazy" className="size-full object-cover" />
+            <img src={shown[0]?.cover ?? vendors[0]!.cover} alt={category.name} loading="lazy" className="size-full object-cover" />
           </div>
           <div>
             <h1 className="font-display text-3xl font-bold sm:text-4xl">{category.name}</h1>
