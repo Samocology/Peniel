@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { CalendarCheck, CalendarPlus, Clock, MapPin, Phone, ShieldCheck, User, XCircle } from "lucide-react";
+import { CalendarCheck, CalendarPlus, Clock, MapPin, MessageCircle, ShieldCheck, User, XCircle } from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { StatusPill } from "@/components/site/bits";
@@ -87,12 +87,13 @@ function BookingPage() {
             <button className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground">
               <CalendarPlus className="size-4" /> Add to calendar
             </button>
-            <a
-              href={`tel:${vendor?.phone ?? "+2348030000000"}`}
+            <Link
+              to="/messages"
+              search={{ v: vendor?.slug ?? "glamour-beauty-lounge" }}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-semibold"
             >
-              <Phone className="size-4" /> Call business
-            </a>
+              <MessageCircle className="size-4" /> Chat with business
+            </Link>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
