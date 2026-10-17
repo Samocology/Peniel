@@ -2,7 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { z } from "zod";
 import { getVendor } from "@/lib/data";
 import { defaultTemplateFor, getTemplate } from "@/lib/templates";
-import { useStorefront } from "@/lib/storefront-store";
+import { mergeVendor, useApp } from "@/lib/vendra-store";
 import { StoreFooter, StoreTopBar } from "@/components/store/store-kit";
 import { BuilderStore, CinematicStore, EditorialStore, GalleryStore } from "@/components/store/layouts-a";
 import { GridStore, PlayfulStore, ReservationStore } from "@/components/store/layouts-b";
@@ -37,9 +37,10 @@ export const Route = createFileRoute("/store/$slug")({
 function StorePage() {
   const { vendor: base } = Route.useLoaderData();
   const { t: previewId } = Route.useSearch();
-  const s = useStorefront();
-  const tpl = getTemplate(previewId) ?? getTemplate(s.choices[base.slug]) ?? defaultTemplateFor(base);
-  const vendor = { ...base, theme: tpl.theme };
+  const s = useApp();
+  const acc = s.accounts[base.slug];
+  const tpl = getTemplate(previewId) ?? getTemplate(acc?.choice) ?? defaultTemplateFor(base);
+  const vendor = { ...mergeVendor(base, acc), theme: tpl.theme };
 
   const L = tpl.layout;
   const body =

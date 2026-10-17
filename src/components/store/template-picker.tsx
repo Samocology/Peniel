@@ -3,7 +3,7 @@ import { Check, Eye, Lock, Sparkles } from "lucide-react";
 import { useState } from "react";
 import type { Vendor } from "@/lib/data";
 import { defaultTemplateFor, templatesFor, type StoreTemplate } from "@/lib/templates";
-import { canPickStorefront, storefrontStore, useStorefront, type Plan } from "@/lib/storefront-store";
+import { app, canPickStorefront, useApp } from "@/lib/vendra-store";
 
 function Thumb({ tpl }: { tpl: StoreTemplate }) {
   const t = tpl.theme;
@@ -26,16 +26,17 @@ function Thumb({ tpl }: { tpl: StoreTemplate }) {
 
 /** Storefront design chooser used in onboarding and store settings. */
 export function TemplatePicker({ vendor }: { vendor: Vendor }) {
-  const s = useStorefront();
-  const current = s.choices[vendor.slug] ?? defaultTemplateFor(vendor).id;
-  const picks = s.picks[vendor.slug] ?? 0;
+  const st = useApp();
+  const s = st.accounts[vendor.slug] ?? { plan: "starter" as const, picks: 0, choice: undefined };
+  const current = s.choice ?? defaultTemplateFor(vendor).id;
+  const picks = s.picks;
   const unlocked = canPickStorefront(s.plan, picks);
   const [msg, setMsg] = useState<string | null>(null);
   const list = templatesFor(vendor.type);
 
   const pick = (id: string) => {
     if (id === current) return;
-    const ok = storefrontStore.choose(vendor.slug, id);
+    const ok = app.chooseStorefront(id);
     setMsg(ok ? "Storefront updated. Customers now see the new design." : "Free plan includes one storefront choice. Upgrade to switch again.");
   };
 
@@ -50,24 +51,15 @@ export function TemplatePicker({ vendor }: { vendor: Vendor }) {
               : "storefront choice used"
             : "switch designs any time"}
         </span>
-        <span className="flex gap-1">
-          {(["starter", "growth", "business"] as Plan[]).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => storefrontStore.setPlan(p)}
-              className={"rounded-full px-3 py-1 text-xs font-semibold capitalize " + (s.plan === p ? "bg-primary text-primary-foreground" : "border border-border")}
-            >
-              {p}
-            </button>
-          ))}
-        </span>
+        {s.plan === "starter" && (
+          <Link to="/vendor/upgrade" className="rounded-full bg-gold px-3 py-1 text-xs font-bold text-gold-foreground">Upgrade</Link>
+        )}
       </div>
 
       {!unlocked && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/50 bg-gold/10 px-4 py-3 text-sm">
           <span className="flex items-center gap-2"><Lock className="size-4" /> Your free storefront choice is used. Upgrade to change design.</span>
-          <Link to="/pricing" className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Upgrade</Link>
+          <Link to="/vendor/upgrade" className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Upgrade</Link>
         </div>
       )}
       {msg && <p role="status" className="text-sm font-medium text-primary">{msg}</p>}
