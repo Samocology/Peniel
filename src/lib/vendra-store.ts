@@ -267,8 +267,4 @@ export function mergeVendor(v: Vendor, a?: Account): Vendor {
 }
 
 export const unreadFor = (t: Thread, side: ChatMsg["from"]) =>
-  Math.max(0, t.messages.filter((m) => m.from !== side).length - (side === "customer" ? countOther(t, "customer") : countOther(t, "vendor")));
-function countOther(t: Thread, side: ChatMsg["from"]) {
-  const read = side === "customer" ? t.readC : t.readV;
-  return t.messages.slice(0, read).filter((m) => m.from !== side).length;
-}
+  t.messages.slice(side === "customer" ? t.readC : t.readV).filter((m) => m.from !== side).length;
