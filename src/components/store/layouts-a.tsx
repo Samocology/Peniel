@@ -188,7 +188,7 @@ export function StoreSidebar({ vendor }: { vendor: Vendor }) {
   const rows = [
     { icon: MapPin, label: "Location", value: vendor.location },
     { icon: Clock, label: "Opening hours", value: vendor.hours },
-    { icon: Phone, label: "Contact", value: `${vendor.phone}\n${vendor.email}` },
+    { icon: Phone, label: "Contact", value: "Chat in-app via Vendra — contact details stay private" },
     { icon: Truck, label: "Fulfilment", value: vendor.delivery },
   ];
   return (
@@ -381,9 +381,9 @@ export function EditorialStore({ vendor }: { vendor: Vendor }) {
               <Link to="/cart" className="px-6 py-3 text-sm font-semibold" style={{ background: t.accent, color: t.accentInk, borderRadius: "999px" }}>
                 Book an appointment
               </Link>
-              <a href={`tel:${vendor.phone}`} className="border px-6 py-3 text-sm font-semibold" style={{ borderColor: t.accent, color: t.accent, borderRadius: "999px" }}>
-                Call the lounge
-              </a>
+              <Link to="/messages" search={{ v: vendor.slug }} className="border px-6 py-3 text-sm font-semibold" style={{ borderColor: t.accent, color: t.accent, borderRadius: "999px" }}>
+                Chat with the lounge
+              </Link>
             </div>
           </div>
           <div className="overflow-hidden" style={{ borderRadius: "180px 180px 24px 24px" }}>

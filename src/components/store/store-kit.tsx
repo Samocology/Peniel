@@ -1,11 +1,28 @@
 import { Link } from "@tanstack/react-router";
-import { BadgeCheck, ChevronLeft, Heart, Share2, ShoppingBag, Star } from "lucide-react";
+import { BadgeCheck, ChevronLeft, Heart, MessageCircle, Share2, ShoppingBag, Star } from "lucide-react";
+import { toast } from "sonner";
+import { app, useApp } from "@/lib/vendra-store";
 import type { ReactNode } from "react";
 import { naira, type Product, type Vendor } from "@/lib/data";
 
 /** Subtle platform bar — vendor brand stays the visual priority. */
 export function StoreTopBar({ vendor }: { vendor: Vendor }) {
   const t = vendor.theme;
+  const s = useApp();
+  const saved = s.favorites.includes(vendor.slug);
+  const count = s.cart.reduce((a, l) => a + l.qty, 0);
+  const share = async () => {
+    const url = window.location.origin + "/store/" + vendor.slug;
+    try {
+      if (navigator.share) await navigator.share({ title: vendor.name, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Store link copied");
+      }
+    } catch {
+      /* cancelled */
+    }
+  };
   return (
     <div
       className="sticky top-0 z-40 border-b backdrop-blur-md"
@@ -17,19 +34,30 @@ export function StoreTopBar({ vendor }: { vendor: Vendor }) {
         </Link>
         <span className="mx-1 h-4 w-px" style={{ background: t.line }} />
         <span className="truncate text-xs font-semibold tracking-wide">{vendor.name}</span>
-        <span className="ml-auto flex items-center gap-2">
-          <button className="rounded-full border px-3 py-1 text-xs" style={{ borderColor: t.line }}>
-            <Share2 className="mr-1 inline size-3" /> Share
+        <span className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <Link to="/messages" search={{ v: vendor.slug }} aria-label="Chat" className="rounded-full border px-2.5 py-1 text-xs sm:px-3" style={{ borderColor: t.line }}>
+            <MessageCircle className="inline size-3 sm:mr-1" /> <span className="hidden sm:inline">Chat</span>
+          </Link>
+          <button onClick={share} aria-label="Share" className="rounded-full border px-2.5 py-1 text-xs sm:px-3" style={{ borderColor: t.line }}>
+            <Share2 className="inline size-3 sm:mr-1" /> <span className="hidden sm:inline">Share</span>
           </button>
-          <button className="rounded-full border px-3 py-1 text-xs" style={{ borderColor: t.line }}>
-            <Heart className="mr-1 inline size-3" /> Save
+          <button
+            onClick={() => {
+              app.toggleFavorite(vendor.slug);
+              toast.success(saved ? "Removed from favourites" : "Saved to favourites");
+            }}
+            aria-label="Save"
+            className="rounded-full border px-2.5 py-1 text-xs sm:px-3"
+            style={{ borderColor: t.line, background: saved ? t.soft : undefined }}
+          >
+            <Heart className={"inline size-3 sm:mr-1 " + (saved ? "fill-current" : "")} /> <span className="hidden sm:inline">{saved ? "Saved" : "Save"}</span>
           </button>
           <Link
             to="/cart"
             className="rounded-full px-3 py-1 text-xs font-semibold"
             style={{ background: t.accent, color: t.accentInk }}
           >
-            <ShoppingBag className="mr-1 inline size-3" /> Cart
+            <ShoppingBag className="mr-1 inline size-3" /> {count}
           </Link>
         </span>
       </div>
@@ -55,8 +83,10 @@ export function StoreFooter({ vendor }: { vendor: Vendor }) {
         </div>
         <div className="text-sm opacity-80">
           <p className="mb-2 text-xs tracking-[0.14em] uppercase opacity-60">Contact</p>
-          <p>{vendor.phone}</p>
-          <p>{vendor.email}</p>
+          <Link to="/messages" search={{ v: vendor.slug }} className="inline-flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline">
+            <MessageCircle className="size-3.5" /> Chat with {vendor.name}
+          </Link>
+          <p className="mt-1 text-xs opacity-60">Contact details stay private on Vendra.</p>
         </div>
       </div>
       <div

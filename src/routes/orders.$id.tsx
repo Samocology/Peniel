@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Check, ChefHat, CircleDot, Download, MessageCircle, Package, Phone, ShieldCheck, Star, Truck } from "lucide-react";
+import { Check, ChefHat, CircleDot, Download, MessageCircle, Package, ShieldCheck, Star, Truck } from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { StatusPill } from "@/components/site/bits";
@@ -105,12 +105,9 @@ function OrderTracking() {
               <p className="text-sm font-semibold">{order.vendor}</p>
               {vendor && <p className="mt-0.5 text-xs text-muted-foreground">{vendor.location}</p>}
               <div className="mt-3 flex flex-wrap gap-2">
-                <a href="tel:+2348030000000" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold">
-                  <Phone className="size-3.5" /> Call
-                </a>
-                <button className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold">
-                  <MessageCircle className="size-3.5" /> Message
-                </button>
+                <Link to="/messages" search={{ v: order.vendorSlug }} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold">
+                  <MessageCircle className="size-3.5" /> Chat with business
+                </Link>
                 <Link
                   to="/store/$slug"
                   params={{ slug: order.vendorSlug }}
