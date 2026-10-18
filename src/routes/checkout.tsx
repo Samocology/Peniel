@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Banknote, Building2, CreditCard, Lock, MapPin, ShieldCheck, Smartphone, Truck } from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import { cartLines, cartTotals, naira } from "@/lib/data";
+import { naira } from "@/lib/data";
+import { totalsFor, useApp } from "@/lib/vendra-store";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -20,7 +21,9 @@ const field = "w-full rounded-xl border border-input bg-background px-4 py-3 tex
 const label = "mb-1.5 block text-xs font-semibold tracking-wide uppercase text-muted-foreground";
 
 function CheckoutPage() {
-  const totals = cartTotals();
+  const s = useApp();
+  const cartLines = s.cart;
+  const totals = totalsFor(cartLines, s.promo);
 
   return (
     <div className="min-h-screen bg-background">
@@ -156,7 +159,7 @@ function CheckoutPage() {
               <p className="font-display text-lg font-bold">Order summary</p>
               <ul className="mt-4 space-y-3 text-sm">
                 {cartLines.map((l) => (
-                  <li key={l.item} className="flex justify-between gap-3">
+                  <li key={l.id} className="flex justify-between gap-3">
                     <span className="min-w-0">
                       <span className="block truncate font-medium">
                         {l.qty}× {l.item}
@@ -170,6 +173,7 @@ function CheckoutPage() {
               <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
                 {[
                   ["Subtotal", totals.subtotal],
+                  ...(totals.discount ? [["Promo discount", -totals.discount]] : []),
                   ["Delivery", totals.delivery],
                   ["Platform fee", totals.platformFee],
                 ].map(([l, v]) => (
@@ -185,7 +189,9 @@ function CheckoutPage() {
               </div>
               <Link
                 to="/payment"
-                className="mt-5 block rounded-xl bg-primary py-3.5 text-center text-sm font-bold text-primary-foreground transition hover:opacity-90"
+                search={{ state: "processing", amount: totals.total }}
+                disabled={!cartLines.length}
+                className="mt-5 block aria-disabled:pointer-events-none aria-disabled:opacity-50 rounded-xl bg-primary py-3.5 text-center text-sm font-bold text-primary-foreground transition hover:opacity-90"
               >
                 Pay {naira(totals.total)}
               </Link>

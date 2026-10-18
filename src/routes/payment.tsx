@@ -3,10 +3,14 @@ import { CheckCircle2, Clock, Loader2, ShieldCheck, XCircle } from "lucide-react
 import { z } from "zod";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import { cartTotals, naira, orders } from "@/lib/data";
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { naira, orders } from "@/lib/data";
+import { app } from "@/lib/vendra-store";
 
 const searchSchema = z.object({
   state: z.enum(["processing", "success", "failed", "cancelled"]).default("success"),
+  amount: z.number().optional(),
 });
 
 export const Route = createFileRoute("/payment")({
@@ -23,8 +27,17 @@ export const Route = createFileRoute("/payment")({
 });
 
 function PaymentPage() {
-  const { state } = Route.useSearch();
-  const totals = cartTotals();
+  const { state, amount } = Route.useSearch();
+  const navigate = useNavigate({ from: "/payment" });
+  const totals = { total: amount ?? 0 };
+  useEffect(() => {
+    if (state !== "processing") return;
+    const id = setTimeout(() => {
+      app.clearCart();
+      navigate({ search: { state: "success", amount }, replace: true });
+    }, 2200);
+    return () => clearTimeout(id);
+  }, [state, amount, navigate]);
   const order = orders[0]!;
 
   const config = {

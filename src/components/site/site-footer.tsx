@@ -31,11 +31,10 @@ const cols = [
     ],
   },
   {
-    title: "Consoles",
+    title: "Sell on Vendra",
     links: [
-      { label: "Vendor dashboard", to: "/vendor" },
-      { label: "Vendor onboarding", to: "/vendor/onboarding" },
-      { label: "Admin console", to: "/admin" },
+      { label: "Start selling", to: "/vendor/onboarding" },
+      { label: "Plans & pricing", to: "/pricing" },
       { label: "My orders", to: "/orders" },
     ],
   },

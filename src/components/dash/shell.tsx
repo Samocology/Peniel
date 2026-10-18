@@ -2,6 +2,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { Bell, Menu, Search, X } from "lucide-react";
 import { Logo } from "@/components/site/logo";
+import { BottomBar } from "@/components/site/bottom-nav";
+import { unreadFor, useApp, useCurrentVendor } from "@/lib/vendra-store";
 
 export type NavItem = { label: string; to: string; icon: ReactNode; badge?: string; primary?: boolean };
 
@@ -25,7 +27,20 @@ export function DashShell({
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [menu, setMenu] = useState(false);
-  const primary = nav.filter((n) => n.primary).slice(0, 4);
+  const isVendor = kicker === "Business console";
+  const st = useApp();
+  const { vendor: me, account } = useCurrentVendor();
+  if (isVendor && storeLink) storeLink = { ...storeLink, slug: me.slug };
+  const live: Record<string, number> = isVendor
+    ? {
+        "/vendor/orders": st.orders.filter((o) => o.status === "New").length,
+        "/vendor/messages": st.threads.filter((t) => t.vendorSlug === me.slug).reduce((a, t) => a + unreadFor(t, "vendor"), 0),
+      }
+    : {};
+  nav = nav.map((n) => (n.to in live ? { ...n, badge: live[n.to] ? String(live[n.to]) : undefined } : n));
+  const primary = nav.filter((n) => n.primary).slice(0, 5);
+  const secondary = nav.filter((n) => !primary.includes(n));
+  const initials = isVendor ? me.monogram : "VA";
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -104,7 +119,7 @@ export function DashShell({
                   <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive" />
                 </button>
                 <span className="grid size-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  AK
+                  {initials}
                 </span>
               </div>
             </div>
@@ -120,9 +135,11 @@ export function DashShell({
                     <X className="size-4" />
                   </button>
                 </div>
-                <p className="px-4 pt-4 pb-2 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">{kicker}</p>
+                <p className="px-4 pt-4 pb-2 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
+                  {isVendor ? `${me.name} · ${account.plan === "starter" ? "Free plan" : account.plan + " plan"}` : kicker}
+                </p>
                 <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-4">
-                  {nav.map((n) => (
+                  {secondary.map((n) => (
                     <Link
                       key={n.to}
                       to={n.to}
@@ -147,8 +164,8 @@ export function DashShell({
             </div>
           )}
 
-          <main className="px-4 pt-6 pb-24 sm:px-6 lg:pb-6">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+          <main className="px-3 pt-5 pb-28 sm:px-6 sm:pt-6 lg:pb-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <h1 className="font-display text-2xl font-bold sm:text-3xl">{title}</h1>
                 {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
@@ -160,28 +177,10 @@ export function DashShell({
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
-        <ul className="grid grid-cols-5">
-          {primary.map((n) => {
-            const active = pathname === n.to;
-            return (
-              <li key={n.to}>
-                <Link to={n.to} className={"relative flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold " + (active ? "text-primary" : "text-muted-foreground")}>
-                  <span className={"grid h-7 w-12 place-items-center rounded-full [&_svg]:size-5 " + (active ? "bg-primary-soft" : "")}>{n.icon}</span>
-                  <span className="max-w-full truncate px-1">{n.label}</span>
-                  {n.badge && <span className="absolute top-1 right-[18%] rounded-full bg-gold px-1 text-[9px] font-bold text-gold-foreground">{n.badge}</span>}
-                </Link>
-              </li>
-            );
-          })}
-          <li>
-            <button onClick={() => setMenu(true)} className="flex w-full flex-col items-center gap-0.5 py-2 text-[10px] font-semibold text-muted-foreground">
-              <span className="grid h-7 w-12 place-items-center rounded-full"><Menu className="size-5" /></span>
-              More
-            </button>
-          </li>
-        </ul>
-      </nav>
+      <BottomBar
+        className="lg:hidden"
+        items={primary.map((n) => ({ to: n.to, label: n.label, icon: n.icon, badge: n.badge ? Number(n.badge) || undefined : undefined, exact: n.to === "/vendor" || n.to === "/admin" }))}
+      />
     </div>
   );
 }

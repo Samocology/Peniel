@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, Menu, Search, ShoppingCart, MapPin, LayoutGrid } from "lucide-react";
+import { Heart, Menu, Receipt, Search, ShoppingCart, MapPin, LayoutGrid } from "lucide-react";
+import { useApp } from "@/lib/vendra-store";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,24 +71,15 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
         <div className="border-t border-border bg-card px-4 py-3 lg:hidden">
           <div className="flex flex-col gap-1">
             {nav.map((n) => (
-              <Link key={n.to} to={n.to} className="rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
+              <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
                 {n.label}
               </Link>
             ))}
-            <Link to="/cart" className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
-              <ShoppingCart className="size-4" /> Cart
-            </Link>
-            <Link to="/account" className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
-              <Heart className="size-4" /> My account
-            </Link>
-            <Link to="/search" className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
+            <Link to="/search" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
               <Search className="size-4" /> Search
             </Link>
-            <Link to="/vendor" className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
-              <LayoutGrid className="size-4" /> Business console
-            </Link>
-            <Link to="/admin" className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
-              <MapPin className="size-4" /> Platform admin
+            <Link to="/orders" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
+              <Receipt className="size-4" /> My orders
             </Link>
             <Button asChild className="mt-2">
               <Link to="/vendor/onboarding">Start selling</Link>
@@ -100,6 +92,7 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
 }
 
 export function CustomerBar() {
+  const cart = useApp().cart.reduce((a, l) => a + l.qty, 0);
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:flex sm:px-6">
@@ -130,7 +123,7 @@ export function CustomerBar() {
             <Link to="/cart" aria-label="Cart">
               <ShoppingCart className="size-4" />
               <span className="absolute -top-1 -right-1 grid size-4 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                4
+                {cart}
               </span>
             </Link>
           </Button>

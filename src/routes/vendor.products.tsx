@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Filter, Pencil, Plus, Search } from "lucide-react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
-import { getVendor, naira } from "@/lib/data";
+import { useState } from "react";
+import { toast } from "sonner";
+import { naira } from "@/lib/data";
+import { app, useCurrentVendor } from "@/lib/vendra-store";
 
 export const Route = createFileRoute("/vendor/products")({
   head: () => ({
@@ -17,7 +20,10 @@ export const Route = createFileRoute("/vendor/products")({
 });
 
 function VendorProducts() {
-  const vendor = getVendor("abigails-kitchen")!;
+  const { base: vendor, account } = useCurrentVendor();
+  const [q, setQ] = useState("");
+  const [g, setG] = useState("All");
+  const list = vendor.products.filter((p) => (g === "All" || p.group === g) && p.name.toLowerCase().includes(q.toLowerCase()));
 
   return (
     <DashShell
@@ -36,31 +42,32 @@ function VendorProducts() {
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
           <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border px-3 py-2">
             <Search className="size-4 shrink-0 text-muted-foreground" />
-            <input placeholder="Search products" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
           </div>
-          <button className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-4 text-sm font-semibold">
-            <Filter className="size-4" /> Filter
+          <button onClick={() => { setQ(""); setG("All"); }} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-4 text-sm font-semibold">
+            <Filter className="size-4" /> Reset
           </button>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2 text-sm">
-          {["All", ...vendor.groups].map((g, i) => (
-            <span
-              key={g}
+          {["All", ...vendor.groups].map((x) => (
+            <button
+              key={x}
+              onClick={() => setG(x)}
               className={
                 "rounded-full border px-3.5 py-1.5 " +
-                (i === 0 ? "border-primary bg-primary-soft font-semibold text-primary" : "border-border text-muted-foreground")
+                (x === g ? "border-primary bg-primary-soft font-semibold text-primary" : "border-border text-muted-foreground")
               }
             >
-              {g}
-            </span>
+              {x}
+            </button>
           ))}
         </div>
 
         <div className="mt-5">
           <DataTable
             head={["Product", "Category", "Price", "Stock", "Status", ""]}
-            rows={vendor.products.map((p, i) => [
+            rows={list.map((p, i) => [
               <span className="flex min-w-0 items-center gap-3">
                 <span className="size-9 shrink-0 rounded-lg bg-primary-soft" />
                 <span className="min-w-0">
@@ -71,14 +78,19 @@ function VendorProducts() {
               <span className="text-muted-foreground">{p.group}</span>,
               naira(p.price),
               <span className={i === 2 ? "font-semibold text-gold-foreground" : ""}>{i === 2 ? "3 left" : "In stock"}</span>,
-              <span
+              <button
+                onClick={() => {
+                  const hidden = account.hidden.includes(p.id);
+                  app.toggleHidden(p.id);
+                  toast.success(hidden ? `${p.name} is live on your store` : `${p.name} hidden from your store`);
+                }}
                 className={
                   "rounded-full px-2.5 py-1 text-xs font-semibold " +
-                  (i === 4 ? "bg-muted text-muted-foreground" : "bg-success/12 text-success")
+                  (account.hidden.includes(p.id) ? "bg-muted text-muted-foreground" : "bg-success/12 text-success")
                 }
               >
-                {i === 4 ? "Hidden" : "Live"}
-              </span>,
+                {account.hidden.includes(p.id) ? "Hidden" : "Live"}
+              </button>,
               <Link to="/vendor/products/new" className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
                 <Pencil className="size-3.5" /> Edit
               </Link>,
