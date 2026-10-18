@@ -16,6 +16,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ForBusinessesRouteImport } from './routes/for-businesses'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
+import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -42,6 +43,7 @@ import { Route as VendorAnalyticsRouteImport } from './routes/vendor.analytics'
 import { Route as VendorBookingsRouteImport } from './routes/vendor.bookings'
 import { Route as VendorCustomersRouteImport } from './routes/vendor.customers'
 import { Route as VendorInventoryRouteImport } from './routes/vendor.inventory'
+import { Route as VendorMessagesRouteImport } from './routes/vendor.messages'
 import { Route as VendorOnboardingRouteImport } from './routes/vendor.onboarding'
 import { Route as VendorOrdersRouteImport } from './routes/vendor.orders'
 import { Route as VendorPayoutsRouteImport } from './routes/vendor.payouts'
@@ -89,6 +91,11 @@ const ForBusinessesRoute = ForBusinessesRouteImport.update({
 const MarketplaceRoute = MarketplaceRouteImport.update({
   id: '/marketplace',
   path: '/marketplace',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrdersRoute = OrdersRouteImport.update({
@@ -221,6 +228,11 @@ const VendorInventoryRoute = VendorInventoryRouteImport.update({
   path: '/vendor/inventory',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VendorMessagesRoute = VendorMessagesRouteImport.update({
+  id: '/vendor/messages',
+  path: '/vendor/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendorOnboardingRoute = VendorOnboardingRouteImport.update({
   id: '/vendor/onboarding',
   path: '/vendor/onboarding',
@@ -295,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
+  '/messages': typeof MessagesRoute
   '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
@@ -319,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/vendor/bookings': typeof VendorBookingsRoute
   '/vendor/customers': typeof VendorCustomersRoute
   '/vendor/inventory': typeof VendorInventoryRoute
+  '/vendor/messages': typeof VendorMessagesRoute
   '/vendor/onboarding': typeof VendorOnboardingRoute
   '/vendor/orders': typeof VendorOrdersRoute
   '/vendor/payouts': typeof VendorPayoutsRoute
@@ -343,6 +357,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
+  '/messages': typeof MessagesRoute
   '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
@@ -367,6 +382,7 @@ export interface FileRoutesByTo {
   '/vendor/bookings': typeof VendorBookingsRoute
   '/vendor/customers': typeof VendorCustomersRoute
   '/vendor/inventory': typeof VendorInventoryRoute
+  '/vendor/messages': typeof VendorMessagesRoute
   '/vendor/onboarding': typeof VendorOnboardingRoute
   '/vendor/orders': typeof VendorOrdersRoute
   '/vendor/payouts': typeof VendorPayoutsRoute
@@ -392,6 +408,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
+  '/messages': typeof MessagesRoute
   '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
@@ -416,6 +433,7 @@ export interface FileRoutesById {
   '/vendor/bookings': typeof VendorBookingsRoute
   '/vendor/customers': typeof VendorCustomersRoute
   '/vendor/inventory': typeof VendorInventoryRoute
+  '/vendor/messages': typeof VendorMessagesRoute
   '/vendor/onboarding': typeof VendorOnboardingRoute
   '/vendor/orders': typeof VendorOrdersRoute
   '/vendor/payouts': typeof VendorPayoutsRoute
@@ -442,6 +460,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/for-businesses'
     | '/marketplace'
+    | '/messages'
     | '/orders'
     | '/payment'
     | '/pricing'
@@ -466,6 +485,7 @@ export interface FileRouteTypes {
     | '/vendor/bookings'
     | '/vendor/customers'
     | '/vendor/inventory'
+    | '/vendor/messages'
     | '/vendor/onboarding'
     | '/vendor/orders'
     | '/vendor/payouts'
@@ -490,6 +510,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/for-businesses'
     | '/marketplace'
+    | '/messages'
     | '/orders'
     | '/payment'
     | '/pricing'
@@ -514,6 +535,7 @@ export interface FileRouteTypes {
     | '/vendor/bookings'
     | '/vendor/customers'
     | '/vendor/inventory'
+    | '/vendor/messages'
     | '/vendor/onboarding'
     | '/vendor/orders'
     | '/vendor/payouts'
@@ -538,6 +560,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/for-businesses'
     | '/marketplace'
+    | '/messages'
     | '/orders'
     | '/payment'
     | '/pricing'
@@ -562,6 +585,7 @@ export interface FileRouteTypes {
     | '/vendor/bookings'
     | '/vendor/customers'
     | '/vendor/inventory'
+    | '/vendor/messages'
     | '/vendor/onboarding'
     | '/vendor/orders'
     | '/vendor/payouts'
@@ -587,6 +611,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ForBusinessesRoute: typeof ForBusinessesRoute
   MarketplaceRoute: typeof MarketplaceRoute
+  MessagesRoute: typeof MessagesRoute
   OrdersRoute: typeof OrdersRouteWithChildren
   PaymentRoute: typeof PaymentRoute
   PricingRoute: typeof PricingRoute
@@ -610,6 +635,7 @@ export interface RootRouteChildren {
   VendorBookingsRoute: typeof VendorBookingsRoute
   VendorCustomersRoute: typeof VendorCustomersRoute
   VendorInventoryRoute: typeof VendorInventoryRoute
+  VendorMessagesRoute: typeof VendorMessagesRoute
   VendorOnboardingRoute: typeof VendorOnboardingRoute
   VendorOrdersRoute: typeof VendorOrdersRoute
   VendorPayoutsRoute: typeof VendorPayoutsRoute
@@ -674,6 +700,13 @@ declare module '@tanstack/react-router' {
       path: '/marketplace'
       fullPath: '/marketplace'
       preLoaderRoute: typeof MarketplaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orders': {
@@ -858,6 +891,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorInventoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vendor/messages': {
+      id: '/vendor/messages'
+      path: '/vendor/messages'
+      fullPath: '/vendor/messages'
+      preLoaderRoute: typeof VendorMessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendor/onboarding': {
       id: '/vendor/onboarding'
       path: '/vendor/onboarding'
@@ -995,6 +1035,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ForBusinessesRoute: ForBusinessesRoute,
   MarketplaceRoute: MarketplaceRoute,
+  MessagesRoute: MessagesRoute,
   OrdersRoute: OrdersRouteWithChildren,
   PaymentRoute: PaymentRoute,
   PricingRoute: PricingRoute,
@@ -1018,6 +1059,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorBookingsRoute: VendorBookingsRoute,
   VendorCustomersRoute: VendorCustomersRoute,
   VendorInventoryRoute: VendorInventoryRoute,
+  VendorMessagesRoute: VendorMessagesRoute,
   VendorOnboardingRoute: VendorOnboardingRoute,
   VendorOrdersRoute: VendorOrdersRoute,
   VendorPayoutsRoute: VendorPayoutsRoute,

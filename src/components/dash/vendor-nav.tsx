@@ -3,9 +3,13 @@ import {
   BarChart3,
   Boxes,
   CalendarClock,
-  LayoutDashboard,
+  CalendarRange,
+  CircleUserRound,
+  Gauge,
   LifeBuoy,
   Megaphone,
+  MessagesSquare,
+  PackageCheck,
   Receipt,
   Settings,
   ShoppingBag,
@@ -13,25 +17,29 @@ import {
   Store,
   Users,
   Wallet,
+  LayoutDashboard,
 } from "lucide-react";
 import type { NavItem } from "./shell";
 
 const i = "size-4";
 
+/** `primary` items live in the mobile bottom bar; everything else goes in the menu. */
 export const vendorNav: NavItem[] = [
-  { label: "Overview", to: "/vendor", icon: <LayoutDashboard className={i} />, primary: true },
+  { label: "Home", to: "/vendor", icon: <Gauge className={i} />, primary: true },
+  { label: "Orders", to: "/vendor/orders", icon: <PackageCheck className={i} />, primary: true },
   { label: "Products", to: "/vendor/products", icon: <Store className={i} />, primary: true },
+  { label: "Chats", to: "/vendor/messages", icon: <MessagesSquare className={i} />, primary: true },
+  { label: "Profile", to: "/vendor/profile", icon: <CircleUserRound className={i} />, primary: true },
   { label: "Services", to: "/vendor/services", icon: <CalendarClock className={i} /> },
-  { label: "Orders", to: "/vendor/orders", icon: <ShoppingBag className={i} />, primary: true, badge: "6" },
-  { label: "Bookings", to: "/vendor/bookings", icon: <CalendarClock className={i} /> },
+  { label: "Bookings", to: "/vendor/bookings", icon: <CalendarRange className={i} /> },
   { label: "Customers", to: "/vendor/customers", icon: <Users className={i} /> },
   { label: "Inventory", to: "/vendor/inventory", icon: <Boxes className={i} /> },
   { label: "Transactions", to: "/vendor/transactions", icon: <Receipt className={i} /> },
-  { label: "Payouts", to: "/vendor/payouts", icon: <Wallet className={i} />, primary: true },
+  { label: "Payouts", to: "/vendor/payouts", icon: <Wallet className={i} /> },
   { label: "Promotions", to: "/vendor/promotions", icon: <Megaphone className={i} /> },
   { label: "Reviews", to: "/vendor/reviews", icon: <Star className={i} /> },
   { label: "Analytics", to: "/vendor/analytics", icon: <BarChart3 className={i} /> },
-  { label: "Verification", to: "/vendor/verification", icon: <BadgeCheck className={i} />, badge: "3/5" },
+  { label: "Verification", to: "/vendor/verification", icon: <BadgeCheck className={i} /> },
   { label: "Store settings", to: "/vendor/settings", icon: <Settings className={i} /> },
   { label: "Support", to: "/vendor/support", icon: <LifeBuoy className={i} /> },
 ];
@@ -49,5 +57,5 @@ export const adminNav: NavItem[] = [
   { label: "Reviews", to: "/admin/reviews", icon: <Star className={i} /> },
   { label: "Promotions", to: "/admin/promotions", icon: <Megaphone className={i} /> },
   { label: "Analytics", to: "/admin/analytics", icon: <BarChart3 className={i} /> },
-  { label: "Platform settings", to: "/admin/settings", icon: <Settings className={i} /> },
+  { label: "Platform settings", to: "/admin/settings", icon: <Settings className={i} />, primary: true },
 ];
