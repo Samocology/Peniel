@@ -99,7 +99,7 @@ function ProductPage() {
             </p>
 
             <div className="mt-6 space-y-5">
-              {optionGroups.map(([label, opts], gi) => (
+              {optionGroups.map(([label, opts]) => (
                 <div key={label}>
                   <p className="mb-2 text-xs font-bold tracking-wide uppercase opacity-55">{label}</p>
                   <div className="flex flex-wrap gap-2">
