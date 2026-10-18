@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Printer } from "lucide-react";
-import { DashShell, DataTable, Panel } from "@/components/dash/shell";
+import { useState } from "react";
+import { toast } from "sonner";
+import { DashShell, Panel } from "@/components/dash/shell";
+import { app, useApp, type OrderStatus } from "@/lib/vendra-store";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard, StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
@@ -17,71 +20,80 @@ export const Route = createFileRoute("/vendor/orders")({
   component: VendorOrders,
 });
 
-const rows = [
-  ["#ORD-7F4X2", "Tosin Adeyemi", "2 items", "Delivery · VI", 26760, "New"],
-  ["#ORD-7F4X1", "Ada Nwosu", "1 item", "Pickup", 12400, "Preparing"],
-  ["#ORD-7F4W9", "Bola Salami", "2 items", "Delivery · Lekki", 16000, "Out for delivery"],
-  ["#ORD-7F4W8", "Kelechi Obi", "4 items", "Delivery · Yaba", 41200, "Preparing"],
-  ["#ORD-7F4W7", "Chidi Okeke", "1 item", "Pickup", 22000, "Delivered"],
-  ["#ORD-7F4W5", "Halima Bello", "3 items", "Delivery · Ikoyi", 33500, "Delivered"],
-  ["#ORD-7F4W2", "Uche Eze", "1 item", "Delivery · Surulere", 9800, "Cancelled"],
-] as const;
+const filters = ["All", "New", "Preparing", "Out for delivery", "Delivered", "Cancelled"] as const;
+const next: Partial<Record<OrderStatus, OrderStatus>> = { Preparing: "Out for delivery", "Out for delivery": "Delivered" };
 
 function VendorOrders() {
+  const s = useApp();
+  const [f, setF] = useState<(typeof filters)[number]>("All");
+  const count = (st: OrderStatus) => s.orders.filter((o) => o.status === st).length;
+  const rows = s.orders.filter((o) => f === "All" || o.status === f);
+  const set = (id: string, st: OrderStatus, msg: string) => {
+    app.setOrderStatus(id, st);
+    toast.success(msg);
+  };
   return (
     <DashShell
       nav={vendorNav}
       kicker="Business console"
       title="Orders"
-      subtitle="6 open orders · average prep time 22 minutes"
+      subtitle={`${count("New") + count("Preparing") + count("Out for delivery")} open orders`}
       storeLink={{ label: "View storefront", slug: "abigails-kitchen" }}
       actions={
-        <button className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold">
+        <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold">
           <Printer className="size-4" /> Print queue
         </button>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="New" value="2" hint="Awaiting your confirmation" tone="gold" />
-        <StatCard label="Preparing" value="3" hint="In the kitchen" />
-        <StatCard label="With riders" value="1" hint="ETA 11:35 AM" />
-        <StatCard label="Completed today" value="14" hint={naira(186500)} tone="primary" />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <StatCard label="New" value={String(count("New"))} hint="Awaiting your confirmation" tone="gold" />
+        <StatCard label="Preparing" value={String(count("Preparing"))} hint="In progress" />
+        <StatCard label="With riders" value={String(count("Out for delivery"))} hint="On the way" />
+        <StatCard label="Completed" value={String(count("Delivered"))} hint="Delivered" tone="primary" />
       </div>
 
       <div className="mt-6">
         <Panel title="Order queue">
-          <div className="mb-4 flex flex-wrap gap-2 text-sm">
-            {["All", "New", "Preparing", "Out for delivery", "Delivered", "Cancelled"].map((f, i) => (
-              <span
-                key={f}
-                className={
-                  "rounded-full border px-3.5 py-1.5 " +
-                  (i === 0 ? "border-primary bg-primary-soft font-semibold text-primary" : "border-border text-muted-foreground")
-                }
+          <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 text-sm hide-scrollbar">
+            {filters.map((x) => (
+              <button
+                key={x}
+                onClick={() => setF(x)}
+                className={"shrink-0 rounded-full border px-3.5 py-1.5 " + (x === f ? "border-primary bg-primary-soft font-semibold text-primary" : "border-border text-muted-foreground")}
               >
-                {f}
-              </span>
+                {x}
+              </button>
             ))}
           </div>
-          <DataTable
-            head={["Order", "Customer", "Items", "Fulfilment", "Total", "Status", ""]}
-            rows={rows.map((r) => [
-              <span className="font-mono text-xs">{r[0]}</span>,
-              <span className="font-medium">{r[1]}</span>,
-              <span className="text-muted-foreground">{r[2]}</span>,
-              <span className="text-muted-foreground">{r[3]}</span>,
-              naira(r[4]),
-              <StatusPill status={r[5]} />,
-              r[5] === "New" ? (
-                <span className="flex gap-2">
-                  <button className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Accept</button>
-                  <button className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
-                </span>
-              ) : (
-                <button className="text-xs font-semibold text-primary">View</button>
-              ),
-            ])}
-          />
+          {rows.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No {f.toLowerCase()} orders.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {rows.map((o) => (
+                <li key={o.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
+                  <div className="min-w-0 flex-1 basis-48">
+                    <p className="text-sm font-semibold">{o.customer} <span className="font-mono text-xs font-normal text-muted-foreground">{o.id}</span></p>
+                    <p className="text-xs text-muted-foreground">{o.items} · {o.mode}</p>
+                  </div>
+                  <span className="font-display text-sm font-bold">{naira(o.total)}</span>
+                  <StatusPill status={o.status} />
+                  <span className="flex gap-2">
+                    {o.status === "New" && (
+                      <>
+                        <button onClick={() => set(o.id, "Preparing", "Order accepted")} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Accept</button>
+                        <button onClick={() => set(o.id, "Cancelled", "Order declined — customer refunded")} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold">Decline</button>
+                      </>
+                    )}
+                    {next[o.status] && (
+                      <button onClick={() => set(o.id, next[o.status]!, `Marked ${next[o.status]!.toLowerCase()}`)} className="rounded-lg border border-primary px-3 py-1.5 text-xs font-bold text-primary">
+                        Mark {next[o.status]!.toLowerCase()}
+                      </button>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Panel>
       </div>
     </DashShell>
