@@ -1,6 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { CalendarDays, Check, ChevronLeft, Minus, Plus, ShieldCheck, Star, Truck } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { getVendor, naira, reviews } from "@/lib/data";
+import { app } from "@/lib/vendra-store";
 import { ItemArt, ItemLink, Price, StoreFooter, StoreTopBar } from "@/components/store/store-kit";
 
 export const Route = createFileRoute("/store/$slug/product/$id")({
@@ -31,6 +35,10 @@ function ProductPage() {
   const { vendor, product } = Route.useLoaderData();
   const t = vendor.theme;
   const isService = vendor.fulfilment !== "order";
+  const [sel, setSel] = useState<Record<string, number>>({});
+  const [day, setDay] = useState(1);
+  const [qty, setQty] = useState(1);
+  const navigate = useNavigate();
   const related = vendor.products.filter((p) => p.id !== product.id).slice(0, 4);
 
   const optionGroups: [string, string[]][] =
@@ -47,6 +55,12 @@ function ProductPage() {
               : vendor.type === "bakery"
                 ? [["Size", ['6"', '8"', "Two-tier"]], ["Finish", ["Buttercream", "Fondant", "Ganache"]]]
                 : [["Condition", ["Brand new", "UK used"]], ["Warranty", ["12 months", "24 months (+₦25,000)"]]];
+
+  const add = () => {
+    const meta = optionGroups.map(([l, o]) => o[sel[l] ?? 0]).join(" · ") + (isService ? ` · ${["Fri 23", "Sat 24", "Sun 25", "Mon 26", "Tue 27"][day]}` : "");
+    app.addToCart({ vendor: vendor.name, vendorSlug: vendor.slug, item: product.name, meta, qty, price: product.price });
+    toast.success(`${product.name} added to cart`, { action: { label: "View cart", onClick: () => navigate({ to: "/cart" }) } });
+  };
 
   return (
     <div className="min-h-screen" style={{ background: t.bg, color: t.ink }}>
@@ -90,17 +104,19 @@ function ProductPage() {
                   <p className="mb-2 text-xs font-bold tracking-wide uppercase opacity-55">{label}</p>
                   <div className="flex flex-wrap gap-2">
                     {opts.map((o, i) => (
-                      <span
+                      <button
+                        type="button"
                         key={o}
+                        onClick={() => setSel({ ...sel, [label]: i })}
                         className="border px-3.5 py-2 text-xs font-medium"
                         style={
-                          i === gi % 2
+                          i === (sel[label] ?? 0)
                             ? { background: t.accent, color: t.accentInk, borderColor: t.accent, borderRadius: t.radius }
                             : { borderColor: t.line, borderRadius: t.radius }
                         }
                       >
                         {o}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -113,13 +129,15 @@ function ProductPage() {
                   </p>
                   <div className="mt-3 flex gap-2 overflow-x-auto hide-scrollbar">
                     {["Fri 23", "Sat 24", "Sun 25", "Mon 26", "Tue 27"].map((d, i) => (
-                      <span
+                      <button
+                        type="button"
+                        onClick={() => setDay(i)}
                         key={d}
                         className="shrink-0 border px-4 py-2 text-xs font-medium"
-                        style={i === 1 ? { background: t.accent, color: t.accentInk, borderColor: t.accent, borderRadius: t.radius } : { borderColor: t.line, borderRadius: t.radius }}
+                        style={i === day ? { background: t.accent, color: t.accentInk, borderColor: t.accent, borderRadius: t.radius } : { borderColor: t.line, borderRadius: t.radius }}
                       >
                         {d}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -138,17 +156,17 @@ function ProductPage() {
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-3 border px-3 py-2" style={{ borderColor: t.line, borderRadius: t.radius }}>
-                <button className="grid size-7 place-items-center"><Minus className="size-4" /></button>
-                <span className="w-6 text-center font-semibold">1</span>
-                <button className="grid size-7 place-items-center"><Plus className="size-4" /></button>
+                <button aria-label="Decrease" onClick={() => setQty(Math.max(1, qty - 1))} className="grid size-7 place-items-center"><Minus className="size-4" /></button>
+                <span className="w-6 text-center font-semibold">{qty}</span>
+                <button aria-label="Increase" onClick={() => setQty(qty + 1)} className="grid size-7 place-items-center"><Plus className="size-4" /></button>
               </div>
-              <Link
-                to="/cart"
-                className="flex-1 px-6 py-3.5 text-center text-sm font-bold"
+              <button
+                onClick={add}
+                className="min-w-[200px] flex-1 px-6 py-3.5 text-center text-sm font-bold transition active:scale-[0.98]"
                 style={{ background: t.accent, color: t.accentInk, borderRadius: t.radius }}
               >
-                {isService ? "Add booking to cart" : "Add to cart"} · {naira(product.price)}
-              </Link>
+                {isService ? "Add booking to cart" : "Add to cart"} · {naira(product.price * qty)}
+              </button>
             </div>
 
             <div className="mt-6 grid gap-3 text-xs sm:grid-cols-2">
