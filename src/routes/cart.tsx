@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Minus, Plus, ShieldCheck, Store, Tag, Trash2 } from "lucide-react";
+import { Minus, Plus, ShieldCheck, ShoppingBasket, Store, Tag, Trash2 } from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import { cartLines, cartTotals, naira } from "@/lib/data";
+import { useState } from "react";
+import { toast } from "sonner";
+import { naira } from "@/lib/data";
+import { app, totalsFor, useApp } from "@/lib/vendra-store";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -17,7 +20,10 @@ export const Route = createFileRoute("/cart")({
 });
 
 function CartPage() {
-  const totals = cartTotals();
+  const s = useApp();
+  const cartLines = s.cart;
+  const totals = totalsFor(cartLines, s.promo);
+  const [code, setCode] = useState("");
   const groups = Array.from(new Set(cartLines.map((l) => l.vendorSlug)));
 
   return (
@@ -29,7 +35,15 @@ function CartPage() {
           {cartLines.length} items from {groups.length} businesses · one checkout, one payment
         </p>
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+        {cartLines.length === 0 ? (
+          <div className="mt-10 rounded-3xl border border-dashed border-border p-10 text-center">
+            <ShoppingBasket className="mx-auto size-10 text-primary" />
+            <p className="mt-3 font-display text-xl font-bold">Your cart is empty</p>
+            <p className="mt-1 text-sm text-muted-foreground">Find something you love from a Vendra business.</p>
+            <Link to="/marketplace" className="mt-5 inline-block rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground">Explore businesses</Link>
+          </div>
+        ) : (
+        <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
           <div className="space-y-6">
             {groups.map((slug) => {
               const lines = cartLines.filter((l) => l.vendorSlug === slug);
@@ -49,22 +63,22 @@ function CartPage() {
                   </div>
                   <div className="divide-y divide-border">
                     {lines.map((l) => (
-                      <div key={l.item} className="grid grid-cols-[64px_minmax(0,1fr)] gap-4 p-5 sm:grid-cols-[72px_minmax(0,1fr)_auto]">
+                      <div key={l.id} className="grid grid-cols-[64px_minmax(0,1fr)] gap-3 p-4 sm:gap-4 sm:p-5 sm:grid-cols-[72px_minmax(0,1fr)_auto]">
                         <div className="size-16 shrink-0 rounded-xl bg-primary-soft sm:size-18" />
                         <div className="min-w-0">
                           <p className="font-semibold">{l.item}</p>
                           <p className="mt-0.5 text-xs text-muted-foreground">{l.meta}</p>
                           <div className="mt-3 flex items-center gap-4">
                             <div className="flex items-center gap-3 rounded-lg border border-border px-2 py-1">
-                              <button aria-label="Decrease quantity" className="grid size-6 place-items-center text-muted-foreground">
+                              <button onClick={() => app.setQty(l.id, l.qty - 1)} aria-label="Decrease quantity" className="grid size-6 place-items-center text-muted-foreground">
                                 <Minus className="size-3.5" />
                               </button>
                               <span className="w-4 text-center text-sm font-semibold">{l.qty}</span>
-                              <button aria-label="Increase quantity" className="grid size-6 place-items-center text-muted-foreground">
+                              <button onClick={() => app.setQty(l.id, l.qty + 1)} aria-label="Increase quantity" className="grid size-6 place-items-center text-muted-foreground">
                                 <Plus className="size-3.5" />
                               </button>
                             </div>
-                            <button className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive">
+                            <button onClick={() => { app.setQty(l.id, 0); toast("Removed from cart"); }} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive">
                               <Trash2 className="size-3.5" /> Remove
                             </button>
                           </div>
@@ -88,6 +102,7 @@ function CartPage() {
               <dl className="mt-4 space-y-2.5 text-sm">
                 {[
                   ["Subtotal", totals.subtotal],
+                  ...(totals.discount ? [[`Promo ${s.promo}`, -totals.discount]] : []),
                   ["Delivery", totals.delivery],
                   ["Platform fee (2%)", totals.platformFee],
                 ].map(([l, v]) => (
@@ -118,10 +133,17 @@ function CartPage() {
               </p>
               <div className="mt-3 flex gap-2">
                 <input
-                  placeholder="Enter code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Try WEEKEND10"
                   className="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
-                <button className="shrink-0 rounded-lg border border-border px-4 text-sm font-semibold">Apply</button>
+                <button
+                  onClick={() => (app.applyPromo(code) ? toast.success("Promo applied") : toast.error("That code isn't valid"))}
+                  className="shrink-0 rounded-lg border border-border px-4 text-sm font-semibold"
+                >
+                  Apply
+                </button>
               </div>
             </div>
 
@@ -133,6 +155,7 @@ function CartPage() {
             </div>
           </aside>
         </div>
+        )}
       </main>
       <SiteFooter />
     </div>
