@@ -1,3 +1,5 @@
+import { PlanGate } from "@/components/dash/plan-gate";
+import { app, isPaid, useCurrentVendor } from "@/lib/vendra-store";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { AlertCircle, BadgeCheck, Check, Clock, FileText, Lock, ShieldCheck, Upload, X } from "lucide-react";
@@ -31,6 +33,7 @@ const eligibility = [
 function VerificationPage() {
   const { stage } = Route.useSearch();
   const eligible = stage !== "progress";
+  const { account } = useCurrentVendor();
 
   return (
     <DashShell
@@ -97,12 +100,13 @@ function VerificationPage() {
                 search={{ stage: "apply" }}
                 className="mt-5 inline-block rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
               >
-                Apply for verification
+                {isPaid(account.plan) ? "Apply for verification" : "Upgrade to apply"}
               </Link>
             </Panel>
           )}
 
           {stage === "apply" && (
+            <PlanGate feature="Verification applications">
             <Panel title="Verification application">
               <div className="space-y-5">
                 {[
@@ -140,12 +144,14 @@ function VerificationPage() {
                 <Link
                   to="/vendor/verification"
                   search={{ stage: "review" }}
+                  onClick={() => app.applyVerification()}
                   className="inline-block rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
                 >
                   Submit application
                 </Link>
               </div>
             </Panel>
+            </PlanGate>
           )}
 
           {stage === "review" && (
