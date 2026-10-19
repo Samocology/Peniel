@@ -35,8 +35,14 @@ function VendorPromotions() {
   const [offer, setOffer] = useState("");
   const all = [...account.promos, ...promos.map((p) => ({ code: p[0], offer: p[1], active: p[2] === "Active", uses: p[3], revenue: p[4] }))];
   const create = () => {
-    if (!code.trim() || !offer.trim()) return toast.error("Add a code and describe the offer");
-    if (all.some((p) => p.code === code.trim().toUpperCase())) return toast.error("That code already exists");
+    if (!code.trim() || !offer.trim()) {
+      toast.error("Add a code and describe the offer");
+      return;
+    }
+    if (all.some((p) => p.code === code.trim().toUpperCase())) {
+      toast.error("That code already exists");
+      return;
+    }
     app.addPromo(code.trim(), offer.trim());
     toast.success("Promotion is live on your storefront");
     setCode("");

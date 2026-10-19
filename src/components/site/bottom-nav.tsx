@@ -3,7 +3,7 @@ import { CircleUserRound, Compass, House, MessagesSquare, ShoppingBasket } from 
 import type { ReactNode } from "react";
 import { unreadFor, useApp } from "@/lib/vendra-store";
 
-export type BarItem = { to: string; label: string; icon: ReactNode; badge?: number; exact?: boolean };
+export type BarItem = { to: string; label: string; icon: ReactNode; badge?: number | undefined; exact?: boolean };
 
 /** Floating pill bottom bar shared by the customer app and the business console. */
 export function BottomBar({ items, className = "md:hidden" }: { items: BarItem[]; className?: string }) {

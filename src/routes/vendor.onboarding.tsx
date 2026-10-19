@@ -1,7 +1,6 @@
 import { useCurrentVendor } from "@/lib/vendra-store";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
-import { vendors } from "@/lib/data";
 import { TemplatePicker } from "@/components/store/template-picker";
 import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, PartyPopper, Store } from "lucide-react";
 import { Logo } from "@/components/site/logo";

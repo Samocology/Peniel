@@ -5,7 +5,7 @@ import { Logo } from "@/components/site/logo";
 import { BottomBar } from "@/components/site/bottom-nav";
 import { unreadFor, useApp, useCurrentVendor } from "@/lib/vendra-store";
 
-export type NavItem = { label: string; to: string; icon: ReactNode; badge?: string; primary?: boolean };
+export type NavItem = { label: string; to: string; icon: ReactNode; badge?: string | undefined; primary?: boolean };
 
 /** Shared dashboard chrome for the vendor console and platform admin. */
 export function DashShell({

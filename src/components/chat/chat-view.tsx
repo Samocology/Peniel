@@ -16,7 +16,7 @@ export function ChatView({
 }: {
   side: ChatMsg["from"];
   threads: Thread[];
-  activeId?: string;
+  activeId?: string | undefined;
   onSelect: (id: string | undefined) => void;
 }) {
   const active = threads.find((t) => t.id === activeId);
