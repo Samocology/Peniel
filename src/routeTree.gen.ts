@@ -58,7 +58,7 @@ import { Route as VendorTransactionsRouteImport } from './routes/vendor.transact
 import { Route as VendorUpgradeRouteImport } from './routes/vendor.upgrade'
 import { Route as VendorVerificationRouteImport } from './routes/vendor.verification'
 import { Route as VendorProductsNewRouteImport } from './routes/vendor.products.new'
-import { Route as StoreSlugProductIdRouteImport } from './routes/store.$slug.product.$id'
+import { Route as StoreSlugProductIdRouteImport } from './routes/store.$slug_.product.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -306,9 +306,9 @@ const VendorProductsNewRoute = VendorProductsNewRouteImport.update({
   getParentRoute: () => VendorProductsRoute,
 } as any)
 const StoreSlugProductIdRoute = StoreSlugProductIdRouteImport.update({
-  id: '/product/$id',
-  path: '/product/$id',
-  getParentRoute: () => StoreSlugRoute,
+  id: '/store/$slug_/product/$id',
+  path: '/store/$slug/product/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -339,7 +339,7 @@ export interface FileRoutesByFullPath {
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
-  '/store/$slug': typeof StoreSlugRouteWithChildren
+  '/store/$slug': typeof StoreSlugRoute
   '/vendor/analytics': typeof VendorAnalyticsRoute
   '/vendor/bookings': typeof VendorBookingsRoute
   '/vendor/customers': typeof VendorCustomersRoute
@@ -391,7 +391,7 @@ export interface FileRoutesByTo {
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
-  '/store/$slug': typeof StoreSlugRouteWithChildren
+  '/store/$slug': typeof StoreSlugRoute
   '/vendor/analytics': typeof VendorAnalyticsRoute
   '/vendor/bookings': typeof VendorBookingsRoute
   '/vendor/customers': typeof VendorCustomersRoute
@@ -444,7 +444,7 @@ export interface FileRoutesById {
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
-  '/store/$slug': typeof StoreSlugRouteWithChildren
+  '/store/$slug': typeof StoreSlugRoute
   '/vendor/analytics': typeof VendorAnalyticsRoute
   '/vendor/bookings': typeof VendorBookingsRoute
   '/vendor/customers': typeof VendorCustomersRoute
@@ -466,7 +466,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/vendor/': typeof VendorIndexRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
-  '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
+  '/store/$slug_/product/$id': typeof StoreSlugProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -624,7 +624,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/vendor/'
     | '/vendor/products/new'
-    | '/store/$slug/product/$id'
+    | '/store/$slug_/product/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -654,7 +654,7 @@ export interface RootRouteChildren {
   AdminVerificationRoute: typeof AdminVerificationRoute
   BookingsIdRoute: typeof BookingsIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
-  StoreSlugRoute: typeof StoreSlugRouteWithChildren
+  StoreSlugRoute: typeof StoreSlugRoute
   VendorAnalyticsRoute: typeof VendorAnalyticsRoute
   VendorBookingsRoute: typeof VendorBookingsRoute
   VendorCustomersRoute: typeof VendorCustomersRoute
@@ -675,6 +675,7 @@ export interface RootRouteChildren {
   VendorVerificationRoute: typeof VendorVerificationRoute
   AdminIndexRoute: typeof AdminIndexRoute
   VendorIndexRoute: typeof VendorIndexRoute
+  StoreSlugProductIdRoute: typeof StoreSlugProductIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1022,12 +1023,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorProductsNewRouteImport
       parentRoute: typeof VendorProductsRoute
     }
-    '/store/$slug/product/$id': {
-      id: '/store/$slug/product/$id'
-      path: '/product/$id'
+    '/store/$slug_/product/$id': {
+      id: '/store/$slug_/product/$id'
+      path: '/store/$slug/product/$id'
       fullPath: '/store/$slug/product/$id'
       preLoaderRoute: typeof StoreSlugProductIdRouteImport
-      parentRoute: typeof StoreSlugRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -1042,18 +1043,6 @@ const OrdersRouteChildren: OrdersRouteChildren = {
 
 const OrdersRouteWithChildren =
   OrdersRoute._addFileChildren(OrdersRouteChildren)
-
-interface StoreSlugRouteChildren {
-  StoreSlugProductIdRoute: typeof StoreSlugProductIdRoute
-}
-
-const StoreSlugRouteChildren: StoreSlugRouteChildren = {
-  StoreSlugProductIdRoute: StoreSlugProductIdRoute,
-}
-
-const StoreSlugRouteWithChildren = StoreSlugRoute._addFileChildren(
-  StoreSlugRouteChildren,
-)
 
 interface VendorProductsRouteChildren {
   VendorProductsNewRoute: typeof VendorProductsNewRoute
@@ -1094,7 +1083,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminVerificationRoute: AdminVerificationRoute,
   BookingsIdRoute: BookingsIdRoute,
   CategorySlugRoute: CategorySlugRoute,
-  StoreSlugRoute: StoreSlugRouteWithChildren,
+  StoreSlugRoute: StoreSlugRoute,
   VendorAnalyticsRoute: VendorAnalyticsRoute,
   VendorBookingsRoute: VendorBookingsRoute,
   VendorCustomersRoute: VendorCustomersRoute,
@@ -1115,6 +1104,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorVerificationRoute: VendorVerificationRoute,
   AdminIndexRoute: AdminIndexRoute,
   VendorIndexRoute: VendorIndexRoute,
+  StoreSlugProductIdRoute: StoreSlugProductIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
