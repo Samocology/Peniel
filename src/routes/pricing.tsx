@@ -83,7 +83,7 @@ function Pricing() {
               className={"mt-7 w-full " + (p.highlight ? "bg-gold text-gold-foreground hover:bg-gold/90" : "")}
               variant={p.highlight ? "default" : "outline"}
             >
-              <Link to="/vendor/onboarding">{p.cta}</Link>
+              {p.name === "Starter" ? <Link to="/vendor/onboarding">{p.cta}</Link> : <Link to="/vendor/upgrade">{p.cta}</Link>}
             </Button>
           </div>
         ))}

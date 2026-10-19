@@ -1,6 +1,6 @@
+import { useCurrentVendor } from "@/lib/vendra-store";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
-import { vendors } from "@/lib/data";
 import { TemplatePicker } from "@/components/store/template-picker";
 import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, PartyPopper, Store } from "lucide-react";
 import { Logo } from "@/components/site/logo";
@@ -165,7 +165,7 @@ function Onboarding() {
                 Pick how your storefront looks. We start you on a default that fits your category. On the free plan you
                 can choose once; paid plans can switch any time.
               </p>
-              <TemplatePicker vendor={vendors[0]!} />
+              <CurrentPicker />
             </div>
           )}
 
@@ -322,4 +322,9 @@ function Onboarding() {
       </div>
     </div>
   );
+}
+
+function CurrentPicker() {
+  const { base } = useCurrentVendor();
+  return <TemplatePicker vendor={base} />;
 }

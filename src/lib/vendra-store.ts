@@ -39,7 +39,7 @@ type State = {
   customer: { name: string; city: string };
   accounts: Record<string, Account>;
   cart: CartItem[];
-  promo?: string;
+  promo?: string | undefined;
   favorites: string[];
   orders: VendorOrder[];
   threads: Thread[];

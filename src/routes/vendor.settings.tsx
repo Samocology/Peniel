@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Copy, ImagePlus, ShieldCheck } from "lucide-react";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
-import { vendors } from "@/lib/data";
+import { toast } from "sonner";
+import { app, useCurrentVendor } from "@/lib/vendra-store";
 import { TemplatePicker } from "@/components/store/template-picker";
 
 export const Route = createFileRoute("/vendor/settings")({
@@ -21,6 +22,26 @@ const field = "w-full rounded-xl border border-input bg-background px-4 py-3 tex
 const label = "mb-1.5 block text-xs font-semibold tracking-wide uppercase text-muted-foreground";
 
 function VendorSettings() {
+  const { vendor, base, account } = useCurrentVendor();
+  const p = account.profile;
+  const save = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const g = (k: string) => String(f.get(k) ?? "").trim();
+    app.saveProfile({
+      name: g("name"),
+      tagline: g("tagline"),
+      about: g("about"),
+      location: g("location"),
+      deliveryFee: Number(g("deliveryFee")) || 0,
+      freeAbove: Number(g("freeAbove")) || 0,
+      published: f.get("published") === "on",
+      acceptingOrders: f.get("acceptingOrders") === "on",
+      acceptingBookings: f.get("acceptingBookings") === "on",
+      paused: f.get("paused") === "on",
+    });
+    toast.success("Store settings saved — your storefront is updated");
+  };
   return (
     <DashShell
       nav={vendorNav}
@@ -29,28 +50,29 @@ function VendorSettings() {
       subtitle="Everything customers see about your business"
       storeLink={{ label: "View storefront", slug: "abigails-kitchen" }}
       actions={
-        <button className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">Save changes</button>
+        <button type="submit" form="store-settings" className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">Save changes</button>
       }
     >
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <form id="store-settings" key={base.slug} onSubmit={save} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           <Panel title="Business details">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <span className={label}>Business name</span>
-                <input className={field} defaultValue="Abigail's Kitchen" />
+                <input name="name" required className={field} defaultValue={vendor.name} />
               </div>
               <div className="sm:col-span-2">
                 <span className={label}>Tagline</span>
-                <input className={field} defaultValue="Home-style Nigerian cooking, made fresh daily" />
+                <input name="tagline" className={field} defaultValue={vendor.tagline} />
               </div>
               <div className="sm:col-span-2">
                 <span className={label}>About</span>
-                <textarea rows={4} className={field} defaultValue="We cook the food you grew up on, with produce bought fresh every morning at Obalende market." />
+                <textarea name="about" rows={4} className={field} defaultValue={vendor.about} />
               </div>
               <div>
                 <span className={label}>Phone</span>
                 <input className={field} defaultValue="+234 803 000 0000" />
+                <span className="mt-1 block text-[11px] text-muted-foreground">Private — never shown to customers.</span>
               </div>
               <div>
                 <span className={label}>Email</span>
@@ -58,7 +80,7 @@ function VendorSettings() {
               </div>
               <div className="sm:col-span-2">
                 <span className={label}>Address</span>
-                <input className={field} defaultValue="14 Awolowo Road, Ikoyi, Lagos" />
+                <input name="location" className={field} defaultValue={vendor.location} />
               </div>
             </div>
           </Panel>
@@ -85,7 +107,7 @@ function VendorSettings() {
           </Panel>
 
           <Panel title="Storefront design">
-            <TemplatePicker vendor={vendors[0]!} />
+            <TemplatePicker vendor={base} />
           </Panel>
 
           <Panel title="Opening hours">
@@ -107,11 +129,11 @@ function VendorSettings() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <span className={label}>Delivery fee</span>
-                <input className={field} defaultValue="2500" />
+                <input name="deliveryFee" inputMode="numeric" className={field} defaultValue={p.deliveryFee ?? 2500} />
               </div>
               <div>
                 <span className={label}>Free delivery above</span>
-                <input className={field} defaultValue="50000" />
+                <input name="freeAbove" inputMode="numeric" className={field} defaultValue={p.freeAbove ?? 50000} />
               </div>
               <div className="sm:col-span-2">
                 <span className={label}>Delivery zones</span>
@@ -130,8 +152,8 @@ function VendorSettings() {
         <div className="space-y-6">
           <Panel title="Storefront link">
             <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-3 py-2.5 text-xs">
-              <span className="min-w-0 flex-1 truncate font-semibold">vendra.ng/store/abigails-kitchen</span>
-              <button className="inline-flex shrink-0 items-center gap-1 font-semibold text-primary">
+              <span className="min-w-0 flex-1 truncate font-semibold">vendra.ng/store/{base.slug}</span>
+              <button type="button" onClick={() => navigator.clipboard.writeText(window.location.origin + "/store/" + base.slug).then(() => toast.success("Link copied"))} className="inline-flex shrink-0 items-center gap-1 font-semibold text-primary">
                 <Copy className="size-3.5" /> Copy
               </button>
             </div>
@@ -151,27 +173,24 @@ function VendorSettings() {
 
           <Panel title="Store status">
             <div className="space-y-3 text-sm">
-              {[
-                ["Storefront published", true],
-                ["Accepting orders", true],
-                ["Accepting bookings", true],
-                ["Pause store temporarily", false],
-              ].map(([t, on]) => (
-                <label key={t as string} className="flex items-center justify-between gap-3">
-                  <span className="min-w-0 truncate">{t as string}</span>
-                  <span
-                    className={
-                      "relative h-6 w-11 shrink-0 rounded-full transition " + (on ? "bg-primary" : "bg-muted")
-                    }
-                  >
-                    <span className={"absolute top-1 size-4 rounded-full bg-card transition " + (on ? "left-6" : "left-1")} />
+              {([
+                ["published", "Storefront published", p.published ?? true],
+                ["acceptingOrders", "Accepting orders", p.acceptingOrders ?? true],
+                ["acceptingBookings", "Accepting bookings", p.acceptingBookings ?? true],
+                ["paused", "Pause store temporarily", p.paused ?? false],
+              ] as const).map(([k, t, on]) => (
+                <label key={k} className="flex cursor-pointer items-center justify-between gap-3">
+                  <span className="min-w-0 truncate">{t}</span>
+                  <input type="checkbox" name={k} defaultChecked={on} className="peer sr-only" />
+                  <span className="relative h-6 w-11 shrink-0 rounded-full bg-muted transition peer-checked:bg-primary peer-checked:[&>span]:left-6 peer-focus-visible:ring-2 peer-focus-visible:ring-ring">
+                    <span className="absolute top-1 left-1 size-4 rounded-full bg-card transition-all" />
                   </span>
                 </label>
               ))}
             </div>
           </Panel>
         </div>
-      </div>
+      </form>
     </DashShell>
   );
 }
