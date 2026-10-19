@@ -7,7 +7,7 @@ import { getVendor, naira, reviews } from "@/lib/data";
 import { app } from "@/lib/vendra-store";
 import { ItemArt, ItemLink, Price, StoreFooter, StoreTopBar } from "@/components/store/store-kit";
 
-export const Route = createFileRoute("/store/$slug/product/$id")({
+export const Route = createFileRoute("/store/$slug_/product/$id")({
   loader: ({ params }) => {
     const vendor = getVendor(params.slug);
     const product = vendor?.products.find((p) => p.id === params.id);
