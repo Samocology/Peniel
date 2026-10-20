@@ -38,7 +38,7 @@ export function ChatView({
   const titleOf = (t: Thread) => (side === "customer" ? (getVendor(t.vendorSlug)?.name ?? t.vendorSlug) : t.customer);
 
   return (
-    <div className="grid h-[calc(100dvh-13rem)] min-h-[420px] overflow-hidden rounded-2xl border border-border bg-card md:h-[calc(100dvh-11rem)] md:grid-cols-[300px_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 h-[calc(100dvh-13rem)] min-h-[420px] overflow-hidden rounded-2xl border border-border bg-card md:h-[calc(100dvh-11rem)] md:grid-cols-[300px_minmax(0,1fr)]">
       <aside className={"min-h-0 flex-col border-r border-border " + (active ? "hidden md:flex" : "flex")}>
         <p className="border-b border-border px-4 py-3 text-sm font-bold">Conversations</p>
         <ul className="min-h-0 flex-1 overflow-y-auto">

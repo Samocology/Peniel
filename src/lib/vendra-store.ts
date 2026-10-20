@@ -76,7 +76,7 @@ function makeInitial(): State {
         readV: 1,
         messages: [
           { from: "customer", text: "Hi! Can you do party jollof for 30 guests next Saturday?", at: 1760680000000 },
-          { from: "vendor", text: "Yes we can 🙌 For 30 guests we'd suggest 3 large trays. Want a quote?", at: 1760680600000 },
+          { from: "vendor", text: "Yes we can! For 30 guests we'd suggest 3 large trays. Want a quote?", at: 1760680600000 },
         ],
       },
     ],
