@@ -15,6 +15,7 @@ const nav = [
 
 export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
   const [open, setOpen] = useState(false);
+  const user = useApp().user;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-md">
@@ -37,9 +38,15 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/account">Sign in</Link>
-          </Button>
+          {user ? (
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/home">My home</Link>
+            </Button>
+          ) : (
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/auth">Sign in</Link>
+            </Button>
+          )}
           <Button asChild size="sm">
             <Link to="/vendor/onboarding">Start selling</Link>
           </Button>
@@ -81,6 +88,11 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
             <Link to="/orders" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
               <Receipt className="size-4" /> My orders
             </Link>
+            {!user && (
+              <Link to="/auth" onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted">
+                Sign in / Sign up
+              </Link>
+            )}
             <Button asChild className="mt-2">
               <Link to="/vendor/onboarding">Start selling</Link>
             </Button>

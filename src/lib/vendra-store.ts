@@ -37,6 +37,7 @@ export type VendorOrder = { id: string; customer: string; items: string; mode: s
 type State = {
   vendorSlug: string;
   customer: { name: string; city: string };
+  user?: { name: string; email: string; role: "customer" | "vendor" } | undefined;
   accounts: Record<string, Account>;
   cart: CartItem[];
   promo?: string | undefined;
@@ -201,6 +202,9 @@ export const app = {
   },
   toggleFavorite: (slug: string) =>
     set((s) => ({ ...s, favorites: s.favorites.includes(slug) ? s.favorites.filter((x) => x !== slug) : [...s.favorites, slug] })),
+  signIn: (name: string, email: string, role: "customer" | "vendor") =>
+    set((s) => ({ ...s, user: { name, email, role }, customer: { ...s.customer, name } })),
+  signOut: () => set((s) => ({ ...s, user: undefined })),
   saveCustomer: (c: State["customer"]) => set((s) => ({ ...s, customer: c })),
 
   /** Opens (or creates) the customer's chat with a vendor and returns its id. */
