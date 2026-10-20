@@ -42,13 +42,13 @@ export function BottomBar({ items, className = "md:hidden" }: { items: BarItem[]
 export function CustomerBottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const s = useApp();
-  if (path.startsWith("/vendor") || path.startsWith("/admin")) return null;
+  if (!s.user || path.startsWith("/vendor") || path.startsWith("/admin") || path === "/auth") return null;
   const cart = s.cart.reduce((a, l) => a + l.qty, 0);
   const unread = s.threads.filter((t) => t.customer === s.customer.name).reduce((a, t) => a + unreadFor(t, "customer"), 0);
   return (
     <BottomBar
       items={[
-        { to: "/", label: "Home", icon: <House />, exact: true },
+        { to: "/home", label: "Home", icon: <House />, exact: true },
         { to: "/marketplace", label: "Explore", icon: <Compass /> },
         { to: "/cart", label: "Cart", icon: <ShoppingBasket />, badge: cart },
         { to: "/messages", label: "Chats", icon: <MessagesSquare />, badge: unread },
