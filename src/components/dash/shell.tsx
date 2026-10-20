@@ -177,10 +177,10 @@ export function DashShell({
         </div>
       </div>
 
-      <BottomBar
+      {st.user && <BottomBar
         className="lg:hidden"
         items={primary.map((n) => ({ to: n.to, label: n.label, icon: n.icon, badge: n.badge ? Number(n.badge) || undefined : undefined, exact: n.to === "/vendor" || n.to === "/admin" }))}
-      />
+      />}
     </div>
   );
 }
