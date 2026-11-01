@@ -8,7 +8,7 @@ Design a complete, modern, production-ready UI/UX for a multi-business digital c
 
 “YOUR BUSINESS. YOUR STOREFRONT. YOUR CUSTOMERS. ONE PLATFORM.”
 
-The platform allows different types of businesses to create their own online storefront, sell products or services, accept orders/bookings, manage customers, track transactions, build reputation, and grow their business — all from one platform.
+The platform allows different types of businesses to create their own online storefront, sell products or services, accept orders/bookings, manage customers, track transactions, build reputation, and grow their business - all from one platform.
 
 IMPORTANT:
 
@@ -1274,19 +1274,9 @@ Design the experience around that vision.
 
 that is the full prompt, please do this very well and make it nice
 
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/4788cdad-6484-48ae-9420-aac3998303c6).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Prefer working locally? You need Node.js and npm - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
 git clone <this-repository-url>
@@ -1294,3 +1284,5 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+#   P e n i e l  
+ 
