@@ -7,9 +7,9 @@ import { naira } from "@/lib/data";
 export const Route = createFileRoute("/admin/disputes")({
   head: () => ({
     meta: [
-      { title: "Disputes — Vendra admin" },
-      { name: "description", content: "Resolve refund requests and order disputes with funds still held safely by Vendra Pay." },
-      { property: "og:title", content: "Disputes — Vendra admin" },
+      { title: "Disputes - Peniel admin" },
+      { name: "description", content: "Resolve refund requests and order disputes with funds still held safely by Peniel Pay." },
+      { property: "og:title", content: "Disputes - Peniel admin" },
       { property: "og:description", content: "Fair outcomes for customers and vendors." },
     ],
   }),
@@ -70,7 +70,7 @@ function AdminDisputes() {
             ))}
           </ul>
           <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">
-            Because Vendra collects every payment, money can be returned without chasing the vendor.
+            Because Peniel collects every payment, money can be returned without chasing the vendor.
           </p>
         </Panel>
       </div>

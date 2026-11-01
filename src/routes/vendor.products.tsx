@@ -1,18 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Filter, Pencil, Plus, Search } from "lucide-react";
+import { Filter, Plus, Search } from "lucide-react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { useState } from "react";
 import { toast } from "sonner";
 import { naira } from "@/lib/data";
-import { app, useCurrentVendor } from "@/lib/vendra-store";
+import { app, useCurrentVendor } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/vendor/products")({
   head: () => ({
     meta: [
-      { title: "Products — Vendra business console" },
+      { title: "Products - Peniel business console" },
       { name: "description", content: "Manage your menu and products: prices, stock, categories and visibility on your storefront." },
-      { property: "og:title", content: "Products — Vendra business console" },
+      { property: "og:title", content: "Products - Peniel business console" },
       { property: "og:description", content: "Add, edit and organise everything you sell." },
     ],
   }),
@@ -20,7 +20,32 @@ export const Route = createFileRoute("/vendor/products")({
 });
 
 function VendorProducts() {
-  const { base: vendor, account } = useCurrentVendor();
+  const { base, account } = useCurrentVendor();
+  const vendor = { ...base, products: [...base.products, ...(account.products ?? [])] };
+  const catalogLabel =
+    vendor.type === "restaurant" || vendor.type === "bakery"
+      ? "Menu"
+      : vendor.type === "beauty"
+        ? "Services"
+        : vendor.type === "hotel"
+          ? "Rooms"
+          : "Products";
+  const itemLabel =
+    vendor.type === "restaurant" || vendor.type === "bakery"
+      ? "menu items"
+      : vendor.type === "beauty"
+        ? "services"
+        : vendor.type === "hotel"
+          ? "rooms"
+          : "products";
+  const itemTypeLabel =
+    vendor.type === "restaurant" || vendor.type === "bakery"
+      ? "Menu item"
+      : vendor.type === "beauty"
+        ? "Service"
+        : vendor.type === "hotel"
+          ? "Room"
+          : "Product";
   const [q, setQ] = useState("");
   const [g, setG] = useState("All");
   const list = vendor.products.filter((p) => (g === "All" || p.group === g) && p.name.toLowerCase().includes(q.toLowerCase()));
@@ -29,12 +54,12 @@ function VendorProducts() {
     <DashShell
       nav={vendorNav}
       kicker="Business console"
-      title="Products"
-      subtitle={`${vendor.products.length} items on your storefront`}
+      title={catalogLabel}
+      subtitle={`${vendor.products.length} ${itemLabel} on your storefront`}
       storeLink={{ label: "View storefront", slug: vendor.slug }}
       actions={
         <Link to="/vendor/products/new" className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">
-          <Plus className="size-4" /> Add product
+          <Plus className="size-4" /> Add {itemTypeLabel.toLowerCase()}
         </Link>
       }
     >
@@ -66,8 +91,8 @@ function VendorProducts() {
 
         <div className="mt-5">
           <DataTable
-            head={["Product", "Category", "Price", "Stock", "Status", ""]}
-            rows={list.map((p, i) => [
+            head={[itemTypeLabel, "Category", "Price", "Details", "Status"]}
+            rows={list.map((p) => [
               <span className="flex min-w-0 items-center gap-3">
                 <span className="size-9 shrink-0 rounded-lg bg-primary-soft" />
                 <span className="min-w-0">
@@ -77,7 +102,7 @@ function VendorProducts() {
               </span>,
               <span className="text-muted-foreground">{p.group}</span>,
               naira(p.price),
-              <span className={i === 2 ? "font-semibold text-gold-foreground" : ""}>{i === 2 ? "3 left" : "In stock"}</span>,
+              <span className="text-muted-foreground">{p.meta ?? "Details not set"}</span>,
               <button
                 onClick={() => {
                   const hidden = account.hidden.includes(p.id);
@@ -91,9 +116,6 @@ function VendorProducts() {
               >
                 {account.hidden.includes(p.id) ? "Hidden" : "Live"}
               </button>,
-              <Link to="/vendor/products/new" className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                <Pencil className="size-3.5" /> Edit
-              </Link>,
             ])}
           />
         </div>

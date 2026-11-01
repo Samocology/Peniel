@@ -8,10 +8,10 @@ import { naira } from "@/lib/data";
 export const Route = createFileRoute("/admin/customers")({
   head: () => ({
     meta: [
-      { title: "Customers — Vendra admin" },
-      { name: "description", content: "Every shopper on Vendra with order counts, lifetime spend, location and account standing." },
-      { property: "og:title", content: "Customers — Vendra admin" },
-      { property: "og:description", content: "Understand who is buying on Vendra." },
+      { title: "Customers - Peniel admin" },
+      { name: "description", content: "Every shopper on Peniel with order counts, lifetime spend, location and account standing." },
+      { property: "og:title", content: "Customers - Peniel admin" },
+      { property: "og:description", content: "Understand who is buying on Peniel." },
     ],
   }),
   component: AdminCustomers,

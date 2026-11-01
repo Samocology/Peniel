@@ -8,9 +8,9 @@ import { naira, orders, reviews, vendors } from "@/lib/data";
 export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
-      { title: "My account — Vendra" },
-      { name: "description", content: "Your Vendra profile: saved businesses, addresses, order history, reviews and wallet balance." },
-      { property: "og:title", content: "My account — Vendra" },
+      { title: "My account - Peniel" },
+      { name: "description", content: "Your Peniel profile: saved businesses, addresses, order history, reviews and wallet balance." },
+      { property: "og:title", content: "My account - Peniel" },
       { property: "og:description", content: "Manage your profile, favourites and orders." },
     ],
   }),
@@ -153,7 +153,7 @@ function AccountPage() {
             </div>
 
             <div className="rounded-2xl border border-primary/20 bg-primary-soft p-5">
-              <p className="font-display text-lg font-bold">Sell on Vendra</p>
+              <p className="font-display text-lg font-bold">Sell on Peniel</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Turn your business into an online store with its own link.
               </p>

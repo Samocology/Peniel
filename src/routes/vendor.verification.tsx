@@ -1,8 +1,9 @@
 import { PlanGate } from "@/components/dash/plan-gate";
-import { app, isPaid, useCurrentVendor } from "@/lib/vendra-store";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { app, isPaid, useApp, useCurrentVendor } from "@/lib/peniel-store";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { z } from "zod";
-import { AlertCircle, BadgeCheck, Check, Clock, FileText, Lock, ShieldCheck, Upload, X } from "lucide-react";
+import { AlertCircle, BadgeCheck, Check, Clock, Lock, ShieldCheck, Upload, X } from "lucide-react";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 
@@ -12,28 +13,83 @@ export const Route = createFileRoute("/vendor/verification")({
   }),
   head: () => ({
     meta: [
-      { title: "Verification — earn your Vendra badge" },
+      { title: "Verification - earn your Peniel badge" },
       { name: "description", content: "Serve five different customers well to unlock your verification application. Verification is earned, never bought." },
-      { property: "og:title", content: "Verification — earn your Vendra badge" },
-      { property: "og:description", content: "Trust on Vendra is earned through real customer service." },
+      { property: "og:title", content: "Verification - earn your Peniel badge" },
+      { property: "og:description", content: "Trust on Peniel is earned through real customer service." },
     ],
   }),
   component: VerificationPage,
 });
 
-const eligibility = [
-  ["Serve 5 different customers", "3 of 5 completed", false],
-  ["Customer satisfaction above 4.0", "Currently 4.8", true],
-  ["No unresolved serious complaints", "None on record", true],
-  ["No confirmed fraud", "Clear", true],
-  ["Identity & business information", "1 document missing", false],
-  ["Compliance with platform policies", "In good standing", true],
-] as const;
-
 function VerificationPage() {
-  const { stage } = Route.useSearch();
-  const eligible = stage !== "progress";
-  const { account } = useCurrentVendor();
+  const { stage: requestedStage } = Route.useSearch();
+  const navigate = useNavigate({ from: "/vendor/verification" });
+  const { vendor, account } = useCurrentVendor();
+  const state = useApp();
+  const isVendor = state.user?.role === "vendor";
+  useEffect(() => {
+    if (!isVendor) {
+      void navigate({
+        to: "/auth",
+        search: {
+          mode: "login",
+          role: "vendor",
+          returnTo: "/vendor/verification",
+        },
+      });
+    }
+  }, [isVendor, navigate]);
+
+  if (!isVendor) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-background px-4">
+        <div className="max-w-sm text-center">
+          <ShieldCheck className="mx-auto size-8 text-primary" />
+          <h1 className="mt-4 font-display text-xl font-bold">Sign in to view verification</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We’re taking you to sign in or create your business account.
+          </p>
+          <Link
+            to="/auth"
+            search={{
+              mode: "login",
+              role: "vendor",
+              returnTo: "/vendor/verification",
+            }}
+            className="mt-5 inline-flex rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
+          >
+            Continue to sign in
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const servedCustomers = new Set(
+    state.orders
+      .filter((order) => order.vendorSlug === vendor.slug && order.status === "Delivered")
+      .map((order) => order.customer),
+  ).size;
+  const eligible = servedCustomers >= 5 && vendor.rating >= 4;
+  const stage =
+    account.verification === "applied"
+      ? "review"
+      : !eligible && (requestedStage === "eligible" || requestedStage === "apply")
+        ? "progress"
+        : requestedStage;
+  const eligibility = [
+    ["Serve 5 different customers", `${servedCustomers} of 5 completed`, servedCustomers >= 5],
+    ["Customer satisfaction above 4.0", `${vendor.rating.toFixed(1)} average`, vendor.rating >= 4],
+    ["No unresolved serious complaints", "Requires platform review", false],
+    ["No confirmed fraud", "Requires platform review", false],
+    ["Identity & business information", "Provide business documents", false],
+    ["Compliance with platform policies", "Requires platform review", false],
+  ] as const;
+  const documents =
+    vendor.type === "restaurant" || vendor.type === "bakery" || vendor.type === "fresh-food"
+      ? ["Government ID", "Business registration", "Proof of address", "Food safety certificate"]
+      : ["Government ID", "Business registration", "Proof of address", "Business-specific license"];
 
   return (
     <DashShell
@@ -41,7 +97,7 @@ function VerificationPage() {
       kicker="Business console"
       title="Verification"
       subtitle="Verification cannot be bought. It is earned by serving real customers well."
-      storeLink={{ label: "View storefront", slug: "abigails-kitchen" }}
+      storeLink={{ label: "View storefront", slug: vendor.slug }}
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
@@ -50,11 +106,11 @@ function VerificationPage() {
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
                 <div className="min-w-0">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-                    <Clock className="size-3.5" /> New vendor
+                    <Clock className="size-3.5" /> Verification progress
                   </span>
-                  <h2 className="mt-3 font-display text-xl font-bold">3 of 5 customers successfully served</h2>
+                  <h2 className="mt-3 font-display text-xl font-bold">{servedCustomers} of 5 customers successfully served</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    2 more customers needed before you can apply.
+                    {Math.max(0, 5 - servedCustomers)} more different customers needed before you can apply.
                   </p>
                 </div>
                 <Lock className="size-5 shrink-0 text-muted-foreground" />
@@ -68,18 +124,18 @@ function VerificationPage() {
                     key={n}
                     className={
                       "grid size-9 place-items-center rounded-full text-xs font-bold " +
-                      (n <= 3 ? "bg-primary text-primary-foreground" : "border border-dashed border-border text-muted-foreground")
+                      (n <= servedCustomers ? "bg-primary text-primary-foreground" : "border border-dashed border-border text-muted-foreground")
                     }
                   >
-                    {n <= 3 ? <Check className="size-4" /> : n}
+                    {n <= servedCustomers ? <Check className="size-4" /> : n}
                   </span>
                 ))}
               </div>
               <button
-                disabled
-                className="mt-5 w-full cursor-not-allowed rounded-xl bg-muted py-3 text-sm font-bold text-muted-foreground sm:w-auto sm:px-6"
+                disabled={!eligible || !isPaid(account.plan)}
+                className="mt-5 w-full rounded-xl bg-muted py-3 text-sm font-bold text-muted-foreground disabled:cursor-not-allowed sm:w-auto sm:px-6"
               >
-                Apply for verification (locked)
+                {eligible ? "Apply for verification" : "Application locked"}
               </button>
             </Panel>
           )}
@@ -93,7 +149,7 @@ function VerificationPage() {
                 Congratulations! You are now eligible to apply for verification.
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                You've served 5 different customers with a 4.8 rating. Eligibility unlocks the application — it is not automatic approval.
+                You’ve served {servedCustomers} different customers with a {vendor.rating.toFixed(1)} rating. Eligibility unlocks the application - it is not automatic approval.
               </p>
               <Link
                 to="/vendor/verification"
@@ -110,10 +166,10 @@ function VerificationPage() {
             <Panel title="Verification application">
               <div className="space-y-5">
                 {[
-                  ["Business owner full name", "Abigail Nwachukwu"],
-                  ["Business registration number (CAC)", "RC 1849302"],
-                  ["Business phone", "+234 803 000 0000"],
-                  ["Business address", "14 Awolowo Road, Ikoyi, Lagos"],
+                  ["Business owner full name", ""],
+                  ["Business registration number", ""],
+                  ["Business phone", vendor.phone],
+                  ["Business address", vendor.location],
                 ].map(([l, v]) => (
                   <div key={l}>
                     <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted-foreground uppercase">{l}</span>
@@ -126,11 +182,11 @@ function VerificationPage() {
                 <div>
                   <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted-foreground uppercase">Documents</span>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {["Government ID", "CAC certificate", "Proof of address", "Food handling permit"].map((d, i) => (
+                    {documents.map((d) => (
                       <div key={d} className="flex items-center gap-3 rounded-xl border border-border p-3.5 text-sm">
-                        {i < 2 ? <FileText className="size-4 shrink-0 text-success" /> : <Upload className="size-4 shrink-0 text-muted-foreground" />}
+                        <Upload className="size-4 shrink-0 text-muted-foreground" />
                         <span className="min-w-0 flex-1 truncate">{d}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">{i < 2 ? "Uploaded" : "Upload"}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">Upload</span>
                       </div>
                     ))}
                   </div>
@@ -138,7 +194,7 @@ function VerificationPage() {
                 <label className="flex items-start gap-3 text-sm">
                   <input type="checkbox" defaultChecked className="mt-1 accent-primary" />
                   <span className="text-muted-foreground">
-                    I confirm this information is accurate and I accept Vendra's verification policy.
+                    I confirm this information is accurate and I accept Peniel's verification policy.
                   </span>
                 </label>
                 <Link
@@ -212,8 +268,8 @@ function VerificationPage() {
           <Panel title="Reputation level">
             <ol className="space-y-4 text-sm">
               {[
-                ["New vendor", "You are here", true],
-                ["Eligible for verification", "5 customers served", eligible],
+                ["New vendor", vendor.categoryLabel, servedCustomers > 0],
+                ["Eligible for verification", "5 different customers served", eligible],
                 ["Verified business", "Reviewed & approved", stage === "approved"],
                 ["Trusted / Top rated", "Sustained 4.8+ and 100+ orders", false],
               ].map(([t, h, on]) => (
@@ -241,23 +297,6 @@ function VerificationPage() {
             </p>
           </Panel>
 
-          <Panel title="Preview stages">
-            <div className="flex flex-wrap gap-2">
-              {(["progress", "eligible", "apply", "review", "approved", "rejected"] as const).map((s) => (
-                <Link
-                  key={s}
-                  to="/vendor/verification"
-                  search={{ stage: s }}
-                  className={
-                    "rounded-full border px-3 py-1 text-xs font-medium " +
-                    (s === stage ? "border-primary text-primary" : "border-border text-muted-foreground")
-                  }
-                >
-                  {s}
-                </Link>
-              ))}
-            </div>
-          </Panel>
         </div>
       </div>
     </DashShell>

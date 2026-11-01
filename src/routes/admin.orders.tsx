@@ -7,9 +7,9 @@ import { naira, orders } from "@/lib/data";
 export const Route = createFileRoute("/admin/orders")({
   head: () => ({
     meta: [
-      { title: "Orders & bookings — Vendra admin" },
-      { name: "description", content: "Track every order and booking placed on Vendra, including fulfilment status and payment state." },
-      { property: "og:title", content: "Orders & bookings — Vendra admin" },
+      { title: "Orders & bookings - Peniel admin" },
+      { name: "description", content: "Track every order and booking placed on Peniel, including fulfilment status and payment state." },
+      { property: "og:title", content: "Orders & bookings - Peniel admin" },
       { property: "og:description", content: "Platform-wide order monitoring." },
     ],
   }),

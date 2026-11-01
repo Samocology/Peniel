@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { cartLines as seedCart, getVendor, vendors, type CartLine, type Vendor } from "./data";
+import { cartLines as seedCart, getVendor, vendors, type CartLine, type Product, type Vendor } from "./data";
 import { sanitizeChat } from "./chat-guard";
 
 /**
@@ -7,7 +7,8 @@ import { sanitizeChat } from "./chat-guard";
  * across every open tab/window of the app via the `storage` event.
  */
 export type Plan = "starter" | "growth" | "business";
-export type OrderStatus = "New" | "Preparing" | "Out for delivery" | "Delivered" | "Cancelled";
+export type OrderStatus = "New" | "Confirmed" | "Preparing" | "Out for delivery" | "Delivered" | "Cancelled";
+export type OrderLine = { id: string; item: string; meta: string; qty: number; price: number };
 
 export type Profile = Partial<Pick<Vendor, "name" | "tagline" | "about" | "location" | "hours" | "delivery">> & {
   deliveryFee?: number;
@@ -26,13 +27,30 @@ export type Account = {
   verification: "none" | "applied";
   promos: { code: string; offer: string; active: boolean; uses: number; revenue: number }[];
   hidden: string[];
+  products?: Product[];
+  payoutBank?: {
+    bankName: string;
+    accountName: string;
+    accountLast4: string;
+    linkedAt: number;
+  };
 };
 
 export type ChatMsg = { from: "customer" | "vendor"; text: string; at: number; blocked?: boolean };
 export type Thread = { id: string; vendorSlug: string; customer: string; messages: ChatMsg[]; readC: number; readV: number };
 export type CartItem = CartLine & { id: string };
 
-export type VendorOrder = { id: string; customer: string; items: string; mode: string; total: number; status: OrderStatus };
+export type VendorOrder = {
+  id: string;
+  vendorSlug: string;
+  customer: string;
+  items: string;
+  mode: string;
+  total: number;
+  status: OrderStatus;
+  createdAt?: number;
+  lineItems?: OrderLine[];
+};
 
 type State = {
   vendorSlug: string;
@@ -43,31 +61,33 @@ type State = {
   promo?: string | undefined;
   favorites: string[];
   orders: VendorOrder[];
+  completedCheckouts?: Record<string, string[]>;
   threads: Thread[];
 };
 
-const KEY = "vendra-app-v2";
+const KEY = "peniel-app-v2";
 
 const seedOrders: VendorOrder[] = [
-  { id: "#ORD-7F4X2", customer: "Tosin A.", items: "2 items", mode: "Delivery · VI", total: 26760, status: "New" },
-  { id: "#ORD-7F4X1", customer: "Ada N.", items: "1 item", mode: "Pickup", total: 12400, status: "New" },
-  { id: "#ORD-7F4W9", customer: "Bola S.", items: "2 items", mode: "Delivery · Lekki", total: 16000, status: "Out for delivery" },
-  { id: "#ORD-7F4W8", customer: "Kelechi O.", items: "4 items", mode: "Delivery · Yaba", total: 41200, status: "Preparing" },
-  { id: "#ORD-7F4W7", customer: "Chidi O.", items: "1 item", mode: "Pickup", total: 22000, status: "Delivered" },
-  { id: "#ORD-7F4W5", customer: "Halima B.", items: "3 items", mode: "Delivery · Ikoyi", total: 33500, status: "Delivered" },
-  { id: "#ORD-7F4W2", customer: "Uche E.", items: "1 item", mode: "Delivery · Surulere", total: 9800, status: "Cancelled" },
+  { id: "#ORD-7F4X2", vendorSlug: "abigails-kitchen", customer: "Tosin A.", items: "2 items", mode: "Delivery · VI", total: 26760, status: "New" },
+  { id: "#ORD-7F4X1", vendorSlug: "abigails-kitchen", customer: "Ada N.", items: "1 item", mode: "Pickup", total: 12400, status: "New" },
+  { id: "#ORD-7F4W9", vendorSlug: "abigails-kitchen", customer: "Bola S.", items: "2 items", mode: "Delivery · Lekki", total: 16000, status: "Out for delivery" },
+  { id: "#ORD-7F4W8", vendorSlug: "abigails-kitchen", customer: "Kelechi O.", items: "4 items", mode: "Delivery · Yaba", total: 41200, status: "Preparing" },
+  { id: "#ORD-7F4W7", vendorSlug: "abigails-kitchen", customer: "Chidi O.", items: "1 item", mode: "Pickup", total: 22000, status: "Delivered" },
+  { id: "#ORD-7F4W5", vendorSlug: "abigails-kitchen", customer: "Halima B.", items: "3 items", mode: "Delivery · Ikoyi", total: 33500, status: "Delivered" },
+  { id: "#ORD-7F4W2", vendorSlug: "abigails-kitchen", customer: "Uche E.", items: "1 item", mode: "Delivery · Surulere", total: 9800, status: "Cancelled" },
 ];
 
-const newAccount = (): Account => ({ plan: "starter", picks: 0, profile: {}, verification: "none", promos: [], hidden: [] });
+const newAccount = (): Account => ({ plan: "starter", picks: 0, profile: {}, verification: "none", promos: [], hidden: [], products: [] });
 
 function makeInitial(): State {
   return {
     vendorSlug: "abigails-kitchen",
-    customer: { name: "Tosin A.", city: "Lagos" },
+    customer: { name: "Tosin A.", city: "Lagos State" },
     accounts: {},
     cart: seedCart.map((l, i) => ({ ...l, id: "seed-" + i })),
     favorites: [],
     orders: seedOrders,
+    completedCheckouts: {},
     threads: [
       {
         id: "t-abigails-kitchen",
@@ -93,7 +113,20 @@ const emit = () => listeners.forEach((l) => l());
 function read() {
   try {
     const raw = window.localStorage.getItem(KEY);
-    state = raw ? { ...makeInitial(), ...JSON.parse(raw) } : makeInitial();
+    if (!raw) {
+      state = makeInitial();
+      return;
+    }
+    const restored = JSON.parse(raw) as Partial<State>;
+    state = {
+      ...makeInitial(),
+      ...restored,
+      completedCheckouts: restored.completedCheckouts ?? {},
+      orders: (restored.orders ?? seedOrders).map((order) => ({
+        ...order,
+        vendorSlug: order.vendorSlug ?? "abigails-kitchen",
+      })),
+    };
   } catch {
     state = makeInitial();
   }
@@ -182,8 +215,90 @@ export const app = {
     patchAcct(app.get().vendorSlug, (a) => ({
       hidden: a.hidden.includes(productId) ? a.hidden.filter((x) => x !== productId) : [...a.hidden, productId],
     })),
+  addProduct: (product: Product) =>
+    patchAcct(app.get().vendorSlug, (a) => ({
+      products: [...(a.products ?? []), product],
+    })),
   setOrderStatus: (id: string, status: OrderStatus) =>
     set((s) => ({ ...s, orders: s.orders.map((o) => (o.id === id ? { ...o, status } : o)) })),
+  linkPayoutBank(bankName: string, accountName: string, accountNumber: string) {
+    const normalizedName = accountName.trim();
+    const normalizedNumber = accountNumber.replace(/\s/g, "");
+    if (!bankName.trim() || !normalizedName || !/^\d{10}$/.test(normalizedNumber)) return false;
+    patchAcct(app.get().vendorSlug, () => ({
+      payoutBank: {
+        bankName: bankName.trim(),
+        accountName: normalizedName,
+        accountLast4: normalizedNumber.slice(-4),
+        linkedAt: Date.now(),
+      },
+    }));
+    return true;
+  },
+  completeCheckout(checkoutId: string) {
+    let orderIds: string[] = [];
+    set((s) => {
+      const completed = s.completedCheckouts ?? {};
+      if (completed[checkoutId]) {
+        orderIds = completed[checkoutId];
+        return s;
+      }
+      if (!s.cart.length) return s;
+
+      const grouped = new Map<string, CartItem[]>();
+      for (const line of s.cart) {
+        const lines = grouped.get(line.vendorSlug) ?? [];
+        lines.push(line);
+        grouped.set(line.vendorSlug, lines);
+      }
+
+      const groupedLines = [...grouped];
+      const subtotal = s.cart.reduce((sum, line) => sum + line.price * line.qty, 0);
+      const discount = Math.round(subtotal * (PROMO_CODES[s.promo ?? ""] ?? 0));
+      let discountRemaining = discount;
+      const createdAt = Date.now();
+      const createdOrders: VendorOrder[] = groupedLines.map(([vendorSlug, lines], index) => {
+        const vendor = getVendor(vendorSlug);
+        const itemCount = lines.reduce((sum, line) => sum + line.qty, 0);
+        const checkoutSuffix = checkoutId.replace(/[^a-z0-9]/gi, "").slice(-6).toUpperCase();
+        const id = `ORD-${createdAt.toString(36).toUpperCase()}-${checkoutSuffix}-${index + 1}`;
+        const gross = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
+        const plannedDiscount =
+          index === groupedLines.length - 1
+            ? discountRemaining
+            : subtotal > 0
+              ? Math.round((discount * gross) / subtotal)
+              : 0;
+        const discountShare = Math.min(discountRemaining, Math.max(0, plannedDiscount));
+        discountRemaining -= discountShare;
+        return {
+          id,
+          vendorSlug,
+          customer: s.customer.name,
+          items: `${itemCount} ${itemCount === 1 ? "item" : "items"}`,
+          mode:
+            vendor?.fulfilment === "booking"
+              ? "Appointment request"
+              : vendor?.fulfilment === "reservation"
+                ? "Reservation request"
+                : "Delivery",
+          total: gross - discountShare,
+          status: "New",
+          createdAt,
+          lineItems: lines.map(({ id: lineId, item, meta, qty, price }) => ({ id: lineId, item, meta, qty, price })),
+        };
+      });
+      orderIds = createdOrders.map((order) => order.id);
+      return {
+        ...s,
+        orders: [...createdOrders, ...s.orders],
+        cart: [],
+        promo: undefined,
+        completedCheckouts: { ...completed, [checkoutId]: orderIds },
+      };
+    });
+    return orderIds;
+  },
 
   addToCart: (line: CartLine) =>
     set((s) => {
@@ -266,7 +381,7 @@ export function mergeVendor(v: Vendor, a?: Account): Vendor {
     location: p.location || v.location,
     hours: p.hours || v.hours,
     delivery: p.delivery || v.delivery,
-    products: v.products.filter((x) => !a.hidden.includes(x.id)),
+    products: [...v.products, ...(a.products ?? [])].filter((x) => !a.hidden.includes(x.id)),
   };
 }
 

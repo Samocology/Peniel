@@ -1,29 +1,30 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { CalendarDays, Check, ChevronLeft, Minus, Plus, ShieldCheck, Star, Truck } from "lucide-react";
+import { CalendarDays, ChevronLeft, Minus, Plus, ShieldCheck, Star, Truck } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { getVendor, naira, reviews } from "@/lib/data";
-import { app } from "@/lib/vendra-store";
+import { getVendor, naira, type Product } from "@/lib/data";
+import { app, mergeVendor, useApp } from "@/lib/peniel-store";
 import { ItemArt, ItemLink, Price, StoreFooter, StoreTopBar } from "@/components/store/store-kit";
 
 export const Route = createFileRoute("/store/$slug_/product/$id")({
   loader: ({ params }) => {
-    const vendor = getVendor(params.slug);
-    const product = vendor?.products.find((p) => p.id === params.id);
+    const base = getVendor(params.slug);
+    const vendor = base ? mergeVendor(base, app.get().accounts[base.slug]) : undefined;
+    const product = vendor?.products.find((p: Product) => p.id === params.id);
     if (!vendor || !product) throw notFound();
     return { vendor, product };
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Item unavailable — Vendra" }, { name: "robots", content: "noindex" }] };
+      return { meta: [{ title: "Item unavailable - Peniel" }, { name: "robots", content: "noindex" }] };
     }
     const { vendor, product } = loaderData;
     return {
       meta: [
-        { title: `${product.name} — ${vendor.name}` },
-        { name: "description", content: `${product.desc}. ${naira(product.price)} from ${vendor.name} on Vendra.` },
-        { property: "og:title", content: `${product.name} — ${vendor.name}` },
+        { title: `${product.name} - ${vendor.name}` },
+        { name: "description", content: `${product.desc}. ${naira(product.price)} from ${vendor.name} on Peniel.` },
+        { property: "og:title", content: `${product.name} - ${vendor.name}` },
         { property: "og:description", content: product.desc },
       ],
     };
@@ -39,11 +40,18 @@ function ProductPage() {
   const [day, setDay] = useState(1);
   const [qty, setQty] = useState(1);
   const navigate = useNavigate();
-  const related = vendor.products.filter((p) => p.id !== product.id).slice(0, 4);
+  const account = useApp().accounts[vendor.slug];
+  const available =
+    account?.profile.published !== false &&
+    account?.profile.paused !== true &&
+    (vendor.fulfilment === "order"
+      ? account?.profile.acceptingOrders !== false
+      : account?.profile.acceptingBookings !== false);
+  const related = vendor.products.filter((p: Product) => p.id !== product.id).slice(0, 4);
 
   const optionGroups: [string, string[]][] =
     vendor.type === "restaurant"
-      ? [["Size", ["Regular", "Large (Serves 10–15)"]], ["Add protein", ["Grilled chicken", "Beef", "Goat meat", "None"]]]
+      ? [["Size", ["Regular", "Large (Serves 10-15)"]], ["Add protein", ["Grilled chicken", "Beef", "Goat meat", "None"]]]
       : vendor.type === "fashion"
         ? [["Size", ["UK 6", "UK 8", "UK 10", "UK 12", "UK 14"]], ["Colour", ["Indigo", "Ochre", "Noir"]]]
         : vendor.type === "beauty"
@@ -57,6 +65,10 @@ function ProductPage() {
                 : [["Condition", ["Brand new", "UK used"]], ["Warranty", ["12 months", "24 months (+₦25,000)"]]];
 
   const add = () => {
+    if (!available) {
+      toast.error(`${vendor.name} is not currently accepting ${isService ? "bookings" : "orders"}`);
+      return;
+    }
     const meta = optionGroups.map(([l, o]) => o[sel[l] ?? 0]).join(" · ") + (isService ? ` · ${["Fri 23", "Sat 24", "Sun 25", "Mon 26", "Tue 27"][day]}` : "");
     app.addToCart({ vendor: vendor.name, vendorSlug: vendor.slug, item: product.name, meta, qty, price: product.price });
     toast.success(`${product.name} added to cart`, { action: { label: "View cart", onClick: () => navigate({ to: "/cart" }) } });
@@ -162,17 +174,20 @@ function ProductPage() {
               </div>
               <button
                 onClick={add}
+                disabled={!available}
                 className="min-w-[200px] flex-1 px-6 py-3.5 text-center text-sm font-bold transition active:scale-[0.98]"
-                style={{ background: t.accent, color: t.accentInk, borderRadius: t.radius }}
+                style={{ background: t.accent, color: t.accentInk, borderRadius: t.radius, opacity: available ? 1 : 0.5 }}
               >
-                {isService ? "Add booking to cart" : "Add to cart"} · {naira(product.price * qty)}
+                {available
+                  ? `${isService ? "Add booking to cart" : "Add to cart"} · ${naira(product.price * qty)}`
+                  : "Currently unavailable"}
               </button>
             </div>
 
             <div className="mt-6 grid gap-3 text-xs sm:grid-cols-2">
               {[
                 [Truck, vendor.delivery],
-                [ShieldCheck, "Payments secured by Vendra Pay. Protected until fulfilment."],
+                [ShieldCheck, "Payments secured by Peniel Pay. Protected until fulfilment."],
               ].map(([Icon, text], i) => {
                 const I = Icon as typeof Truck;
                 return (
@@ -187,32 +202,16 @@ function ProductPage() {
         </div>
 
         <section className="mt-14">
-          <h2 className="text-xl font-bold">Customer reviews</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {reviews.map((r) => (
-              <div key={r.name + r.when} className="border p-4" style={{ borderColor: t.line, borderRadius: t.radius }}>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">{r.name}</p>
-                  <span className="text-xs opacity-55">{r.when}</span>
-                </div>
-                <div className="mt-1.5 flex gap-0.5">
-                  {Array.from({ length: r.stars }).map((_, i) => (
-                    <Star key={i} className="size-3" style={{ color: t.accent, fill: t.accent }} />
-                  ))}
-                </div>
-                <p className="mt-2 text-sm opacity-70">{r.text}</p>
-                <p className="mt-2 inline-flex items-center gap-1 text-[11px] opacity-60">
-                  <Check className="size-3" /> Verified buyer
-                </p>
-              </div>
-            ))}
+          <h2 className="text-xl font-bold">Reviews for {vendor.name}</h2>
+          <div className="mt-4 border p-5 text-sm opacity-70" style={{ borderColor: t.line, borderRadius: t.radius }}>
+            Review details are not connected to this storefront yet. The current aggregate rating is {vendor.rating.toFixed(1)} from {vendor.reviews} customer reviews.
           </div>
         </section>
 
         <section className="mt-14">
           <h2 className="text-xl font-bold">You may also like</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {related.map((p, i) => (
+            {related.map((p: Product, i: number) => (
               <ItemLink key={p.id} vendor={vendor} product={p} className="border p-3" style={{ borderColor: t.line, borderRadius: t.radius }}>
                 <ItemArt vendor={vendor} seed={i + 2} className="h-28 w-full" />
                 <p className="mt-2 truncate text-sm font-semibold">{p.name}</p>

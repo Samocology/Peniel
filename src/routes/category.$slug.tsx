@@ -15,14 +15,14 @@ export const Route = createFileRoute("/category/$slug")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Category not found — Vendra" }, { name: "robots", content: "noindex" }] };
+      return { meta: [{ title: "Category not found - Peniel" }, { name: "robots", content: "noindex" }] };
     }
     const { category } = loaderData;
     return {
       meta: [
-        { title: `${category.name} in Lagos — Vendra` },
-        { name: "description", content: `${category.blurb}. Browse ${category.count}+ ${category.name.toLowerCase()} businesses on Vendra and order or book securely.` },
-        { property: "og:title", content: `${category.name} on Vendra` },
+        { title: `${category.name} in Lagos - Peniel` },
+        { name: "description", content: `${category.blurb}. Browse ${category.count}+ ${category.name.toLowerCase()} businesses on Peniel and order or book securely.` },
+        { property: "og:title", content: `${category.name} on Peniel` },
         { property: "og:description", content: category.blurb },
       ],
     };
@@ -54,7 +54,7 @@ function CategoryPage() {
           </div>
           <div>
             <h1 className="font-display text-3xl font-bold sm:text-4xl">{category.name}</h1>
-            <p className="mt-2 max-w-xl text-sm text-muted-foreground">{category.blurb}. Find top-rated businesses in Lagos — from local favourites to premium names.</p>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">{category.blurb}. Find top-rated businesses in Lagos - from local favourites to premium names.</p>
             <div className="mt-5 grid grid-cols-2 gap-6 sm:grid-cols-4">
               {[
                 [`${category.count}+`, "Businesses"],
@@ -147,7 +147,7 @@ function CategoryPage() {
             <Star className="size-5 text-sidebar-primary" />
             <p className="mt-3 font-display font-bold">List your business</p>
             <p className="mt-1 text-sm text-sidebar-foreground/70">
-              Get discovered by thousands of customers in this category. Join Vendra today.
+              Get discovered by thousands of customers in this category. Join Peniel today.
             </p>
             <Button asChild size="sm" className="mt-4 bg-gold text-gold-foreground hover:bg-gold/90">
               <Link to="/vendor/onboarding">Get started</Link>

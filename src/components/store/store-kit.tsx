@@ -1,141 +1,389 @@
 import { Link } from "@tanstack/react-router";
-import { BadgeCheck, ChevronLeft, Heart, MessageCircle, Share2, ShoppingBag, Star } from "lucide-react";
+import {
+  BadgeCheck,
+  ChevronLeft,
+  Heart,
+  MessageCircle,
+  Share2,
+  ShoppingBag,
+  Star,
+} from "lucide-react";
 import { toast } from "sonner";
-import { app, useApp } from "@/lib/vendra-store";
-import type { ReactNode } from "react";
+import { app, useApp } from "@/lib/peniel-store";
+import type { CSSProperties, ReactNode } from "react";
 import { naira, type Product, type Vendor } from "@/lib/data";
 
-/** Subtle platform bar — vendor brand stays the visual priority. */
+/* ───────────────────────── Store Top Bar ───────────────────────── */
+
 export function StoreTopBar({ vendor }: { vendor: Vendor }) {
   const t = vendor.theme;
   const s = useApp();
   const saved = s.favorites.includes(vendor.slug);
   const count = s.cart.reduce((a, l) => a + l.qty, 0);
+
   const share = async () => {
     const url = window.location.origin + "/store/" + vendor.slug;
+
     try {
-      if (navigator.share) await navigator.share({ title: vendor.name, url });
-      else {
+      if (navigator.share) {
+        await navigator.share({
+          title: vendor.name,
+          url,
+        });
+      } else {
         await navigator.clipboard.writeText(url);
         toast.success("Store link copied");
       }
     } catch {
-      /* cancelled */
+      // Sharing was cancelled or unavailable.
     }
   };
+
+  const navItems = [
+    { label: "Shop", target: "catalogue", active: true },
+    { label: "Reviews", target: "reviews", active: false },
+    { label: "About", target: "about", active: false },
+    { label: "Visit", target: "visit", active: false },
+  ];
+
+  const handleJump = (target: string) => {
+    const el = document.getElementById(target);
+
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+
+    window.location.hash = `#${target}`;
+  };
+
   return (
-    <div
-      className="sticky top-0 z-40 border-b backdrop-blur-md"
-      style={{ background: t.bg + "e6", borderColor: t.line, color: t.ink }}
+    <header
+      className="fixed inset-x-0 top-0 z-50 border-b backdrop-blur-xl"
+      style={{
+        background: `${t.bg}f5`,
+        borderColor: t.line,
+        color: t.ink,
+        paddingTop: "env(safe-area-inset-top, 0px)",
+      }}
     >
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 sm:px-6">
-        <Link to="/marketplace" className="inline-flex items-center gap-1 text-xs opacity-70 hover:opacity-100">
-          <ChevronLeft className="size-3.5" /> Marketplace
+      <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6">
+        {/* Marketplace back link */}
+        <Link
+          to="/marketplace"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] transition-opacity hover:opacity-65 sm:text-[11px]"
+          style={{
+            borderColor: t.line,
+            background: t.soft,
+          }}
+        >
+          <ChevronLeft className="size-3.5" strokeWidth={2} />
+          <span className="hidden sm:inline">Market</span>
         </Link>
-        <span className="mx-1 h-4 w-px" style={{ background: t.line }} />
-        <span className="truncate text-xs font-semibold tracking-wide">{vendor.name}</span>
-        <span className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Link to="/messages" search={{ v: vendor.slug }} aria-label="Chat" className="rounded-full border px-2.5 py-1 text-xs sm:px-3" style={{ borderColor: t.line }}>
-            <MessageCircle className="inline size-3 sm:mr-1" /> <span className="hidden sm:inline">Chat</span>
+
+        {/* Desktop navigation */}
+        <nav
+          className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex"
+          aria-label="Store navigation"
+        >
+          {navItems.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => handleJump(item.target)}
+              className="rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition-all duration-200 hover:opacity-100"
+              style={
+                item.active
+                  ? {
+                      background: t.accent,
+                      color: t.accentInk,
+                    }
+                  : {
+                      color: t.ink,
+                      opacity: 0.55,
+                    }
+              }
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Actions */}
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <Link
+            to="/messages"
+            search={{ v: vendor.slug }}
+            aria-label="Chat with store"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-[10px] font-medium transition-all hover:-translate-y-0.5 sm:px-3 sm:text-[11px]"
+            style={{
+              borderColor: t.line,
+              background: t.soft,
+            }}
+          >
+            <MessageCircle className="size-3.5" strokeWidth={1.8} />
+            <span className="hidden sm:inline">Chat</span>
           </Link>
-          <button onClick={share} aria-label="Share" className="rounded-full border px-2.5 py-1 text-xs sm:px-3" style={{ borderColor: t.line }}>
-            <Share2 className="inline size-3 sm:mr-1" /> <span className="hidden sm:inline">Share</span>
-          </button>
+
           <button
+            type="button"
+            onClick={share}
+            aria-label="Share store"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-[10px] font-medium transition-all hover:-translate-y-0.5 sm:px-3 sm:text-[11px]"
+            style={{
+              borderColor: t.line,
+              background: t.soft,
+            }}
+          >
+            <Share2 className="size-3.5" strokeWidth={1.8} />
+            <span className="hidden sm:inline">Share</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => {
               app.toggleFavorite(vendor.slug);
-              toast.success(saved ? "Removed from favourites" : "Saved to favourites");
+
+              toast.success(
+                saved
+                  ? "Removed from favourites"
+                  : "Saved to favourites",
+              );
             }}
-            aria-label="Save"
-            className="rounded-full border px-2.5 py-1 text-xs sm:px-3"
-            style={{ borderColor: t.line, background: saved ? t.soft : undefined }}
+            aria-label={saved ? "Remove from favourites" : "Save store"}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-[10px] font-medium transition-all hover:-translate-y-0.5 sm:px-3 sm:text-[11px]"
+            style={{
+              borderColor: saved ? t.accent : t.line,
+              background: saved ? `${t.accent}18` : t.soft,
+              color: saved ? t.accent : t.ink,
+            }}
           >
-            <Heart className={"inline size-3 sm:mr-1 " + (saved ? "fill-current" : "")} /> <span className="hidden sm:inline">{saved ? "Saved" : "Save"}</span>
+            <Heart
+              className={`size-3.5 ${saved ? "fill-current" : ""}`}
+              strokeWidth={1.8}
+            />
+            <span className="hidden sm:inline">
+              {saved ? "Saved" : "Save"}
+            </span>
           </button>
+
           <Link
             to="/cart"
-            className="rounded-full px-3 py-1 text-xs font-semibold"
-            style={{ background: t.accent, color: t.accentInk }}
+            aria-label={`Shopping bag, ${count} items`}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[10px] font-semibold transition-all hover:-translate-y-0.5 sm:px-3.5 sm:text-[11px]"
+            style={{
+              background: t.accent,
+              color: t.accentInk,
+            }}
           >
-            <ShoppingBag className="mr-1 inline size-3" /> {count}
+            <ShoppingBag className="size-3.5" strokeWidth={2} />
+            <span className="tabular-nums">{count}</span>
           </Link>
-        </span>
+        </div>
       </div>
-    </div>
+    </header>
   );
 }
 
+/* ───────────────────────── Store Footer ───────────────────────── */
+
 export function StoreFooter({ vendor }: { vendor: Vendor }) {
   const t = vendor.theme;
+
   return (
-    <footer className="mt-16 border-t py-10" style={{ borderColor: t.line, color: t.ink }}>
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 md:grid-cols-4">
-        <div className="md:col-span-2">
-          <p className="text-lg font-bold" style={{ fontFamily: t.heading }}>
-            {vendor.name}
+    <footer
+      id="visit"
+      className="mt-16 scroll-mt-28 border-t"
+      style={{
+        borderColor: t.line,
+        color: t.ink,
+        background: t.bg,
+      }}
+    >
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-12 md:py-16">
+        {/* Brand */}
+        <div className="md:col-span-5">
+          <div className="flex items-center gap-3">
+            <span
+              className="grid size-10 shrink-0 place-items-center rounded-full text-xs font-semibold"
+              style={{
+                background: t.soft,
+                color: t.accent,
+                border: `1px solid ${t.line}`,
+                fontFamily: t.heading,
+              }}
+            >
+              {vendor.monogram}
+            </span>
+
+            <div>
+              <p
+                className="text-lg font-semibold tracking-tight"
+                style={{ fontFamily: t.heading }}
+              >
+                {vendor.name}
+              </p>
+
+              <p className="mt-0.5 text-[9px] uppercase tracking-[0.17em] opacity-45">
+                Official Peniel store
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-5 max-w-sm text-sm leading-7 opacity-60">
+            {vendor.about}
           </p>
-          <p className="mt-2 max-w-sm text-sm opacity-70">{vendor.about}</p>
+
+          <div className="mt-5">
+            <StoreBadges vendor={vendor} />
+          </div>
         </div>
-        <div className="text-sm opacity-80">
-          <p className="mb-2 text-xs tracking-[0.14em] uppercase opacity-60">Visit</p>
-          <p>{vendor.location}</p>
-          <p className="mt-2">{vendor.hours}</p>
+
+        {/* Location */}
+        <div className="md:col-span-3">
+          <p className="mb-4 text-[9px] font-semibold uppercase tracking-[0.2em] opacity-45">
+            Find us
+          </p>
+
+          <div className="flex items-start gap-2.5 text-sm leading-7 opacity-75">
+            <span
+              className="mt-1 grid size-7 shrink-0 place-items-center rounded-full"
+              style={{
+                background: t.soft,
+                color: t.accent,
+              }}
+            >
+              <span className="text-xs">⌖</span>
+            </span>
+
+            <span>{vendor.location}</span>
+          </div>
+
+          <p className="mt-3 pl-9 text-xs leading-6 opacity-55">
+            {vendor.hours}
+          </p>
         </div>
-        <div className="text-sm opacity-80">
-          <p className="mb-2 text-xs tracking-[0.14em] uppercase opacity-60">Contact</p>
-          <Link to="/messages" search={{ v: vendor.slug }} className="inline-flex items-center gap-1.5 font-semibold underline-offset-4 hover:underline">
-            <MessageCircle className="size-3.5" /> Chat with {vendor.name}
+
+        {/* Contact */}
+        <div className="md:col-span-4">
+          <p className="mb-4 text-[9px] font-semibold uppercase tracking-[0.2em] opacity-45">
+            Get in touch
+          </p>
+
+          <Link
+            to="/messages"
+            search={{ v: vendor.slug }}
+            className="inline-flex items-center gap-2.5 text-sm font-semibold transition-opacity hover:opacity-60"
+          >
+            <MessageCircle
+              className="size-4"
+              style={{ color: t.accent }}
+            />
+            Chat with {vendor.name}
           </Link>
-          <p className="mt-1 text-xs opacity-60">Contact details stay private on Vendra.</p>
+
+          <p className="mt-3 max-w-xs text-xs leading-6 opacity-50">
+            Your contact details stay private on Peniel. All conversations
+            are protected.
+          </p>
         </div>
       </div>
+
       <div
-        className="mx-auto mt-8 flex max-w-6xl flex-wrap items-center justify-between gap-2 border-t px-4 pt-6 text-xs opacity-60 sm:px-6"
+        className="border-t"
         style={{ borderColor: t.line }}
       >
-        <p>© 2026 {vendor.name}. All rights reserved.</p>
-        <Link to="/" className="hover:opacity-100">
-          Powered by Vendra · Payments secured by Vendra Pay
-        </Link>
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-[10px] opacity-50 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p>© 2026 {vendor.name}. All rights reserved.</p>
+
+          <Link
+            to="/"
+            className="transition-opacity hover:opacity-100"
+          >
+            Powered by Peniel · Payments secured by Peniel Pay
+          </Link>
+        </div>
       </div>
     </footer>
   );
 }
 
+/* ───────────────────────── Store Badges ───────────────────────── */
+
 export function StoreBadges({ vendor }: { vendor: Vendor }) {
   const t = vendor.theme;
+
   return (
-    <div className="flex flex-wrap items-center gap-3 text-sm">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       {vendor.verified && (
         <span
-          className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
-          style={{ background: t.accent, color: t.accentInk }}
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] font-semibold"
+          style={{
+            background: `${t.accent}14`,
+            color: t.accent,
+          }}
         >
-          <BadgeCheck className="size-3.5" /> Verified business
+          <BadgeCheck className="size-3.5" strokeWidth={2.2} />
+          Verified
         </span>
       )}
-      <span className="inline-flex items-center gap-1 font-semibold">
-        <Star className="size-4" style={{ color: t.accent, fill: t.accent }} /> {vendor.rating}
-        <span className="font-normal opacity-60">({vendor.reviews} reviews)</span>
+
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold">
+        <Star
+          className="size-3.5"
+          style={{
+            color: t.accent,
+            fill: t.accent,
+          }}
+        />
+
+        <span className="tabular-nums">{vendor.rating}</span>
+
+        <span className="font-normal opacity-50">
+          ({vendor.reviews} reviews)
+        </span>
       </span>
-      <span className="opacity-60">·</span>
-      <span className="opacity-70">{vendor.orders}</span>
+
+      <span className="hidden text-xs opacity-25 sm:inline">·</span>
+
+      <span className="text-[11px] opacity-55">{vendor.orders}</span>
     </div>
   );
 }
 
-export function GroupTabs({ vendor, active = 0 }: { vendor: Vendor; active?: number }) {
+/* ───────────────────────── Group Tabs ───────────────────────── */
+
+export function GroupTabs({
+  vendor,
+  active = 0,
+}: {
+  vendor: Vendor;
+  active?: number;
+}) {
   const t = vendor.theme;
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+    <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-2">
       {vendor.groups.map((g, i) => (
         <span
           key={g}
-          className="shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium"
+          className="shrink-0 cursor-pointer rounded-full border px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] whitespace-nowrap transition-all duration-200"
           style={
             i === active
-              ? { background: t.accent, color: t.accentInk, borderColor: t.accent }
-              : { borderColor: t.line, opacity: 0.75 }
+              ? {
+                  background: t.accent,
+                  color: t.accentInk,
+                  borderColor: t.accent,
+                }
+              : {
+                  borderColor: t.line,
+                  background: t.soft,
+                  color: t.ink,
+                  opacity: 0.7,
+                }
           }
         >
           {g}
@@ -144,6 +392,8 @@ export function GroupTabs({ vendor, active = 0 }: { vendor: Vendor; active?: num
     </div>
   );
 }
+
+/* ───────────────────────── Item Link ───────────────────────── */
 
 export function ItemLink({
   vendor,
@@ -156,12 +406,15 @@ export function ItemLink({
   product: Product;
   children: ReactNode;
   className?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
 }) {
   return (
     <Link
       to="/store/$slug/product/$id"
-      params={{ slug: vendor.slug, id: product.id }}
+      params={{
+        slug: vendor.slug,
+        id: product.id,
+      }}
       className={className}
       style={style}
     >
@@ -170,7 +423,8 @@ export function ItemLink({
   );
 }
 
-/** Brand-tinted image stand-in for catalogue items. */
+/* ───────────────────────── Item Art ───────────────────────── */
+
 export function ItemArt({
   vendor,
   seed,
@@ -183,27 +437,87 @@ export function ItemArt({
   label?: string;
 }) {
   const t = vendor.theme;
-  const angle = 120 + seed * 37;
+
+  const variations = [
+    "radial-gradient(ellipse at 20% 20%, rgba(255,255,255,0.48), transparent 48%), linear-gradient(135deg, var(--art-accent), var(--art-soft))",
+    "radial-gradient(ellipse at 80% 15%, rgba(255,255,255,0.38), transparent 45%), linear-gradient(145deg, var(--art-soft), var(--art-accent))",
+    "radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.35), transparent 55%), linear-gradient(125deg, var(--art-accent), var(--art-soft))",
+    "radial-gradient(ellipse at 15% 85%, rgba(255,255,255,0.42), transparent 48%), linear-gradient(160deg, var(--art-soft), var(--art-accent))",
+  ];
+
+  const background = variations[Math.abs(seed) % variations.length];
+
   return (
     <div
-      className={className}
-      style={{
-        backgroundImage: `linear-gradient(${angle}deg, ${t.accent}33, ${t.soft})`,
-        borderRadius: t.radius,
-      }}
+      className={"relative isolate overflow-hidden " + (className ?? "")}
+      style={
+        {
+          background,
+          borderRadius: t.radius,
+          "--art-accent": `${t.accent}35`,
+          "--art-soft": t.soft,
+        } as CSSProperties
+      }
     >
+      {/* Soft decorative shapes */}
+      <div
+        className="pointer-events-none absolute -right-8 -top-10 size-32 rounded-full border opacity-30"
+        style={{
+          borderColor: t.accent,
+          borderWidth: "1px",
+        }}
+      />
+
+      <div
+        className="pointer-events-none absolute -bottom-12 -left-8 size-36 rounded-full border opacity-25"
+        style={{
+          borderColor: t.accent,
+          borderWidth: "1px",
+        }}
+      />
+
+      <div
+        className="pointer-events-none absolute inset-0 opacity-20"
+        style={{
+          background: `linear-gradient(135deg, transparent 40%, ${t.accent}25 100%)`,
+        }}
+      />
+
       {label && (
-        <span className="grid size-full place-items-center px-3 text-center text-xs font-semibold opacity-45">
-          {label}
-        </span>
+        <div className="absolute inset-0 flex items-end p-4 sm:p-5">
+          <span
+            className="max-w-[85%] text-[9px] font-semibold uppercase tracking-[0.16em] opacity-60"
+            style={{ color: t.ink }}
+          >
+            {label}
+          </span>
+        </div>
       )}
+
+      <span
+        className="absolute right-4 top-4 text-[9px] font-medium tracking-[0.18em] opacity-35"
+        style={{ color: t.ink }}
+      >
+        {String(seed + 1).padStart(2, "0")}
+      </span>
     </div>
   );
 }
 
-export function Price({ value, vendor }: { value: number; vendor: Vendor }) {
+/* ───────────────────────── Price ───────────────────────── */
+
+export function Price({
+  value,
+  vendor,
+}: {
+  value: number;
+  vendor: Vendor;
+}) {
   return (
-    <span className="font-semibold" style={{ color: vendor.theme.accent }}>
+    <span
+      className="text-[15px] font-semibold tabular-nums"
+      style={{ color: vendor.theme.accent }}
+    >
       {naira(value)}
     </span>
   );

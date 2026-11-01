@@ -7,9 +7,9 @@ import { categories } from "@/lib/data";
 export const Route = createFileRoute("/admin/categories")({
   head: () => ({
     meta: [
-      { title: "Categories — Vendra admin" },
+      { title: "Categories - Peniel admin" },
       { name: "description", content: "Manage the business categories customers browse, their order on the marketplace and which are live." },
-      { property: "og:title", content: "Categories — Vendra admin" },
+      { property: "og:title", content: "Categories - Peniel admin" },
       { property: "og:description", content: "Shape how the marketplace is organised." },
     ],
   }),
@@ -62,7 +62,7 @@ function AdminCategories() {
 
           <Panel title="Policy">
             <p className="text-sm text-muted-foreground">
-              Pharmacies and prescription medicine are not allowed on Vendra. Applications in that space are declined at review.
+              Pharmacies and prescription medicine are not allowed on Peniel. Applications in that space are declined at review.
             </p>
           </Panel>
         </div>

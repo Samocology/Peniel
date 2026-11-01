@@ -3,15 +3,15 @@ import { Copy, ImagePlus, ShieldCheck } from "lucide-react";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { toast } from "sonner";
-import { app, useCurrentVendor } from "@/lib/vendra-store";
+import { app, useCurrentVendor } from "@/lib/peniel-store";
 import { TemplatePicker } from "@/components/store/template-picker";
 
 export const Route = createFileRoute("/vendor/settings")({
   head: () => ({
     meta: [
-      { title: "Store settings — Vendra business console" },
+      { title: "Store settings - Peniel business console" },
       { name: "description", content: "Update your business details, branding, opening hours, delivery zones and storefront link." },
-      { property: "og:title", content: "Store settings — Vendra business console" },
+      { property: "og:title", content: "Store settings - Peniel business console" },
       { property: "og:description", content: "Control how your storefront looks and works." },
     ],
   }),
@@ -33,14 +33,17 @@ function VendorSettings() {
       tagline: g("tagline"),
       about: g("about"),
       location: g("location"),
+      hours: g("hours"),
+      delivery: g("delivery"),
       deliveryFee: Number(g("deliveryFee")) || 0,
       freeAbove: Number(g("freeAbove")) || 0,
       published: f.get("published") === "on",
-      acceptingOrders: f.get("acceptingOrders") === "on",
-      acceptingBookings: f.get("acceptingBookings") === "on",
+      ...(vendor.fulfilment === "order"
+        ? { acceptingOrders: f.get("acceptingOrders") === "on" }
+        : { acceptingBookings: f.get("acceptingBookings") === "on" }),
       paused: f.get("paused") === "on",
     });
-    toast.success("Store settings saved — your storefront is updated");
+    toast.success("Store settings saved - your storefront is updated");
   };
   return (
     <DashShell
@@ -48,7 +51,7 @@ function VendorSettings() {
       kicker="Business console"
       title="Store settings"
       subtitle="Everything customers see about your business"
-      storeLink={{ label: "View storefront", slug: "abigails-kitchen" }}
+      storeLink={{ label: "View storefront", slug: vendor.slug }}
       actions={
         <button type="submit" form="store-settings" className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">Save changes</button>
       }
@@ -71,12 +74,12 @@ function VendorSettings() {
               </div>
               <div>
                 <span className={label}>Phone</span>
-                <input className={field} defaultValue="+234 803 000 0000" />
-                <span className="mt-1 block text-[11px] text-muted-foreground">Private — never shown to customers.</span>
+                <input className={field} defaultValue={base.phone} readOnly />
+                <span className="mt-1 block text-[11px] text-muted-foreground">Private - never shown to customers.</span>
               </div>
               <div>
                 <span className={label}>Email</span>
-                <input className={field} defaultValue="hello@abigailskitchen.ng" />
+                <input className={field} defaultValue={base.email} readOnly />
               </div>
               <div className="sm:col-span-2">
                 <span className={label}>Address</span>
@@ -111,63 +114,56 @@ function VendorSettings() {
           </Panel>
 
           <Panel title="Opening hours">
-            <ul className="space-y-3">
-              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((d) => (
-                <li key={d} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-                  <span className="truncate text-sm font-medium">{d}</span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <input className="w-24 rounded-lg border border-input bg-background px-3 py-2 text-sm" defaultValue="10:00" />
-                    <span className="text-muted-foreground">–</span>
-                    <input className="w-24 rounded-lg border border-input bg-background px-3 py-2 text-sm" defaultValue="21:00" />
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <label htmlFor="business-hours" className={label}>Hours shown to customers</label>
+            <textarea id="business-hours" name="hours" rows={2} className={field} defaultValue={vendor.hours} />
           </Panel>
 
-          <Panel title="Delivery">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <span className={label}>Delivery fee</span>
-                <input name="deliveryFee" inputMode="numeric" className={field} defaultValue={p.deliveryFee ?? 2500} />
-              </div>
-              <div>
-                <span className={label}>Free delivery above</span>
-                <input name="freeAbove" inputMode="numeric" className={field} defaultValue={p.freeAbove ?? 50000} />
-              </div>
-              <div className="sm:col-span-2">
-                <span className={label}>Delivery zones</span>
-                <div className="flex flex-wrap gap-2">
-                  {["Ikoyi", "Victoria Island", "Lekki Phase 1", "Yaba", "Surulere"].map((z) => (
-                    <span key={z} className="rounded-full border border-primary bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary">
-                      {z}
-                    </span>
-                  ))}
+          {vendor.fulfilment === "order" ? (
+            <Panel title="Delivery">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <span className={label}>Delivery fee (₦)</span>
+                  <input name="deliveryFee" type="number" min="0" inputMode="numeric" className={field} defaultValue={p.deliveryFee ?? 2500} />
+                </div>
+                <div>
+                  <span className={label}>Free delivery above (₦)</span>
+                  <input name="freeAbove" type="number" min="0" inputMode="numeric" className={field} defaultValue={p.freeAbove ?? 50000} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="delivery-details" className={label}>Delivery details</label>
+                  <textarea id="delivery-details" name="delivery" rows={2} className={field} defaultValue={vendor.delivery} />
                 </div>
               </div>
-            </div>
-          </Panel>
+            </Panel>
+          ) : (
+            <Panel title={vendor.fulfilment === "reservation" ? "Guest information" : "Service area"}>
+              <label htmlFor="delivery-details" className={label}>
+                {vendor.fulfilment === "reservation" ? "Reservation details" : "In-person and home service details"}
+              </label>
+              <textarea id="delivery-details" name="delivery" rows={3} className={field} defaultValue={vendor.delivery} />
+            </Panel>
+          )}
         </div>
 
         <div className="space-y-6">
           <Panel title="Storefront link">
             <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-3 py-2.5 text-xs">
-              <span className="min-w-0 flex-1 truncate font-semibold">vendra.ng/store/{base.slug}</span>
+              <span className="min-w-0 flex-1 truncate font-semibold">peniel.com.ng/store/{base.slug}</span>
               <button type="button" onClick={() => navigator.clipboard.writeText(window.location.origin + "/store/" + base.slug).then(() => toast.success("Link copied"))} className="inline-flex shrink-0 items-center gap-1 font-semibold text-primary">
                 <Copy className="size-3.5" /> Copy
               </button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              Custom domains are coming in a later release. For now your Vendra link is permanent and shareable.
+              Custom domains are coming in a later release. For now your Peniel link is permanent and shareable.
             </p>
           </Panel>
 
           <Panel title="Payments">
             <p className="flex items-center gap-2 text-sm font-semibold">
-              <ShieldCheck className="size-4 text-primary" /> Handled by Vendra Pay
+              <ShieldCheck className="size-4 text-primary" /> Handled by Peniel Pay
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              There are no gateway keys to configure. Your payout account is managed under Payouts.
+              There are no gateway keys to configure. Your payout estimates and bank details are managed under Finance.
             </p>
           </Panel>
 
@@ -175,8 +171,9 @@ function VendorSettings() {
             <div className="space-y-3 text-sm">
               {([
                 ["published", "Storefront published", p.published ?? true],
-                ["acceptingOrders", "Accepting orders", p.acceptingOrders ?? true],
-                ["acceptingBookings", "Accepting bookings", p.acceptingBookings ?? true],
+                ...(vendor.fulfilment === "order"
+                  ? [["acceptingOrders", "Accepting orders", p.acceptingOrders ?? true] as const]
+                  : [["acceptingBookings", vendor.fulfilment === "reservation" ? "Accepting reservations" : "Accepting appointments", p.acceptingBookings ?? true] as const]),
                 ["paused", "Pause store temporarily", p.paused ?? false],
               ] as const).map(([k, t, on]) => (
                 <label key={k} className="flex cursor-pointer items-center justify-between gap-3">

@@ -8,9 +8,9 @@ import { naira, vendors } from "@/lib/data";
 export const Route = createFileRoute("/admin/promotions")({
   head: () => ({
     meta: [
-      { title: "Promotions & featuring — Vendra admin" },
+      { title: "Promotions & featuring - Peniel admin" },
       { name: "description", content: "Run platform-wide campaigns and choose which businesses are featured on the marketplace." },
-      { property: "og:title", content: "Promotions & featuring — Vendra admin" },
+      { property: "og:title", content: "Promotions & featuring - Peniel admin" },
       { property: "og:description", content: "Campaigns and featured placements." },
     ],
   }),
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/admin/promotions")({
 });
 
 const campaigns = [
-  ["VENDRA5K", "₦5,000 off first order platform-wide", "Active", 4128, 20640000],
+  ["PENIEL5K", "₦5,000 off first order platform-wide", "Active", 4128, 20640000],
   ["FREEDELIVERY", "Free delivery weekend, Lagos only", "Scheduled", 0, 0],
   ["INDEPENDENCE", "Independence Day food festival", "Ended", 9840, 41200000],
 ] as const;

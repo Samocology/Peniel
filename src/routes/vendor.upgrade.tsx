@@ -4,14 +4,14 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
-import { app, useCurrentVendor, type Plan } from "@/lib/vendra-store";
+import { app, useCurrentVendor, type Plan } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/vendor/upgrade")({
   head: () => ({
     meta: [
-      { title: "Upgrade your plan — Vendra business console" },
+      { title: "Upgrade your plan - Peniel business console" },
       { name: "description", content: "Unlock promotions, verification applications and unlimited storefront design changes." },
-      { property: "og:title", content: "Upgrade your plan — Vendra" },
+      { property: "og:title", content: "Upgrade your plan - Peniel" },
       { property: "og:description", content: "Unlock more growth tools for your business." },
     ],
   }),
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/vendor/upgrade")({
 });
 
 const plans: { id: Plan; name: string; price: string; perks: string[] }[] = [
-  { id: "starter", name: "Starter", price: "Free", perks: ["1 storefront design choice", "Orders, bookings & chat", "Vendra Pay checkout"] },
+  { id: "starter", name: "Starter", price: "Free", perks: ["1 storefront design choice", "Orders, bookings & chat", "Peniel Pay checkout"] },
   { id: "growth", name: "Growth", price: "₦9,500/mo", perks: ["Switch storefront designs any time", "Promotions & promo codes", "Apply for verification", "Advanced analytics"] },
   { id: "business", name: "Business", price: "₦24,000/mo", perks: ["Everything in Growth", "Staff roles", "Faster payouts", "Account manager"] },
 ];
@@ -36,7 +36,7 @@ function Upgrade() {
       return;
     }
     setPaying(p);
-    // Simulated Vendra Pay charge until payments are connected.
+    // Simulated Peniel Pay charge until payments are connected.
     setTimeout(() => {
       app.upgrade(p);
       setPaying(null);
@@ -71,7 +71,7 @@ function Upgrade() {
         })}
       </div>
       <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-        <ShieldCheck className="size-4 text-primary" /> Charged through Vendra Pay. Plans never buy verification.
+        <ShieldCheck className="size-4 text-primary" /> Charged through Peniel Pay. Plans never buy verification.
       </p>
     </DashShell>
   );

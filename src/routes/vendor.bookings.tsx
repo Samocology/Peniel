@@ -1,91 +1,143 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays } from "lucide-react";
-import { DashShell, DataTable, Panel } from "@/components/dash/shell";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { CalendarDays, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard, StatusPill } from "@/components/site/bits";
+import { app, useApp, useCurrentVendor } from "@/lib/peniel-store";
 import { naira } from "@/lib/data";
 
 export const Route = createFileRoute("/vendor/bookings")({
   head: () => ({
     meta: [
-      { title: "Bookings — Vendra business console" },
-      { name: "description", content: "Today's schedule, upcoming reservations and staff assignment for every booking." },
-      { property: "og:title", content: "Bookings — Vendra business console" },
-      { property: "og:description", content: "See your day at a glance and manage every reservation." },
+      { title: "Bookings - Peniel business console" },
+      { name: "description", content: "Review appointment and reservation activity for your business." },
+      { property: "og:title", content: "Bookings - Peniel business console" },
+      { property: "og:description", content: "Review appointment and reservation activity." },
     ],
   }),
   component: VendorBookings,
 });
 
-const slots = [
-  ["09:00", "Cooking class · 4 guests", "Abigail", "Confirmed"],
-  ["12:30", "Table for 6 · Nwosu", "Front of house", "Confirmed"],
-  ["15:00", "Catering tasting · Eko Events", "Abigail + Chef Musa", "Preparing"],
-  ["18:30", "Table for 2 · Salami", "Front of house", "Confirmed"],
-  ["20:00", "Private dinner · 8 guests", "Chef Musa", "New"],
-] as const;
-
-const upcoming = [
-  ["BKG-4471", "Eko Events Ltd", "Catering · 40 guests", "Sat 24 May, 5:00 PM", 260000, "Confirmed"],
-  ["BKG-4468", "Chioma Amadi", "Cooking class · 2", "Sun 25 May, 11:00 AM", 50000, "Confirmed"],
-  ["BKG-4462", "Damilola O.", "Table for 4", "Fri 23 May, 8:30 PM", 0, "New"],
-] as const;
-
 function VendorBookings() {
+  const { vendor } = useCurrentVendor();
+  const state = useApp();
+  const supported = vendor.fulfilment !== "order";
+  const bookings = state.orders.filter((order) => order.vendorSlug === vendor.slug);
+  const upcoming = bookings.filter((order) => order.status !== "Delivered" && order.status !== "Cancelled");
+  const activity =
+    vendor.fulfilment === "reservation"
+      ? "reservations"
+      : vendor.fulfilment === "booking"
+        ? "appointments"
+        : "bookings";
+  const title =
+    vendor.fulfilment === "reservation"
+      ? "Reservations"
+      : vendor.fulfilment === "booking"
+        ? "Appointments"
+        : "Bookings";
+  const updateStatus = (id: string, status: "Confirmed" | "Cancelled" | "Delivered", message: string) => {
+    app.setOrderStatus(id, status);
+    toast.success(message);
+  };
+
   return (
     <DashShell
       nav={vendorNav}
       kicker="Business console"
-      title="Bookings"
-      subtitle="Friday, 23 May 2025"
-      storeLink={{ label: "View storefront", slug: "abigails-kitchen" }}
+      title={title}
+      subtitle={supported ? `${title} for ${vendor.name}` : `Booking management is not enabled for ${vendor.categoryLabel.toLowerCase()} businesses.`}
+      storeLink={{ label: "View storefront", slug: vendor.slug }}
+      actions={
+        supported ? (
+          <Link to="/vendor/settings" className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold">
+            Manage availability
+          </Link>
+        ) : undefined
+      }
     >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Today's bookings" value="5" hint="1 awaiting confirmation" tone="primary" />
-        <StatCard label="This week" value="18" hint="+6 vs last week" />
-        <StatCard label="Occupancy" value="72%" hint="Peak 7–9 PM" />
-        <StatCard label="Deposits held" value={naira(155000)} hint="Released after service" tone="gold" />
-      </div>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <Panel title="Today's schedule">
-          <ul className="space-y-3">
-            {slots.map((s) => (
-              <li key={s[0]} className="grid grid-cols-[58px_minmax(0,1fr)] gap-3 rounded-xl border border-border p-3.5">
-                <span className="font-display text-sm font-bold text-primary">{s[0]}</span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium">{s[1]}</span>
-                  <span className="mt-0.5 flex items-center gap-2">
-                    <span className="truncate text-xs text-muted-foreground">{s[2]}</span>
-                    <StatusPill status={s[3]} />
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
+      {supported ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <StatCard label={`Open ${activity}`} value={String(upcoming.length)} hint="Awaiting fulfilment or completion" tone="primary" />
+            <StatCard label="Services or room types" value={String(vendor.products.length)} hint="Listed on your storefront" />
+            <StatCard label="Business hours" value="Set" hint={vendor.hours} tone="gold" />
+          </div>
+          <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <Panel title={`${title} queue`}>
+              {bookings.length === 0 ? (
+                <div className="py-10 text-center">
+                  <CalendarDays className="mx-auto size-8 text-muted-foreground" />
+                  <p className="mt-3 text-sm font-semibold">No {activity} yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Customer bookings from checkout will appear here.
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {bookings.map((booking) => (
+                    <li key={booking.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
+                      <div className="min-w-0 flex-1 basis-48">
+                        <p className="text-sm font-semibold">
+                          {booking.customer} <span className="font-mono text-xs font-normal text-muted-foreground">{booking.id}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">{booking.items} · {booking.mode}</p>
+                      </div>
+                      <span className="font-display text-sm font-bold">{naira(booking.total)}</span>
+                      <StatusPill status={booking.status} />
+                      <span className="flex gap-2">
+                        {booking.status === "New" && (
+                          <>
+                            <button
+                              onClick={() => updateStatus(booking.id, "Confirmed", "Booking confirmed")}
+                              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => updateStatus(booking.id, "Cancelled", "Booking declined")}
+                              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
+                            >
+                              Decline
+                            </button>
+                          </>
+                        )}
+                        {booking.status === "Confirmed" && (
+                          <button
+                            onClick={() => updateStatus(booking.id, "Delivered", "Booking marked complete")}
+                            className="rounded-lg border border-primary px-3 py-1.5 text-xs font-bold text-primary"
+                          >
+                            Mark complete
+                          </button>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+            <Panel title="Availability">
+              <div className="flex items-start gap-3">
+                <Clock className="mt-0.5 size-4 shrink-0 text-primary" />
+                <p className="text-sm leading-relaxed text-muted-foreground">{vendor.hours}</p>
+              </div>
+              <Link to="/vendor/settings" className="mt-4 inline-flex text-xs font-semibold text-primary">
+                Update business hours →
+              </Link>
+            </Panel>
+          </div>
+        </>
+      ) : (
+        <Panel title="Orders and fulfilment">
+          <p className="text-sm text-muted-foreground">
+            This business accepts orders rather than appointments or reservations.
+          </p>
+          <Link to="/vendor/orders" className="mt-4 inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">
+            Open orders
+          </Link>
         </Panel>
-
-        <Panel
-          title="Upcoming bookings"
-          action={
-            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              <CalendarDays className="size-3.5" /> Next 14 days
-            </span>
-          }
-        >
-          <DataTable
-            head={["Ref", "Customer", "Service", "When", "Value", "Status"]}
-            rows={upcoming.map((r) => [
-              <span className="font-mono text-xs">{r[0]}</span>,
-              <span className="font-medium">{r[1]}</span>,
-              <span className="text-muted-foreground">{r[2]}</span>,
-              <span className="text-muted-foreground">{r[3]}</span>,
-              r[4] === 0 ? <span className="text-muted-foreground">—</span> : naira(r[4]),
-              <StatusPill status={r[5]} />,
-            ])}
-          />
-        </Panel>
-      </div>
+      )}
     </DashShell>
   );
 }

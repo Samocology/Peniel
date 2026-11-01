@@ -1,17 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Banknote, Building2, CreditCard, Lock, MapPin, ShieldCheck, Smartphone, Truck } from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { naira } from "@/lib/data";
-import { totalsFor, useApp } from "@/lib/vendra-store";
+import { totalsFor, useApp } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
-      { title: "Checkout — Vendra" },
-      { name: "description", content: "Fast, secure Vendra checkout: delivery details, Vendra Pay payment methods and one confirmation." },
-      { property: "og:title", content: "Checkout — Vendra" },
-      { property: "og:description", content: "Fast, secure Vendra checkout with central payment protection." },
+      { title: "Checkout - Peniel" },
+      { name: "description", content: "Complete a local Peniel demo checkout and save vendor orders in this browser." },
+      { property: "og:title", content: "Checkout - Peniel" },
+      { property: "og:description", content: "Local demo checkout; no real payment is processed." },
     ],
   }),
   component: CheckoutPage,
@@ -22,8 +22,13 @@ const label = "mb-1.5 block text-xs font-semibold tracking-wide uppercase text-m
 
 function CheckoutPage() {
   const s = useApp();
+  const navigate = useNavigate({ from: "/checkout" });
   const cartLines = s.cart;
   const totals = totalsFor(cartLines, s.promo);
+  const startPayment = () => {
+    const checkoutId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    navigate({ to: "/payment", search: { state: "processing", amount: totals.total, checkoutId } });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,7 +77,7 @@ function CheckoutPage() {
               <h2 className="font-display text-lg font-bold">Delivery</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
-                  [Truck, "Deliver to me", "45–70 mins · ₦2,500"],
+                  [Truck, "Deliver to me", "45-70 mins · ₦2,500"],
                   [MapPin, "Pick up myself", "Ready in 25 mins · Free"],
                 ].map(([Icon, t, s], i) => {
                   const I = Icon as typeof Truck;
@@ -119,18 +124,18 @@ function CheckoutPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-display text-lg font-bold">Payment</h2>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-success/12 px-2.5 py-1 text-xs font-semibold text-success">
-                  <ShieldCheck className="size-3.5" /> Vendra Pay
+                  <ShieldCheck className="size-3.5" /> Peniel Pay
                 </span>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                Payments are handled securely by Vendra. Businesses never see your card details.
+                Demo checkout only. No real payment is processed; completing this flow saves orders to this browser.
               </p>
               <div className="mt-4 space-y-3">
                 {[
-                  [CreditCard, "Card", "Visa, Mastercard, Verve"],
-                  [Building2, "Bank transfer", "Pay to a one-time Vendra account number"],
-                  [Smartphone, "USSD", "Complete on your phone"],
-                  [Banknote, "Vendra wallet", "Balance ₦18,400"],
+                  [CreditCard, "Card", "Demo card option"],
+                  [Building2, "Bank transfer", "Demo only - no account number is issued"],
+                  [Smartphone, "USSD", "Demo only - no phone authorization"],
+                  [Banknote, "Peniel wallet", "Demo balance - not usable"],
                 ].map(([Icon, t, s], i) => {
                   const I = Icon as typeof CreditCard;
                   return (
@@ -187,19 +192,19 @@ function CheckoutPage() {
                 <span className="font-semibold">Total to pay</span>
                 <span className="font-display text-xl font-bold text-primary">{naira(totals.total)}</span>
               </div>
-              <Link
-                to="/payment"
-                search={{ state: "processing", amount: totals.total }}
+              <button
+                type="button"
+                onClick={startPayment}
                 disabled={!cartLines.length}
-                className="mt-5 block aria-disabled:pointer-events-none aria-disabled:opacity-50 rounded-xl bg-primary py-3.5 text-center text-sm font-bold text-primary-foreground transition hover:opacity-90"
+                className="mt-5 block w-full rounded-xl bg-primary py-3.5 text-center text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
               >
                 Pay {naira(totals.total)}
-              </Link>
+              </button>
               <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <Lock className="size-3.5" /> Encrypted end-to-end
+                <Lock className="size-3.5" /> Local demo checkout
               </p>
               <p className="mt-3 text-center text-[11px] text-muted-foreground">
-                By paying you agree to Vendra's Terms and Refund Policy.
+                Continuing records demo orders locally in this browser.
               </p>
             </div>
           </aside>

@@ -8,9 +8,9 @@ import { naira, platformSeries } from "@/lib/data";
 export const Route = createFileRoute("/admin/analytics")({
   head: () => ({
     meta: [
-      { title: "Analytics — Vendra admin" },
+      { title: "Analytics - Peniel admin" },
       { name: "description", content: "Platform growth: volume, vendor signups, category mix, city performance and retention." },
-      { property: "og:title", content: "Analytics — Vendra admin" },
+      { property: "og:title", content: "Analytics - Peniel admin" },
       { property: "og:description", content: "How the marketplace is growing." },
     ],
   }),

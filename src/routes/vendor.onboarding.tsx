@@ -1,10 +1,11 @@
-import { useCurrentVendor } from "@/lib/vendra-store";
+import { useCurrentVendor } from "@/lib/peniel-store";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { TemplatePicker } from "@/components/store/template-picker";
 import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, PartyPopper, Store } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { categories, naira } from "@/lib/data";
+import { toast } from "sonner";
 
 const steps = [
   "Business name",
@@ -23,9 +24,9 @@ export const Route = createFileRoute("/vendor/onboarding")({
   validateSearch: z.object({ step: z.number().int().min(1).max(10).default(1) }),
   head: () => ({
     meta: [
-      { title: "Create your storefront — Vendra onboarding" },
+      { title: "Create your storefront - Peniel onboarding" },
       { name: "description", content: "Nine guided steps from business name to a live storefront link. No developer, no code, no payment setup." },
-      { property: "og:title", content: "Create your storefront — Vendra" },
+      { property: "og:title", content: "Create your storefront - Peniel" },
       { property: "og:description", content: "Set up your business and get your own storefront link in minutes." },
     ],
   }),
@@ -37,7 +38,24 @@ const label = "mb-1.5 block text-xs font-semibold tracking-wide uppercase text-m
 
 function Onboarding() {
   const { step } = Route.useSearch();
+  const { vendor } = useCurrentVendor();
   const pct = Math.round((step / steps.length) * 100);
+  const selectedCategory = categories.findIndex((category) => category.slug === vendor.categorySlug);
+  const setupChoices =
+    vendor.fulfilment === "order"
+      ? [
+          ["Fulfilment", [vendor.delivery, "Customer pickup", "Delivery and pickup"]],
+          ["Preparation time", ["Under 30 mins", "30-60 mins", "Same day", "48 hours notice"]],
+        ]
+      : vendor.fulfilment === "booking"
+        ? [
+            ["Appointment hours", [vendor.hours]],
+            ["Service options", [vendor.delivery, "In-person appointments"]],
+          ]
+        : [
+            ["Reservation hours", [vendor.hours]],
+            ["Guest information", [vendor.delivery, "Check-in details"]],
+          ];
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -70,20 +88,20 @@ function Onboarding() {
               <p className="text-sm text-muted-foreground">This is the name customers will see on your storefront.</p>
               <div>
                 <span className={label}>Business name</span>
-                <input className={field} placeholder="Abigail's Kitchen" defaultValue="Abigail's Kitchen" />
+                <input className={field} defaultValue={vendor.name} />
               </div>
               <div>
                 <span className={label}>Storefront link</span>
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm">
-                  <span className="truncate text-muted-foreground">vendra.ng/store/</span>
-                  <span className="min-w-0 flex-1 truncate font-semibold">abigails-kitchen</span>
+                  <span className="truncate text-muted-foreground">peniel.com.ng/store/</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">{vendor.slug}</span>
                   <Check className="size-4 shrink-0 text-success" />
                 </div>
                 <p className="mt-1.5 text-xs text-success">This link is available</p>
               </div>
               <div>
                 <span className={label}>One-line description</span>
-                <input className={field} placeholder="Home-style Nigerian cooking, made fresh daily" />
+                <input className={field} defaultValue={vendor.tagline} />
               </div>
             </div>
           )}
@@ -91,7 +109,7 @@ function Onboarding() {
           {step === 2 && (
             <div>
               <p className="text-sm text-muted-foreground">
-                Your category decides which tools you get — menus, variants, appointments or rooms.
+                Your category decides which tools you get - menus, variants, appointments or rooms.
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {categories.map((c, i) => (
@@ -99,8 +117,9 @@ function Onboarding() {
                     key={c.slug}
                     className={
                       "rounded-xl border p-4 text-left transition " +
-                      (i === 0 ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40")
+                      (i === selectedCategory ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40")
                     }
+                    type="button"
                   >
                     <p className="text-sm font-semibold">{c.name}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{c.blurb}</p>
@@ -114,7 +133,7 @@ function Onboarding() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <span className={label}>Street address</span>
-                <input className={field} defaultValue="14 Awolowo Road, Ikoyi" />
+                <input className={field} defaultValue={vendor.location} />
               </div>
               <div>
                 <span className={label}>City</span>
@@ -172,24 +191,24 @@ function Onboarding() {
           {step === 6 && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Add your first few items. You can add more any time.</p>
-              {["Jollof Rice (Party Size)", "Native Soup & Pounded Yam"].map((n) => (
-                <div key={n} className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_140px]">
-                  <input className={field} defaultValue={n} />
-                  <input className={field} defaultValue="15000" />
+              {vendor.products.slice(0, 2).map((product) => (
+                <div key={product.id} className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_140px]">
+                  <input className={field} defaultValue={product.name} />
+                  <input className={field} defaultValue={String(product.price)} />
                 </div>
               ))}
-              <button className="rounded-xl border border-dashed border-border px-4 py-3 text-sm font-semibold text-primary">
+              <Link to="/vendor/products/new" className="inline-block rounded-xl border border-dashed border-border px-4 py-3 text-sm font-semibold text-primary">
                 + Add another item
-              </button>
+              </Link>
             </div>
           )}
 
           {step === 7 && (
             <div className="space-y-4">
               <div className="rounded-xl border border-primary/20 bg-primary-soft p-4 text-sm">
-                <p className="font-semibold">Payments are handled securely by Vendra</p>
+                <p className="font-semibold">Payments are handled securely by Peniel</p>
                 <p className="mt-1 text-muted-foreground">
-                  No API keys, no gateway setup. Vendra collects on your behalf and pays you out.
+                  No API keys, no gateway setup. Peniel collects on your behalf and pays you out.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -203,26 +222,22 @@ function Onboarding() {
                 </div>
                 <div>
                   <span className={label}>Payout account</span>
-                  <input className={field} defaultValue="GTBank ••••4471" />
+                  <input className={field} defaultValue="Not connected in this demo" readOnly />
                 </div>
                 <div>
                   <span className={label}>Payout schedule</span>
-                  <input className={field} defaultValue="Weekly (Fridays)" />
+                  <input className={field} defaultValue="Not scheduled in this demo" readOnly />
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Example: a {naira(15000)} order pays you {naira(14700)} after fees.
+                Example: a {naira(vendor.products[0]?.price ?? 15000)} {vendor.fulfilment === "order" ? "order" : vendor.fulfilment === "booking" ? "appointment" : "reservation"} is charged a 2% platform fee.
               </p>
             </div>
           )}
 
           {step === 8 && (
             <div className="space-y-4">
-              {[
-                ["Delivery", ["I deliver myself", "Vendra riders", "Customer pickup only"]],
-                ["Preparation time", ["Under 30 mins", "30–60 mins", "Same day", "48 hours notice"]],
-                ["Accepts bookings", ["Yes, tables & catering", "No, orders only"]],
-              ].map(([l, opts]) => (
+              {setupChoices.map(([l, opts]) => (
                 <div key={l as string}>
                   <span className={label}>{l as string}</span>
                   <div className="flex flex-wrap gap-2">
@@ -248,23 +263,23 @@ function Onboarding() {
               <p className="text-sm text-muted-foreground">This is what your customers will see.</p>
               <div className="mt-4 overflow-hidden rounded-2xl border border-border">
                 <div className="flex items-center gap-2 border-b border-border bg-muted px-4 py-2 text-xs text-muted-foreground">
-                  <Store className="size-3.5" /> vendra.ng/store/abigails-kitchen
+                  <Store className="size-3.5" /> peniel.com.ng/store/{vendor.slug}
                 </div>
                 <div className="bg-primary-soft p-6">
                   <div className="h-28 rounded-xl bg-primary/20" />
-                  <p className="mt-4 font-display text-xl font-bold">Abigail's Kitchen</p>
-                  <p className="text-sm text-muted-foreground">Home-style Nigerian cooking, made fresh daily</p>
+                  <p className="mt-4 font-display text-xl font-bold">{vendor.name}</p>
+                  <p className="text-sm text-muted-foreground">{vendor.tagline}</p>
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {[0, 1, 2].map((i) => (
                       <div key={i} className="rounded-xl bg-card p-3">
                         <div className="h-16 rounded-lg bg-muted" />
-                        <p className="mt-2 text-xs font-semibold">Menu item</p>
+                        <p className="mt-2 text-xs font-semibold">{vendor.products[i]?.name ?? "Listing"}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-              <Link to="/store/$slug" params={{ slug: "abigails-kitchen" }} className="mt-4 inline-block text-sm font-semibold text-primary">
+              <Link to="/store/$slug" params={{ slug: vendor.slug }} className="mt-4 inline-block text-sm font-semibold text-primary">
                 Open full preview →
               </Link>
             </div>
@@ -277,11 +292,11 @@ function Onboarding() {
               </div>
               <h2 className="mt-4 font-display text-2xl font-bold">Your store is live</h2>
               <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-                Share your link anywhere — WhatsApp, Instagram, TikTok, your business card. Customers land straight on your storefront.
+                Share your link anywhere - WhatsApp, Instagram, TikTok, your business card. Customers land straight on your storefront.
               </p>
               <div className="mx-auto mt-5 flex max-w-md items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm">
-                <span className="min-w-0 flex-1 truncate font-semibold">vendra.ng/store/abigails-kitchen</span>
-                <button className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">
+                <span className="min-w-0 flex-1 truncate font-semibold">peniel.com.ng/store/{vendor.slug}</span>
+                <button type="button" onClick={() => void navigator.clipboard.writeText(`${window.location.origin}/store/${vendor.slug}`).then(() => toast.success("Link copied"))} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">
                   <Copy className="size-3.5" /> Copy
                 </button>
               </div>
@@ -291,7 +306,7 @@ function Onboarding() {
                 </Link>
                 <Link
                   to="/store/$slug"
-                  params={{ slug: "abigails-kitchen" }}
+                  params={{ slug: vendor.slug }}
                   className="rounded-xl border border-border px-6 py-3 text-sm font-semibold"
                 >
                   View my storefront

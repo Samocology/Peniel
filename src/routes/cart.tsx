@@ -5,15 +5,15 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { useState } from "react";
 import { toast } from "sonner";
 import { naira } from "@/lib/data";
-import { app, totalsFor, useApp } from "@/lib/vendra-store";
+import { app, totalsFor, useApp } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Your cart — Vendra" },
-      { name: "description", content: "Review items from every Vendra business in one cart and check out securely with Vendra Pay." },
-      { property: "og:title", content: "Your cart — Vendra" },
-      { property: "og:description", content: "Review items from every Vendra business in one cart and check out securely." },
+      { title: "Your cart - Peniel" },
+      { name: "description", content: "Review items from every Peniel business in one cart and check out securely with Peniel Pay." },
+      { property: "og:title", content: "Your cart - Peniel" },
+      { property: "og:description", content: "Review items from every Peniel business in one cart and check out securely." },
     ],
   }),
   component: CartPage,
@@ -39,7 +39,7 @@ function CartPage() {
           <div className="mt-10 rounded-3xl border border-dashed border-border p-10 text-center">
             <ShoppingBasket className="mx-auto size-10 text-primary" />
             <p className="mt-3 font-display text-xl font-bold">Your cart is empty</p>
-            <p className="mt-1 text-sm text-muted-foreground">Find something you love from a Vendra business.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Find something you love from a Peniel business.</p>
             <Link to="/marketplace" className="mt-5 inline-block rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground">Explore businesses</Link>
           </div>
         ) : (
@@ -123,7 +123,7 @@ function CartPage() {
                 Proceed to checkout
               </Link>
               <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <ShieldCheck className="size-3.5 text-success" /> Secured by Vendra Pay
+                <ShieldCheck className="size-3.5 text-success" /> Secured by Peniel Pay
               </p>
             </div>
 

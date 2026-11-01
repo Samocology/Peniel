@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -8,7 +9,6 @@ import {
   CreditCard,
   ImagePlus,
   ListPlus,
-  MapPin,
   Play,
   Search,
   Star,
@@ -22,6 +22,10 @@ import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SectionHeading, VendorCard } from "@/components/site/bits";
 import { categories, vendors } from "@/lib/data";
+import { searchVendors } from "@/lib/discovery";
+import { getMarketplaceLocationLabel } from "@/lib/location";
+import { app, useApp } from "@/lib/peniel-store";
+import { LocationPicker } from "@/components/site/location-picker";
 import bizRestaurant from "@/assets/biz-restaurant.jpg";
 import bizSalon from "@/assets/biz-salon.jpg";
 import bizFashion from "@/assets/biz-fashion.jpg";
@@ -30,16 +34,17 @@ import coverAbigails from "@/assets/cover-abigails.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Vendra — Your business. Your storefront. Your customers." },
+      { title: "Peniel - Your business. Your storefront. Your customers." },
       {
         name: "description",
         content:
-          "Vendra gives Nigerian businesses their own online storefront, orders and bookings, secure central payments and a full business dashboard — in one platform.",
+          "Peniel gives Nigerian businesses their own online storefront, orders and bookings, secure central payments and a full business dashboard - in one platform.",
       },
-      { property: "og:title", content: "Vendra — Your business. Your storefront. One platform." },
+      { property: "og:title", content: "Peniel - Your business. Your storefront. One platform." },
       {
         property: "og:description",
-        content: "Create your store, sell products or services, accept payments and grow. Built in Lagos.",
+        content:
+          "Create your store, sell products or services, accept payments and grow. Built in Lagos.",
       },
     ],
   }),
@@ -47,19 +52,65 @@ export const Route = createFileRoute("/")({
 });
 
 const setupSteps = [
-  { icon: Store, title: "Choose your business type", text: "Restaurant, fashion, salon, hotel, farm — tools adapt to you." },
-  { icon: ListPlus, title: "Add products or services", text: "Variants, sizes, modifiers, service durations and staff." },
-  { icon: ImagePlus, title: "Brand your storefront", text: "Logo, cover, colours and your own shareable store link." },
-  { icon: CreditCard, title: "Payments handled for you", text: "No API keys. Vendra Pay collects and settles to your balance." },
+  {
+    icon: Store,
+    title: "Choose your business type",
+    text: "Restaurant, fashion, salon, hotel, farm - tools adapt to you.",
+  },
+  {
+    icon: ListPlus,
+    title: "Add products or services",
+    text: "Variants, sizes, modifiers, service durations and staff.",
+  },
+  {
+    icon: ImagePlus,
+    title: "Brand your storefront",
+    text: "Logo, cover, colours and your own shareable store link.",
+  },
+  {
+    icon: CreditCard,
+    title: "Payments handled for you",
+    text: "No API keys. Peniel Pay collects and settles to your balance.",
+  },
 ];
 
 const platformCards = [
-  { icon: Store, title: "Your own storefront", text: "A branded store link you can drop in WhatsApp, Instagram or TikTok bio.", tone: "plain" },
-  { icon: CreditCard, title: "Payments handled", text: "Customers pay securely through Vendra Pay. Track balance and payouts.", tone: "accent" },
-  { icon: BarChart3, title: "Business dashboard", text: "Sales, orders, customers and analytics in one command centre.", tone: "plain" },
-  { icon: BadgeCheck, title: "Earn verification", text: "Serve 5 different customers well, then apply. Trust is earned, never bought.", tone: "plain" },
-  { icon: Boxes, title: "Inventory & orders", text: "Stock levels, low-stock alerts, order and booking pipelines.", tone: "plain" },
-  { icon: Truck, title: "Delivery & bookings", text: "Zones, fees, pickup, appointment slots and reservations.", tone: "plain" },
+  {
+    icon: Store,
+    title: "Your own storefront",
+    text: "A branded store link you can drop in WhatsApp, Instagram or TikTok bio.",
+    tone: "plain",
+  },
+  {
+    icon: CreditCard,
+    title: "Payments handled",
+    text: "Customers pay securely through Peniel Pay. Track balance and payouts.",
+    tone: "accent",
+  },
+  {
+    icon: BarChart3,
+    title: "Business dashboard",
+    text: "Sales, orders, customers and analytics in one command centre.",
+    tone: "plain",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Earn verification",
+    text: "Serve 5 different customers well, then apply. Trust is earned, never bought.",
+    tone: "plain",
+  },
+  {
+    icon: Boxes,
+    title: "Inventory & orders",
+    text: "Stock levels, low-stock alerts, order and booking pipelines.",
+    tone: "plain",
+  },
+  {
+    icon: Truck,
+    title: "Delivery & bookings",
+    text: "Zones, fees, pickup, appointment slots and reservations.",
+    tone: "plain",
+  },
 ];
 
 const bizTypes = [
@@ -84,13 +135,30 @@ const bizTypes = [
 ];
 
 const testimonials = [
-  { name: "Adaeze Okafor", biz: "Founder, FF Collective", text: "I set my store up in under an hour. Now I share one link and orders just come in — no more counting DMs." },
-  { name: "Tunde Bakare", biz: "Owner, TB Autocare", text: "My clients booked fully and paid without me chasing. The dashboard shows me exactly what each week earned." },
-  { name: "Ngozi Eze", biz: "Mama Cee Confectionery", text: "The verification badge changed everything. Customers trust us faster and bookings increased significantly." },
+  {
+    name: "Adaeze Okafor",
+    biz: "Founder, FF Collective",
+    text: "I set my store up in under an hour. Now I share one link and orders just come in - no more counting DMs.",
+  },
+  {
+    name: "Tunde Bakare",
+    biz: "Owner, TB Autocare",
+    text: "My clients booked fully and paid without me chasing. The dashboard shows me exactly what each week earned.",
+  },
+  {
+    name: "Ngozi Eze",
+    biz: "Mama Cee Confectionery",
+    text: "The verification badge changed everything. Customers trust us faster and bookings increased significantly.",
+  },
 ];
 
 function Landing() {
   const featured = vendors.filter((v) => v.featured);
+  const appState = useApp();
+  const [searchQuery, setSearchQuery] = useState("");
+  const selectedLocation = getMarketplaceLocationLabel(appState.customer.city);
+  const matchingVendors = searchVendors(searchQuery, selectedLocation);
+  const showLiveResults = Boolean(searchQuery.trim()) || selectedLocation !== "Lagos State";
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,7 +170,7 @@ function Landing() {
         <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:py-20">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-gold/20 px-3 py-1 text-xs font-semibold text-gold-foreground">
-              <span className="size-1.5 rounded-full bg-primary" /> Now live — Lagos, Nigeria
+              <span className="size-1.5 rounded-full bg-primary" /> Now live - Lagos, Nigeria
             </span>
             <h1 className="mt-6 font-display text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl lg:text-6xl">
               Your business.
@@ -112,13 +180,13 @@ function Landing() {
               Your customers.
             </h1>
             <p className="mt-5 max-w-lg text-base text-muted-foreground sm:text-lg">
-              Create your own online store, accept orders and bookings, manage customers and get paid — all
-              from one platform built for African businesses.
+              Create your own online store, accept orders and bookings, manage customers and get
+              paid - all from one platform built for African businesses.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Button asChild size="lg" className="h-12 px-6">
                 <Link to="/vendor/onboarding">
-                  Create your store — it's free <ArrowRight className="size-4" />
+                  Create your store - it's free <ArrowRight className="size-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-12 gap-2 px-6">
@@ -144,11 +212,17 @@ function Landing() {
                 <span className="size-2.5 rounded-full bg-gold" />
                 <span className="size-2.5 rounded-full bg-success" />
                 <span className="ml-2 truncate rounded-md bg-card px-2 py-1 text-[11px] text-muted-foreground">
-                  vendra.ng/store/abigails-kitchen
+                  peniel.ng/store/abigails-kitchen
                 </span>
               </div>
               <div className="relative">
-                <img src={coverAbigails} alt="Abigail's Kitchen storefront preview" width={1600} height={900} className="h-56 w-full object-cover" />
+                <img
+                  src={coverAbigails}
+                  alt="Abigail's Kitchen storefront preview"
+                  width={1600}
+                  height={900}
+                  className="h-56 w-full object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                 <div className="absolute bottom-4 left-4 text-primary-foreground">
                   <p className="text-script text-2xl">Bringing Africa</p>
@@ -187,7 +261,10 @@ function Landing() {
             ["290K+", "Happy customers"],
             ["24", "Cities covered"],
           ].map(([v, l]) => (
-            <div key={l} className="border-border sm:border-l sm:pl-6 sm:first:border-l-0 sm:first:pl-0">
+            <div
+              key={l}
+              className="border-border sm:border-l sm:pl-6 sm:first:border-l-0 sm:first:pl-0"
+            >
               <p className="font-display text-3xl font-bold text-primary">{v}</p>
               <p className="mt-1 text-sm text-muted-foreground">{l}</p>
             </div>
@@ -198,7 +275,9 @@ function Landing() {
       {/* DISCOVERY */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-display text-2xl font-bold sm:text-3xl">What are you looking for today?</h2>
+          <h2 className="font-display text-2xl font-bold sm:text-3xl">
+            What are you looking for today?
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Find businesses, products and services near you.
           </p>
@@ -207,17 +286,60 @@ function Landing() {
           <div className="relative flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Restaurants, fashion, groceries, salons…"
               className="h-11 border-0 pl-9 shadow-none focus-visible:ring-0"
             />
           </div>
-          <Button variant="outline" className="h-11 gap-2">
-            <MapPin className="size-4" /> Lagos, NG
-          </Button>
+          <LocationPicker
+            value={selectedLocation}
+            onChange={(city) => app.saveCustomer({ ...appState.customer, city })}
+            className="h-11"
+          />
           <Button asChild className="h-11 px-7">
-            <Link to="/search">Search</Link>
+            <Link
+              to="/search"
+              search={{ q: searchQuery.trim() || undefined, location: selectedLocation }}
+            >
+              Search
+            </Link>
           </Button>
         </div>
+
+        {showLiveResults && (
+          <div
+            className="mx-auto mt-3 max-w-3xl rounded-xl border border-border bg-card p-4"
+            aria-live="polite"
+          >
+            <p className="text-sm font-semibold">
+              {matchingVendors.length
+                ? `${matchingVendors.length} ${matchingVendors.length === 1 ? "business" : "businesses"} near ${selectedLocation.replace(/ State$/, "")}`
+                : `No businesses found near ${selectedLocation.replace(/ State$/, "")}`}
+            </p>
+            {matchingVendors.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {matchingVendors.slice(0, 4).map((vendor) => (
+                  <Link
+                    key={vendor.slug}
+                    to="/store/$slug"
+                    params={{ slug: vendor.slug }}
+                    className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium hover:bg-primary-soft hover:text-primary"
+                  >
+                    {vendor.name}
+                  </Link>
+                ))}
+                <Link
+                  to="/search"
+                  search={{ q: searchQuery.trim() || undefined, location: selectedLocation }}
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-primary hover:underline"
+                >
+                  See all results
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
           {categories.slice(0, 7).map((c) => {
@@ -275,8 +397,8 @@ function Landing() {
               Start selling today.
             </h2>
             <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              No developer, no domain, no complicated setup. Choose your business type, add your products or
-              services, and get your own shareable storefront link.
+              No developer, no domain, no complicated setup. Choose your business type, add your
+              products or services, and get your own shareable storefront link.
             </p>
             <ul className="mt-7 space-y-4">
               {setupSteps.map((s, i) => (
@@ -309,7 +431,11 @@ function Landing() {
               >
                 <c.icon className={"size-5 " + (c.tone === "accent" ? "" : "text-primary")} />
                 <p className="mt-3 text-sm font-semibold">{c.title}</p>
-                <p className={"mt-1 text-sm " + (c.tone === "accent" ? "opacity-80" : "text-muted-foreground")}>
+                <p
+                  className={
+                    "mt-1 text-sm " + (c.tone === "accent" ? "opacity-80" : "text-muted-foreground")
+                  }
+                >
                   {c.text}
                 </p>
               </div>
@@ -322,7 +448,9 @@ function Landing() {
       <section className="border-y border-border bg-surface py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-xl text-center">
-            <h2 className="font-display text-2xl font-bold sm:text-3xl">Built for every type of business</h2>
+            <h2 className="font-display text-2xl font-bold sm:text-3xl">
+              Built for every type of business
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               The platform adapts to how your business actually runs.
             </p>
@@ -334,7 +462,14 @@ function Landing() {
                 to={b.to}
                 className="group overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lift"
               >
-                <img src={b.img} alt={b.title} loading="lazy" width={1200} height={800} className="h-40 w-full object-cover" />
+                <img
+                  src={b.img}
+                  alt={b.title}
+                  loading="lazy"
+                  width={1200}
+                  height={800}
+                  className="h-40 w-full object-cover"
+                />
                 <div className="p-5">
                   <p className="font-semibold">{b.title}</p>
                   <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
@@ -360,12 +495,17 @@ function Landing() {
       <section className="brand-gradient py-16 text-primary-foreground">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-xl text-center">
-            <h2 className="font-display text-2xl font-bold sm:text-3xl">Vendors who changed their business</h2>
+            <h2 className="font-display text-2xl font-bold sm:text-3xl">
+              Vendors who changed their business
+            </h2>
             <p className="mt-2 text-sm opacity-75">Real stories from businesses on the platform.</p>
           </div>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {testimonials.map((t) => (
-              <div key={t.name} className="rounded-2xl bg-primary-foreground/8 p-5 backdrop-blur-sm">
+              <div
+                key={t.name}
+                className="rounded-2xl bg-primary-foreground/8 p-5 backdrop-blur-sm"
+              >
                 <div className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} className="size-3.5 fill-gold text-gold" />
@@ -386,19 +526,27 @@ function Landing() {
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <div className="grid items-center gap-6 rounded-3xl bg-sidebar px-6 py-10 text-sidebar-foreground sm:px-10 lg:grid-cols-[1.4fr_auto]">
           <div>
-            <h2 className="font-display text-2xl font-bold sm:text-3xl">Ready to take your business online?</h2>
+            <h2 className="font-display text-2xl font-bold sm:text-3xl">
+              Ready to take your business online?
+            </h2>
             <p className="mt-2 max-w-lg text-sm text-sidebar-foreground/70">
-              Join thousands of Nigerian businesses already selling on Vendra. Create your storefront for
-              free and start receiving orders today.
+              Join thousands of Nigerian businesses already selling on Peniel. Create your
+              storefront for free and start receiving orders today.
             </p>
           </div>
           <div className="flex flex-col items-start gap-2">
-            <Button asChild size="lg" className="h-12 bg-gold px-7 text-gold-foreground hover:bg-gold/90">
+            <Button
+              asChild
+              size="lg"
+              className="h-12 bg-gold px-7 text-gold-foreground hover:bg-gold/90"
+            >
               <Link to="/vendor/onboarding">
-                Create your store — it's free <ArrowRight className="size-4" />
+                Create your store - it's free <ArrowRight className="size-4" />
               </Link>
             </Button>
-            <p className="text-xs text-sidebar-foreground/60">No card required. Setup takes minutes.</p>
+            <p className="text-xs text-sidebar-foreground/60">
+              No card required. Setup takes minutes.
+            </p>
           </div>
         </div>
       </section>

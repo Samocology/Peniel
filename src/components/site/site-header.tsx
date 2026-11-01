@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Menu, Receipt, Search, ShoppingCart, MapPin, LayoutGrid } from "lucide-react";
-import { useApp } from "@/lib/vendra-store";
+import { useApp } from "@/lib/peniel-store";
+import { MARKETPLACE_LOCATIONS, normalizeLocationLabel } from "@/lib/location";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,9 @@ const nav = [
 
 export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
   const [open, setOpen] = useState(false);
-  const user = useApp().user;
+  const app = useApp();
+  const user = app.user;
+  const selectedLocation = normalizeLocationLabel(app.customer.city ?? "Lagos State");
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-md">
@@ -67,9 +70,21 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search businesses, products, services…" className="h-11 pl-9" />
           </div>
-          <Button variant="outline" className="h-11 gap-2">
-            <MapPin className="size-4" /> Lagos, NG
-          </Button>
+          <label className="flex h-11 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-muted-foreground">
+            <MapPin className="size-4" />
+            <select
+              aria-label="Select marketplace location"
+              value={selectedLocation}
+              onChange={(event) => app.saveCustomer({ ...app.customer, city: event.target.value })}
+              className="bg-transparent pr-1 text-sm font-medium text-foreground outline-none"
+            >
+              {MARKETPLACE_LOCATIONS.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          </label>
           <Button className="h-11 px-6">Search</Button>
         </div>
       )}
@@ -104,7 +119,8 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
 }
 
 export function CustomerBar() {
-  const cart = useApp().cart.reduce((a, l) => a + l.qty, 0);
+  const app = useApp();
+  const cart = app.cart.reduce((a, l) => a + l.qty, 0);
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:flex sm:px-6">
@@ -112,9 +128,21 @@ export function CustomerBar() {
           <Logo />
         </Link>
         <div className="hidden flex-1 items-center gap-3 sm:flex">
-          <Button variant="outline" size="sm" className="gap-2">
-            <MapPin className="size-4" /> Lagos, NG
-          </Button>
+          <label className="flex min-w-[170px] items-center gap-2 rounded-xl border border-border bg-card/80 px-2.5 py-2 text-sm text-muted-foreground shadow-sm">
+            <MapPin className="size-4" />
+            <select
+              aria-label="Select marketplace state"
+              value={normalizeLocationLabel(app.customer.city ?? "Lagos State")}
+              onChange={(event) => app.saveCustomer({ ...app.customer, city: event.target.value })}
+              className="w-full bg-transparent text-sm font-medium text-foreground outline-none"
+            >
+              {MARKETPLACE_LOCATIONS.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="relative max-w-xl flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search businesses, products, services…" className="h-10 pl-9" />

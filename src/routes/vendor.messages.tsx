@@ -3,15 +3,15 @@ import { z } from "zod";
 import { DashShell } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { ChatView } from "@/components/chat/chat-view";
-import { useApp } from "@/lib/vendra-store";
+import { useApp } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/vendor/messages")({
   validateSearch: z.object({ t: z.string().optional() }),
   head: () => ({
     meta: [
-      { title: "Customer chats — Vendra business console" },
-      { name: "description", content: "Reply to customers, negotiate custom orders and confirm bookings inside Vendra." },
-      { property: "og:title", content: "Customer chats — Vendra business console" },
+      { title: "Customer chats - Peniel business console" },
+      { name: "description", content: "Reply to customers, negotiate custom orders and confirm bookings inside Peniel." },
+      { property: "og:title", content: "Customer chats - Peniel business console" },
       { property: "og:description", content: "Private in-app chat with your customers." },
     ],
   }),

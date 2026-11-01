@@ -130,6 +130,7 @@ export function StatusPill({ status }: { status: string }) {
     Delivered: "bg-success/12 text-success",
     Completed: "bg-success/12 text-success",
     Confirmed: "bg-success/12 text-success",
+    New: "bg-gold/20 text-gold-foreground",
     Approved: "bg-success/12 text-success",
     Paid: "bg-success/12 text-success",
     Preparing: "bg-gold/20 text-gold-foreground",

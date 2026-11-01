@@ -3,7 +3,7 @@ import { Check, Eye, Lock, Sparkles } from "lucide-react";
 import { useState } from "react";
 import type { Vendor } from "@/lib/data";
 import { defaultTemplateFor, templatesFor, type StoreTemplate } from "@/lib/templates";
-import { app, canPickStorefront, useApp } from "@/lib/vendra-store";
+import { app, canPickStorefront, useApp } from "@/lib/peniel-store";
 
 function Thumb({ tpl }: { tpl: StoreTemplate }) {
   const t = tpl.theme;

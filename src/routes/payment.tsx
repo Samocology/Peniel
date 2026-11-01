@@ -5,65 +5,77 @@ import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { naira, orders } from "@/lib/data";
-import { app } from "@/lib/vendra-store";
+import { naira } from "@/lib/data";
+import { app } from "@/lib/peniel-store";
 
 const searchSchema = z.object({
   state: z.enum(["processing", "success", "failed", "cancelled"]).default("success"),
   amount: z.number().optional(),
+  checkoutId: z.string().optional(),
+  orderId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/payment")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Payment status — Vendra" },
-      { name: "description", content: "Track your Vendra Pay transaction: processing, successful, failed or cancelled payment states." },
-      { property: "og:title", content: "Payment status — Vendra" },
-      { property: "og:description", content: "Track your Vendra Pay transaction status." },
+      { title: "Payment status - Peniel" },
+      { name: "description", content: "View the result of a local demo checkout. No real payment is processed." },
+      { property: "og:title", content: "Payment status - Peniel" },
+      { property: "og:description", content: "Local demo checkout status." },
     ],
   }),
   component: PaymentPage,
 });
 
 function PaymentPage() {
-  const { state, amount } = Route.useSearch();
+  const { state, amount, checkoutId, orderId }: z.infer<typeof searchSchema> = Route.useSearch();
   const navigate = useNavigate({ from: "/payment" });
   const totals = { total: amount ?? 0 };
   useEffect(() => {
-    if (state !== "processing") return;
+    if (state !== "processing" || !checkoutId) return;
     const id = setTimeout(() => {
-      app.clearCart();
-      navigate({ search: { state: "success", amount }, replace: true });
+      const createdOrderIds = app.completeCheckout(checkoutId);
+      const firstOrderId = createdOrderIds[0];
+      if (!firstOrderId) {
+        navigate({ to: "/cart", replace: true });
+        return;
+      }
+      navigate({ search: { state: "success", amount, checkoutId, orderId: firstOrderId }, replace: true });
     }, 2200);
     return () => clearTimeout(id);
-  }, [state, amount, navigate]);
-  const order = orders[0]!;
+  }, [state, amount, checkoutId, navigate]);
 
   const config = {
     processing: {
-      icon: <Loader2 className="size-8 animate-spin text-primary" />,
+      icon: checkoutId
+        ? <Loader2 className="size-8 animate-spin text-primary" />
+        : <Clock className="size-8 text-primary" />,
       tone: "bg-primary-soft",
-      title: "Confirming your payment",
-      body: "Hold on — we're confirming this transaction with your bank. Do not close this page.",
+      title: checkoutId ? "Completing demo checkout" : "Processing preview",
+      body: checkoutId
+        ? "This demo is simulating a successful payment. Orders will be saved locally when it completes."
+        : "Preview only. Start from checkout to simulate a payment and create vendor orders.",
     },
     success: {
       icon: <CheckCircle2 className="size-8 text-success" />,
       tone: "bg-success/12",
       title: "Payment successful",
-      body: "Your money is held securely by Vendra Pay and released to each business after fulfilment.",
+      body: checkoutId
+        ? "The payment simulation is complete. Your orders are saved in this browser and appear in each vendor's dashboard."
+        : "Preview state only. No payment was processed.",
     },
     failed: {
       icon: <XCircle className="size-8 text-destructive" />,
       tone: "bg-destructive/10",
       title: "Payment failed",
-      body: "Your bank declined this transaction. Nothing was charged. Try another method.",
+      body: "Preview state only. No payment was processed, and your cart remains unchanged.",
     },
     cancelled: {
       icon: <Clock className="size-8 text-gold" />,
       tone: "bg-gold/15",
       title: "Payment cancelled",
-      body: "You cancelled before completing payment. Your cart is still saved.",
+      body: "Preview state only. No payment was processed, and your cart remains unchanged.",
     },
   }[state];
 
@@ -79,9 +91,8 @@ function PaymentPage() {
           <dl className="mt-7 space-y-3 rounded-2xl border border-border bg-muted/40 p-5 text-left text-sm">
             {[
               ["Amount", naira(totals.total)],
-              ["Reference", "VNP-8842-2K9L1"],
-              ["Method", "Card · Mastercard ••3421"],
-              ["Date", "23 May 2025, 10:24 AM"],
+              ["Reference", checkoutId ?? "Preview transaction"],
+              ["Method", "Demo simulation"],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{k}</dt>
@@ -93,13 +104,20 @@ function PaymentPage() {
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
             {state === "success" && (
               <>
-                <Link
-                  to="/orders/$id"
-                  params={{ id: order.id }}
-                  className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
-                >
-                  Track my order
-                </Link>
+                {orderId && (
+                  <Link
+                    to="/orders/$id"
+                    params={{ id: orderId }}
+                    className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+                  >
+                    Track my order
+                  </Link>
+                )}
+                {orderId && (
+                  <Link to="/orders" className="rounded-xl border border-border px-6 py-3 text-sm font-semibold">
+                    View all orders
+                  </Link>
+                )}
                 <Link to="/marketplace" className="rounded-xl border border-border px-6 py-3 text-sm font-semibold">
                   Keep shopping
                 </Link>
@@ -116,12 +134,14 @@ function PaymentPage() {
               </>
             )}
             {state === "processing" && (
-              <span className="text-xs text-muted-foreground">This usually takes under 30 seconds…</span>
+              <span className="text-xs text-muted-foreground">
+                {checkoutId ? "This simulation completes in a few seconds…" : "Preview only - no payment is being processed."}
+              </span>
             )}
           </div>
 
           <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-success" /> Every payment on Vendra is protected until the business delivers.
+            <ShieldCheck className="size-3.5 text-success" /> Demo only - no real payment is processed.
           </p>
         </div>
 

@@ -1,46 +1,107 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { z } from "zod";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Stars, VendorCard, Verified } from "@/components/site/bits";
-import { naira, vendors } from "@/lib/data";
+import { getMarketplaceLocationLabel } from "@/lib/location";
+import { searchProducts, searchVendors } from "@/lib/discovery";
+import { naira } from "@/lib/data";
+import { app, useApp } from "@/lib/peniel-store";
+import { LocationPicker } from "@/components/site/location-picker";
 
 export const Route = createFileRoute("/search")({
+  validateSearch: z.object({
+    q: z.string().optional(),
+    location: z.string().optional(),
+  }),
   head: () => ({
     meta: [
-      { title: "Search results — Vendra" },
-      { name: "description", content: "Search across businesses, products and services on Vendra. Filter by category, rating, location and availability." },
-      { property: "og:title", content: "Search on Vendra" },
-      { property: "og:description", content: "Find the business, product or service you need in seconds." },
+      { title: "Search results - Peniel" },
+      {
+        name: "description",
+        content:
+          "Search across businesses, products and services on Peniel. Filter by category, rating, location and availability.",
+      },
+      { property: "og:title", content: "Search on Peniel" },
+      {
+        property: "og:description",
+        content: "Find the business, product or service you need in seconds.",
+      },
     ],
   }),
   component: SearchPage,
 });
 
 function SearchPage() {
-  const products = vendors.flatMap((v) => v.products.slice(0, 2).map((p) => ({ ...p, vendor: v })));
+  const { q = "", location: routeLocation } = Route.useSearch();
+  const appState = useApp();
+  const navigate = useNavigate({ from: "/search" });
+  const [query, setQuery] = useState(q);
+  const [selectedLocation, setSelectedLocation] = useState(
+    getMarketplaceLocationLabel(routeLocation ?? appState.customer.city),
+  );
+  const businesses = searchVendors(query, selectedLocation);
+  const products = searchProducts(query, selectedLocation);
+
+  useEffect(() => {
+    setQuery(q);
+    if (routeLocation) setSelectedLocation(getMarketplaceLocationLabel(routeLocation));
+  }, [q, routeLocation]);
+
+  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void navigate({
+      search: { q: query.trim() || undefined, location: selectedLocation },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
       <div className="border-b border-border bg-surface py-6">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 sm:flex-row sm:px-6">
+        <form
+          onSubmit={submitSearch}
+          className="mx-auto flex max-w-7xl flex-col gap-3 px-4 sm:flex-row sm:px-6"
+        >
           <div className="relative flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input defaultValue="jollof" className="h-12 bg-card pl-9" placeholder="Search businesses, products, services…" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="h-12 bg-card pl-9"
+              placeholder="Search businesses, products, services…"
+              aria-label="Search businesses, products, and services"
+            />
           </div>
-          <Button className="h-12 px-8">Search</Button>
-        </div>
+          <LocationPicker
+            value={selectedLocation}
+            onChange={(city) => {
+              setSelectedLocation(city);
+              app.saveCustomer({ ...appState.customer, city });
+            }}
+            className="h-12"
+          />
+          <Button type="submit" className="h-12 px-8">
+            Search
+          </Button>
+        </form>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold">Results for "jollof"</h1>
-            <p className="text-sm text-muted-foreground">28 businesses · 164 products & services</p>
+            <h1 className="text-2xl font-bold">
+              {query.trim() ? `Results for "${query.trim()}"` : "Discover businesses"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {businesses.length} {businesses.length === 1 ? "business" : "businesses"} ·{" "}
+              {products.length} products & services
+            </p>
           </div>
           <Button variant="outline" size="sm" className="gap-2 sm:hidden">
             <SlidersHorizontal className="size-4" /> Filters
@@ -48,19 +109,44 @@ function SearchPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {["Lagos, NG", "Restaurants", "Verified only"].map((t) => (
-            <span key={t} className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-medium text-primary">
-              {t} <X className="size-3" />
-            </span>
-          ))}
-          <button className="text-xs font-medium text-muted-foreground underline">Clear all</button>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-medium text-primary">
+            {selectedLocation === "Federal Capital Territory"
+              ? "Abuja, NG"
+              : `${selectedLocation.replace(/ State$/, "")}, NG`}
+          </span>
+          {query.trim() && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-medium text-primary"
+            >
+              {query.trim()} <X className="size-3" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              setSelectedLocation("Lagos State");
+              app.saveCustomer({ ...appState.customer, city: "Lagos State" });
+              void navigate({ search: { q: undefined, location: "Lagos State" } });
+            }}
+            className="text-xs font-medium text-muted-foreground underline"
+          >
+            Clear all
+          </button>
         </div>
 
         <h2 className="mt-10 mb-4 text-lg font-bold">Businesses</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {vendors.slice(0, 4).map((v) => (
+          {businesses.map((v) => (
             <VendorCard key={v.slug} vendor={v} compact />
           ))}
+          {businesses.length === 0 && (
+            <p className="col-span-full rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              No businesses match your search in this location.
+            </p>
+          )}
         </div>
 
         <h2 className="mt-12 mb-4 text-lg font-bold">Products & services</h2>
@@ -87,6 +173,11 @@ function SearchPage() {
               </div>
             </Link>
           ))}
+          {products.length === 0 && (
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              No products or services match your search in this location.
+            </p>
+          )}
         </div>
 
         <div className="mt-10 rounded-2xl border border-dashed border-border p-10 text-center">

@@ -8,9 +8,9 @@ import { naira, vendors } from "@/lib/data";
 export const Route = createFileRoute("/admin/vendors")({
   head: () => ({
     meta: [
-      { title: "Vendors — Vendra admin" },
-      { name: "description", content: "Search, review and manage every business selling on Vendra, with status, ratings and volume." },
-      { property: "og:title", content: "Vendors — Vendra admin" },
+      { title: "Vendors - Peniel admin" },
+      { name: "description", content: "Search, review and manage every business selling on Peniel, with status, ratings and volume." },
+      { property: "og:title", content: "Vendors - Peniel admin" },
       { property: "og:description", content: "Manage every business on the platform." },
     ],
   }),

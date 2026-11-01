@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Lock } from "lucide-react";
 import type { ReactNode } from "react";
-import { isPaid, useCurrentVendor } from "@/lib/vendra-store";
+import { isPaid, useCurrentVendor } from "@/lib/peniel-store";
 
 /** Blocks features that the free Starter plan doesn't include. */
 export function PlanGate({ feature, children }: { feature: string; children: ReactNode }) {

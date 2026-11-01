@@ -3,16 +3,16 @@ import { useEffect } from "react";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site/site-header";
 import { ChatView } from "@/components/chat/chat-view";
-import { app, useApp } from "@/lib/vendra-store";
+import { app, useApp } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/messages")({
   validateSearch: z.object({ v: z.string().optional(), t: z.string().optional() }),
   head: () => ({
     meta: [
-      { title: "Messages — Vendra" },
-      { name: "description", content: "Chat privately with businesses on Vendra to negotiate prices, custom orders and bookings." },
-      { property: "og:title", content: "Messages — Vendra" },
-      { property: "og:description", content: "Private in-app chat with Vendra businesses." },
+      { title: "Messages - Peniel" },
+      { name: "description", content: "Chat privately with businesses on Peniel to negotiate prices, custom orders and bookings." },
+      { property: "og:title", content: "Messages - Peniel" },
+      { property: "og:description", content: "Private in-app chat with Peniel businesses." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

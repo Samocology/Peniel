@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { CircleUserRound, Compass, House, MessagesSquare, ShoppingBasket } from "lucide-react";
 import type { ReactNode } from "react";
-import { unreadFor, useApp } from "@/lib/vendra-store";
+import { unreadFor, useApp } from "@/lib/peniel-store";
 
 export type BarItem = { to: string; label: string; icon: ReactNode; badge?: number | undefined; exact?: boolean };
 

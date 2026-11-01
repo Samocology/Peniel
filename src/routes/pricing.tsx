@@ -7,9 +7,9 @@ import { SiteFooter } from "@/components/site/site-footer";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — Vendra plans for growing businesses" },
+      { title: "Pricing - Peniel plans for growing businesses" },
       { name: "description", content: "Start free and only pay a small platform fee per transaction. Upgrade for promotions, advanced analytics and priority support." },
-      { property: "og:title", content: "Vendra pricing" },
+      { property: "og:title", content: "Peniel pricing" },
       { property: "og:description", content: "Free to start. Transparent platform fees. Better tools as you grow." },
     ],
   }),
@@ -21,7 +21,7 @@ const plans = [
     name: "Starter",
     price: "Free",
     note: "2.5% platform fee per transaction",
-    features: ["Branded storefront (choose 1 of 28 designs, once)", "Unlimited products or services", "Orders & bookings", "Vendra Pay checkout", "Basic dashboard", "Verification eligibility"],
+    features: ["Branded storefront (choose 1 of 28 designs, once)", "Unlimited products or services", "Orders & bookings", "Peniel Pay checkout", "Basic dashboard", "Verification eligibility"],
     cta: "Start free",
     highlight: false,
   },
@@ -50,7 +50,7 @@ function Pricing() {
       <section className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6">
         <h1 className="font-display text-4xl font-bold">Simple pricing that grows with you</h1>
         <p className="mt-3 text-muted-foreground">
-          Payments are collected centrally by Vendra Pay. You never configure a gateway or hold API keys.
+          Payments are collected centrally by Peniel Pay. You never configure a gateway or hold API keys.
         </p>
       </section>
 

@@ -8,9 +8,9 @@ import { naira, orders, platformSeries, vendors } from "@/lib/data";
 export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
-      { title: "Platform overview — Vendra admin" },
-      { name: "description", content: "Monitor vendors, orders, payments, payouts and verification across the whole Vendra platform." },
-      { property: "og:title", content: "Platform overview — Vendra admin" },
+      { title: "Platform overview - Peniel admin" },
+      { name: "description", content: "Monitor vendors, orders, payments, payouts and verification across the whole Peniel platform." },
+      { property: "og:title", content: "Platform overview - Peniel admin" },
       { property: "og:description", content: "One view of the entire marketplace." },
     ],
   }),
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/admin/")({
 
 function AdminOverview() {
   return (
-    <DashShell nav={adminNav} kicker="Platform admin" title="Overview" subtitle="Everything happening on Vendra today">
+    <DashShell nav={adminNav} kicker="Platform admin" title="Overview" subtitle="Everything happening on Peniel today">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Gross volume today" value={naira(48920000)} hint="+18% vs yesterday" tone="primary" />
         <StatCard label="Active vendors" value="5,842" hint="+126 this week" />

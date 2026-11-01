@@ -20,6 +20,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import type { NavItem } from "./shell";
+import type { Vendor } from "@/lib/data";
 
 const i = "size-4";
 
@@ -34,8 +35,7 @@ export const vendorNav: NavItem[] = [
   { label: "Bookings", to: "/vendor/bookings", icon: <CalendarRange className={i} /> },
   { label: "Customers", to: "/vendor/customers", icon: <Users className={i} /> },
   { label: "Inventory", to: "/vendor/inventory", icon: <Boxes className={i} /> },
-  { label: "Transactions", to: "/vendor/transactions", icon: <Receipt className={i} /> },
-  { label: "Payouts", to: "/vendor/payouts", icon: <Wallet className={i} /> },
+  { label: "Finance", to: "/vendor/transactions", icon: <Wallet className={i} /> },
   { label: "Promotions", to: "/vendor/promotions", icon: <Megaphone className={i} /> },
   { label: "Reviews", to: "/vendor/reviews", icon: <Star className={i} /> },
   { label: "Analytics", to: "/vendor/analytics", icon: <BarChart3 className={i} /> },
@@ -43,6 +43,34 @@ export const vendorNav: NavItem[] = [
   { label: "Store settings", to: "/vendor/settings", icon: <Settings className={i} /> },
   { label: "Support", to: "/vendor/support", icon: <LifeBuoy className={i} /> },
 ];
+
+export function vendorNavFor(vendor: Vendor): NavItem[] {
+  const catalogLabel =
+    vendor.type === "restaurant" || vendor.type === "bakery"
+      ? "Menu"
+      : vendor.type === "beauty"
+        ? "Services"
+        : vendor.type === "hotel"
+          ? "Rooms"
+          : "Products";
+  const bookingLabel =
+    vendor.fulfilment === "reservation"
+      ? "Reservations"
+      : "Appointments";
+
+  return vendorNav
+    .filter((item) => {
+      if (item.to === "/vendor/services") return false;
+      if (item.to === "/vendor/orders") return vendor.fulfilment === "order";
+      if (item.to === "/vendor/bookings") return vendor.fulfilment !== "order";
+      return true;
+    })
+    .map((item) => {
+      if (item.to === "/vendor/products") return { ...item, label: catalogLabel };
+      if (item.to === "/vendor/bookings") return { ...item, label: bookingLabel, primary: true };
+      return item;
+    });
+}
 
 export const adminNav: NavItem[] = [
   { label: "Overview", to: "/admin", icon: <LayoutDashboard className={i} />, primary: true },

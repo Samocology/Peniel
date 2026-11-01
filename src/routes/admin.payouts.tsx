@@ -7,9 +7,9 @@ import { naira, vendors } from "@/lib/data";
 export const Route = createFileRoute("/admin/payouts")({
   head: () => ({
     meta: [
-      { title: "Payouts — Vendra admin" },
+      { title: "Payouts - Peniel admin" },
       { name: "description", content: "Review and release vendor payouts, check bank destinations and see the settlement schedule." },
-      { property: "og:title", content: "Payouts — Vendra admin" },
+      { property: "og:title", content: "Payouts - Peniel admin" },
       { property: "og:description", content: "Release vendor earnings safely." },
     ],
   }),

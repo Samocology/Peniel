@@ -3,7 +3,8 @@ import { useState, type ReactNode } from "react";
 import { Bell, Menu, Search, X } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { BottomBar } from "@/components/site/bottom-nav";
-import { unreadFor, useApp, useCurrentVendor } from "@/lib/vendra-store";
+import { unreadFor, useApp, useCurrentVendor } from "@/lib/peniel-store";
+import { vendorNavFor } from "./vendor-nav";
 
 export type NavItem = { label: string; to: string; icon: ReactNode; badge?: string | undefined; primary?: boolean };
 
@@ -37,9 +38,11 @@ export function DashShell({
         "/vendor/messages": st.threads.filter((t) => t.vendorSlug === me.slug).reduce((a, t) => a + unreadFor(t, "vendor"), 0),
       }
     : {};
-  nav = nav.map((n) => (n.to in live ? { ...n, badge: live[n.to] ? String(live[n.to]) : undefined } : n));
-  const primary = nav.filter((n) => n.primary).slice(0, 5);
-  const secondary = nav.filter((n) => !primary.includes(n));
+  const displayNav = (isVendor ? vendorNavFor(me) : nav).map((n) =>
+    n.to in live ? { ...n, badge: live[n.to] ? String(live[n.to]) : undefined } : n,
+  );
+  const primary = displayNav.filter((n) => n.primary).slice(0, 5);
+  const secondary = displayNav.filter((n) => !primary.includes(n));
   const initials = isVendor ? me.monogram : "VA";
 
   return (
@@ -54,7 +57,7 @@ export function DashShell({
             {kicker}
           </p>
           <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-6">
-            {nav.map((n) => {
+            {displayNav.map((n) => {
               const active = pathname === n.to;
               return (
                 <Link
@@ -83,7 +86,7 @@ export function DashShell({
           </nav>
           <div className="border-t border-border p-3">
             <Link to="/" className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted">
-              ← Back to Vendra
+              ← Back to Peniel
             </Link>
           </div>
         </aside>
@@ -158,7 +161,7 @@ export function DashShell({
                       {storeLink.label}
                     </Link>
                   )}
-                  <Link to="/" className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted">← Back to Vendra</Link>
+                  <Link to="/" className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted">← Back to Peniel</Link>
                 </div>
               </div>
             </div>

@@ -8,9 +8,9 @@ import { reviews } from "@/lib/data";
 export const Route = createFileRoute("/admin/reviews")({
   head: () => ({
     meta: [
-      { title: "Reviews — Vendra admin" },
+      { title: "Reviews - Peniel admin" },
       { name: "description", content: "Moderate customer reviews, handle flagged content and keep ratings honest across the platform." },
-      { property: "og:title", content: "Reviews — Vendra admin" },
+      { property: "og:title", content: "Reviews - Peniel admin" },
       { property: "og:description", content: "Keep ratings trustworthy." },
     ],
   }),

@@ -3,25 +3,56 @@ import { Check, ChefHat, CircleDot, Download, MessageCircle, Package, ShieldChec
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { StatusPill } from "@/components/site/bits";
-import { cartLines, getVendor, naira, orders } from "@/lib/data";
+import { getVendor, naira, orders } from "@/lib/data";
+import { app, mergeVendor, type OrderLine } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/orders/$id")({
   loader: ({ params }) => {
+    const savedOrder = app.get().orders.find((o) => o.id === params.id);
+    if (savedOrder) {
+      const baseVendor = getVendor(savedOrder.vendorSlug);
+      const vendor = baseVendor ? mergeVendor(baseVendor, app.account(savedOrder.vendorSlug)) : null;
+      return {
+        order: {
+          id: savedOrder.id,
+          vendor: vendor?.name ?? savedOrder.vendorSlug,
+          vendorSlug: savedOrder.vendorSlug,
+          kind:
+            vendor?.fulfilment === "booking"
+              ? "booking" as const
+              : vendor?.fulfilment === "reservation"
+                ? "reservation" as const
+                : "order" as const,
+          placed: savedOrder.createdAt ? new Date(savedOrder.createdAt).toLocaleString() : "Saved in this browser",
+          status: savedOrder.status,
+          total: savedOrder.total,
+          items: savedOrder.items,
+        },
+        vendor,
+        lines: savedOrder.lineItems ?? [],
+        isSaved: true,
+      };
+    }
     const order = orders.find((o) => o.id === params.id);
     if (!order) throw notFound();
-    return { order, vendor: getVendor(order.vendorSlug) ?? null };
+    return {
+      order,
+      vendor: getVendor(order.vendorSlug) ?? null,
+      lines: [],
+      isSaved: false,
+    };
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Order unavailable — Vendra" }, { name: "robots", content: "noindex" }] };
+      return { meta: [{ title: "Order unavailable - Peniel" }, { name: "robots", content: "noindex" }] };
     }
     const o = loaderData.order;
     return {
       meta: [
-        { title: `Order ${o.id} — ${o.vendor} on Vendra` },
+        { title: `Order ${o.id} - ${o.vendor} on Peniel` },
         { name: "description", content: `Live tracking for your ${o.vendor} order: ${o.status}. Placed ${o.placed}.` },
-        { property: "og:title", content: `Order ${o.id} — ${o.vendor}` },
-        { property: "og:description", content: `Live order tracking on Vendra. Status: ${o.status}.` },
+        { property: "og:title", content: `Order ${o.id} - ${o.vendor}` },
+        { property: "og:description", content: `Live order tracking on Peniel. Status: ${o.status}.` },
       ],
     };
   },
@@ -29,7 +60,7 @@ export const Route = createFileRoute("/orders/$id")({
 });
 
 const steps = [
-  { key: "Order received", icon: Check, note: "Payment confirmed by Vendra Pay" },
+  { key: "Order received", icon: Check, note: "Payment confirmed by Peniel Pay" },
   { key: "Confirmed by business", icon: CircleDot, note: "Accepted 10:26 AM" },
   { key: "Preparing", icon: ChefHat, note: "Kitchen is on it · ~25 mins" },
   { key: "Out for delivery", icon: Truck, note: "Rider assigned" },
@@ -37,9 +68,14 @@ const steps = [
 ];
 
 function OrderTracking() {
-  const { order, vendor } = Route.useLoaderData();
-  const activeIndex = order.status === "Delivered" ? 4 : order.status === "Out for delivery" ? 3 : 2;
-  const lines = cartLines.filter((l) => l.vendorSlug === order.vendorSlug);
+  const { order, vendor, lines, isSaved } = Route.useLoaderData();
+  const activeIndex =
+    order.status === "Delivered" ? 4
+      : order.status === "Out for delivery" ? 3
+        : order.status === "Preparing" ? 2
+          : order.status === "Confirmed" ? 1
+            : order.status === "New" ? 0
+              : -1;
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,9 +85,12 @@ function OrderTracking() {
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
             <div className="min-w-0">
               <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-success">
-                <ShieldCheck className="size-3.5" /> Payment held securely
+                <ShieldCheck className="size-3.5" /> {isSaved ? "Order saved locally" : "Demo tracking preview"}
               </p>
-              <h1 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Order {order.status.toLowerCase()}</h1>
+              <h1 className="mt-2 font-display text-2xl font-bold sm:text-3xl">
+                {order.kind === "booking" ? "Appointment" : order.kind === "reservation" ? "Reservation" : "Order"}{" "}
+                {order.status.toLowerCase()}
+              </h1>
               <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{order.id}</p>
             </div>
             <div className="shrink-0 text-right">
@@ -94,10 +133,12 @@ function OrderTracking() {
               })}
             </ol>
 
-            <div className="mt-6 rounded-xl border border-border bg-muted/40 p-4 text-sm">
-              <p className="font-semibold">Estimated arrival</p>
-              <p className="mt-1 text-muted-foreground">Today between 11:05 AM and 11:35 AM · 12 Adeola Odeku St, VI</p>
-            </div>
+            {!isSaved && (
+              <div className="mt-6 rounded-xl border border-border bg-muted/40 p-4 text-sm">
+                <p className="font-semibold">Estimated arrival</p>
+                <p className="mt-1 text-muted-foreground">Today between 11:05 AM and 11:35 AM · 12 Adeola Odeku St, VI</p>
+              </div>
+            )}
           </section>
 
           <aside className="space-y-4">
@@ -121,17 +162,22 @@ function OrderTracking() {
             <div className="rounded-2xl border border-border bg-card p-5">
               <p className="text-sm font-semibold">Items</p>
               <ul className="mt-3 space-y-3 text-sm">
-                {(lines.length ? lines : cartLines.slice(0, 2)).map((l) => (
-                  <li key={l.item} className="flex justify-between gap-3">
+                {lines.length ? lines.map((line: OrderLine) => (
+                  <li key={line.item} className="flex justify-between gap-3">
                     <span className="min-w-0">
                       <span className="block truncate">
-                        {l.qty}× {l.item}
+                        {line.qty}× {line.item}
                       </span>
-                      <span className="block truncate text-xs text-muted-foreground">{l.meta}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{line.meta}</span>
                     </span>
-                    <span className="shrink-0">{naira(l.price * l.qty)}</span>
+                    <span className="shrink-0">{naira(line.price * line.qty)}</span>
                   </li>
-                ))}
+                )) : (
+                  <li className="flex justify-between gap-3">
+                    <span>{order.items}</span>
+                    <span>{naira(order.total)}</span>
+                  </li>
+                )}
               </ul>
               <div className="mt-4 flex justify-between border-t border-border pt-3 text-sm font-semibold">
                 <span>Total paid</span>

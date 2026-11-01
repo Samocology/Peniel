@@ -1,6 +1,6 @@
 /**
  * Chat privacy guard: customers and vendors may never exchange phone numbers,
- * emails or off-platform contact handles inside Vendra chat.
+ * emails or off-platform contact handles inside Peniel chat.
  */
 const EMAIL = /[A-Z0-9._%+-]+\s*(@|\(at\)|\[at\])\s*[A-Z0-9.-]+\s*(\.|\(dot\)|dot)\s*[A-Z]{2,}/gi;
 // 10+ digits (phone-like), allowing spaces, dashes, dots, brackets and a leading +

@@ -3,7 +3,7 @@ import { ArrowLeft, Lock, MessagesSquare, SendHorizontal, ShieldAlert } from "lu
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getVendor } from "@/lib/data";
-import { app, unreadFor, type ChatMsg, type Thread } from "@/lib/vendra-store";
+import { app, unreadFor, type ChatMsg, type Thread } from "@/lib/peniel-store";
 
 const time = (n: number) => new Date(n).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" });
 
@@ -105,7 +105,7 @@ export function ChatView({
             </header>
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-muted/30 p-4">
               <p className="mx-auto flex max-w-sm items-center justify-center gap-1.5 rounded-xl bg-card px-3 py-2 text-center text-[11px] text-muted-foreground">
-                <ShieldAlert className="size-3.5 shrink-0 text-primary" /> Keep payments on Vendra Pay. Phone numbers and emails are hidden automatically.
+                <ShieldAlert className="size-3.5 shrink-0 text-primary" /> Keep payments on Peniel Pay. Phone numbers and emails are hidden automatically.
               </p>
               {active.messages.map((m, i) => {
                 const mine = m.from === side;

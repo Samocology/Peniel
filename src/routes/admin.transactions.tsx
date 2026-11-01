@@ -8,22 +8,22 @@ import { naira, orders } from "@/lib/data";
 export const Route = createFileRoute("/admin/transactions")({
   head: () => ({
     meta: [
-      { title: "Transactions — Vendra admin" },
-      { name: "description", content: "Every payment collected through Vendra Pay, with method, fee, vendor share and settlement state." },
-      { property: "og:title", content: "Transactions — Vendra admin" },
+      { title: "Transactions - Peniel admin" },
+      { name: "description", content: "Every payment collected through Peniel Pay, with method, fee, vendor share and settlement state." },
+      { property: "og:title", content: "Transactions - Peniel admin" },
       { property: "og:description", content: "All money movement in one ledger." },
     ],
   }),
   component: AdminTransactions,
 });
 
-const methods = ["Card", "Bank transfer", "USSD", "Vendra wallet"];
+const methods = ["Card", "Bank transfer", "USSD", "Peniel wallet"];
 
 function AdminTransactions() {
   const rows = [...orders, ...orders, ...orders].slice(0, 10);
 
   return (
-    <DashShell nav={adminNav} kicker="Platform admin" title="Transactions" subtitle="Collected through Vendra Pay">
+    <DashShell nav={adminNav} kicker="Platform admin" title="Transactions" subtitle="Collected through Peniel Pay">
       <div className="grid gap-4 sm:grid-cols-4">
         <StatCard label="Volume today" value={naira(48920000)} tone="primary" />
         <StatCard label="Platform fees" value={naira(978400)} tone="gold" />
@@ -49,7 +49,7 @@ function AdminTransactions() {
         <Panel title="How money flows">
           <ul className="space-y-4 text-sm">
             {[
-              ["Customer pays Vendra", "One checkout, every business."],
+              ["Customer pays Peniel", "One checkout, every business."],
               ["Funds held briefly", "Released once the order is confirmed delivered or the booking is served."],
               ["Vendor share settled", "Paid into the vendor's verified bank account on their payout schedule."],
             ].map(([t, b], i) => (

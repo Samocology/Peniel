@@ -8,12 +8,11 @@ import {
   type ErrorComponentProps,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { CustomerBottomNav } from "../components/site/bottom-nav";
 import { Toaster } from "../components/ui/sonner";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
@@ -40,9 +39,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -80,13 +76,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Vendra — Your business. Your storefront." },
-      { name: "description", content: "Branded storefronts, central payments and marketplace discovery for Nigerian businesses." },
-      { property: "og:title", content: "Vendra" },
-      { property: "og:description", content: "Your business. Your storefront. Your customers. One platform." },
+      { title: "Peniel - A multi-business platform" },
+      {
+        name: "description",
+        content:
+          "Branded storefronts, central payments and marketplace discovery for Nigerian businesses.",
+      },
+      { property: "og:title", content: "Peniel" },
+      {
+        property: "og:description",
+        content: "Your business. Your storefront. Your customers. One platform.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -98,7 +100,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Dancing+Script:wght@600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Space+Grotesk:wght@500;700&family=Bebas+Neue&family=Fraunces:wght@600;800&family=Archivo+Black&family=Cormorant+Garamond:wght@500;700&family=DM+Serif+Display&family=Syne:wght@600;800&family=JetBrains+Mono:wght@500;700&family=Caveat:wght@600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/p-logo.png", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,

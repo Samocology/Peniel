@@ -7,33 +7,29 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { naira } from "@/lib/data";
 import { PlanGate } from "@/components/dash/plan-gate";
-import { app, useCurrentVendor } from "@/lib/vendra-store";
+import { app, useCurrentVendor } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/vendor/promotions")({
   head: () => ({
     meta: [
-      { title: "Promotions — Vendra business console" },
+      { title: "Promotions - Peniel business console" },
       { name: "description", content: "Run discounts, bundles and free-delivery offers, then measure exactly what each one earned you." },
-      { property: "og:title", content: "Promotions — Vendra business console" },
+      { property: "og:title", content: "Promotions - Peniel business console" },
       { property: "og:description", content: "Create offers that bring customers back." },
     ],
   }),
   component: VendorPromotions,
 });
 
-const promos = [
-  ["WEEKEND10", "10% off orders above ₦20,000", "Active", 84, 612000],
-  ["FREEDROP", "Free delivery within Ikoyi", "Active", 41, 298000],
-  ["FIRSTBITE", "₦2,000 off first order", "Active", 128, 486000],
-  ["EASTER24", "Bundle: jollof + suya", "Ended", 212, 1240000],
-] as const;
-
 function VendorPromotions() {
   const { vendor, account } = useCurrentVendor();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
   const [offer, setOffer] = useState("");
-  const all = [...account.promos, ...promos.map((p) => ({ code: p[0], offer: p[1], active: p[2] === "Active", uses: p[3], revenue: p[4] }))];
+  const all = account.promos;
+  const redemptions = all.reduce((sum, promo) => sum + promo.uses, 0);
+  const offerRevenue = all.reduce((sum, promo) => sum + promo.revenue, 0);
+  const activityNoun = vendor.fulfilment === "order" ? "orders" : vendor.fulfilment === "booking" ? "appointments" : "reservations";
   const create = () => {
     if (!code.trim() || !offer.trim()) {
       toast.error("Add a code and describe the offer");
@@ -55,7 +51,7 @@ function VendorPromotions() {
       kicker="Business console"
       title="Promotions"
       subtitle={`${all.filter((p) => p.active).length} offers live on your storefront`}
-      storeLink={{ label: "View storefront", slug: "abigails-kitchen" }}
+      storeLink={{ label: "View storefront", slug: vendor.slug }}
       actions={
         <button onClick={() => setOpen((o) => !o)} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">
           <Plus className="size-4" /> New promotion
@@ -67,22 +63,25 @@ function VendorPromotions() {
         <Panel title="New promotion" className="mb-6">
           <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)_auto]">
             <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s/g, ""))} placeholder="CODE" className="rounded-xl border border-input bg-background px-4 py-3 font-mono text-sm outline-none focus:border-primary" />
-            <input value={offer} onChange={(e) => setOffer(e.target.value)} placeholder="e.g. 15% off orders above ₦25,000" className="min-w-0 rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary" />
+            <input value={offer} onChange={(e) => setOffer(e.target.value)} placeholder={`e.g. 15% off ${activityNoun}`} className="min-w-0 rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary" />
             <button onClick={create} className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground">Publish</button>
           </div>
         </Panel>
       )}
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Revenue from offers" value={naira(1396000)} hint="Last 30 days" tone="primary" />
-        <StatCard label="Redemptions" value="253" hint="Across 3 live offers" />
-        <StatCard label="New customers won" value="61" hint="First-time buyers" tone="gold" />
+        <StatCard label="Revenue from offers" value={naira(offerRevenue)} hint="Recorded by this account" tone="primary" />
+        <StatCard label="Redemptions" value={String(redemptions)} hint={`Across ${all.length} offers`} />
+        <StatCard label="Active offers" value={String(all.filter((promo) => promo.active).length)} hint="For this storefront" tone="gold" />
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Panel title="Your offers">
-          <DataTable
-            head={["Code", "Offer", "Status", "Uses", "Revenue", ""]}
-            rows={all.map((p) => [
+          {all.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No promotions have been created for this account yet.</p>
+          ) : (
+            <DataTable
+              head={["Code", "Offer", "Status", "Uses", "Revenue", ""]}
+              rows={all.map((p) => [
               <span className="font-mono text-xs font-semibold">{p.code}</span>,
               <span className="text-muted-foreground">{p.offer}</span>,
               <span
@@ -98,19 +97,20 @@ function VendorPromotions() {
               account.promos.some((x) => x.code === p.code) ? (
                 <button onClick={() => app.togglePromo(p.code)} className="text-xs font-semibold text-primary">{p.active ? "Pause" : "Resume"}</button>
               ) : (
-                <span className="text-xs text-muted-foreground">—</span>
+                <span className="text-xs text-muted-foreground">-</span>
               ),
-            ])}
-          />
+              ])}
+            />
+          )}
         </Panel>
 
         <div className="space-y-6">
           <Panel title="Share your store">
             <p className="text-sm text-muted-foreground">
-              Post your link anywhere. Customers land straight on your storefront, never on Vendra's homepage.
+              Post your link anywhere. Customers land straight on your storefront, never on Peniel's homepage.
             </p>
             <div className="mt-3 rounded-xl border border-border bg-muted/50 px-3 py-2.5 text-xs font-semibold">
-              vendra.ng/store/{vendor.slug}
+              peniel.com.ng/store/{vendor.slug}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {["WhatsApp", "Instagram", "TikTok", "Facebook"].map((s) => (
@@ -124,8 +124,8 @@ function VendorPromotions() {
           <Panel title="Suggested for you">
             <ul className="space-y-3 text-sm">
               {[
-                ["Bring back quiet customers", "31 customers haven't ordered in 60 days"],
-                ["Weekend lunch bundle", "Saturdays are your strongest day"],
+                [`Promote your ${vendor.groups[0]?.toLowerCase() ?? "catalog"}`, `Create an offer to introduce customers to ${vendor.name}.`],
+                [`Encourage repeat ${activityNoun}`, "Share your storefront link with returning customers."],
               ].map(([t, h]) => (
                 <li key={t} className="flex gap-3 rounded-xl border border-border p-3.5">
                   <Megaphone className="mt-0.5 size-4 shrink-0 text-primary" />

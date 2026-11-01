@@ -6,9 +6,9 @@ import { adminNav } from "@/components/dash/vendor-nav";
 export const Route = createFileRoute("/admin/settings")({
   head: () => ({
     meta: [
-      { title: "Platform settings — Vendra admin" },
+      { title: "Platform settings - Peniel admin" },
       { name: "description", content: "Set platform fees, payout schedules, verification rules, team access and marketplace policies." },
-      { property: "og:title", content: "Platform settings — Vendra admin" },
+      { property: "og:title", content: "Platform settings - Peniel admin" },
       { property: "og:description", content: "The rules that run the marketplace." },
     ],
   }),
@@ -104,7 +104,7 @@ function AdminSettings() {
             <p className="mt-4 flex gap-2 rounded-xl bg-primary-soft p-3.5 text-xs text-muted-foreground">
               <ShieldCheck className="size-4 shrink-0 text-primary" />
               Serving five customers only unlocks eligibility to apply. Approval always depends on satisfaction, complaints, fraud checks,
-              identity and policy compliance — and it can never be purchased.
+              identity and policy compliance - and it can never be purchased.
             </p>
           </Panel>
         </div>

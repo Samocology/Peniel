@@ -13,14 +13,14 @@ export const Route = createFileRoute("/bookings/$id")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Booking unavailable — Vendra" }, { name: "robots", content: "noindex" }] };
+      return { meta: [{ title: "Booking unavailable - Peniel" }, { name: "robots", content: "noindex" }] };
     }
     const b = loaderData.booking;
     return {
       meta: [
-        { title: `Booking ${b.id} — ${b.vendor} on Vendra` },
+        { title: `Booking ${b.id} - ${b.vendor} on Peniel` },
         { name: "description", content: `Your ${b.vendor} appointment is ${b.status.toLowerCase()}. View time, specialist and location.` },
-        { property: "og:title", content: `Booking confirmed — ${b.vendor}` },
+        { property: "og:title", content: `Booking confirmed - ${b.vendor}` },
         { property: "og:description", content: `Appointment details and reminders for your ${b.vendor} booking.` },
       ],
     };

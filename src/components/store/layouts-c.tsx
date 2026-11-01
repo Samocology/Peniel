@@ -1,238 +1,715 @@
-import { ArrowRight, Clock, MapPin, Plus, Star, Truck } from "lucide-react";
-import type { CSSProperties } from "react";
+
+import {
+  ArrowRight,
+  Clock,
+  MapPin,
+  Plus,
+  Star,
+  Truck,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
 import { naira, type Product, type Vendor } from "@/lib/data";
 import type { StoreTemplate } from "@/lib/templates";
 import { ItemArt, ItemLink, StoreBadges } from "./store-kit";
 
 type P = { vendor: Vendor; tpl: StoreTemplate };
 
-const cta = (v: Vendor) => (v.fulfilment === "order" ? "Order now" : v.fulfilment === "booking" ? "Book now" : "Reserve");
+const t = (v: Vendor) => v.theme;
 
-function H({ v, tpl, className = "", children, style }: { v: Vendor; tpl: StoreTemplate; className?: string; children: React.ReactNode; style?: CSSProperties }) {
+const cta = (v: Vendor) =>
+  v.fulfilment === "order"
+    ? "Order now"
+    : v.fulfilment === "booking"
+      ? "Book an appointment"
+      : "Reserve a room";
+
+const category = (v: Vendor) => {
+  const value = `${v.categoryLabel} ${v.name}`.toLowerCase();
+
+  if (/fashion|couture|cloth|apparel|boutique|wear|tailor/.test(value))
+    return "fashion";
+  if (/beauty|salon|spa|makeup|nail|hair/.test(value))
+    return "beauty";
+  if (/hotel|hospitality|resort|guest house/.test(value))
+    return "hospitality";
+  if (/restaurant|food|kitchen|bakery|cafe|catering/.test(value))
+    return "food";
+  return "general";
+};
+
+function Eyebrow({
+  children,
+  color,
+}: {
+  children: ReactNode;
+  color: string;
+}) {
+  return (
+    <p
+      className="text-[9px] font-semibold uppercase tracking-[0.24em]"
+      style={{ color }}
+    >
+      {children}
+    </p>
+  );
+}
+
+function Heading({
+  vendor,
+  tpl,
+  children,
+  className = "",
+  style,
+}: {
+  vendor: Vendor;
+  tpl: StoreTemplate;
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
     <h1
-      className={"leading-[0.95] font-bold " + (tpl.caps ? "uppercase tracking-tight " : "") + className}
-      style={{ fontFamily: v.theme.heading, ...style }}
+      className={[
+        "font-semibold leading-[0.98] tracking-[-0.05em]",
+        tpl.caps ? "uppercase tracking-[-0.035em]" : "",
+        className,
+      ].join(" ")}
+      style={{ fontFamily: vendor.theme.heading, ...style }}
     >
       {children}
     </h1>
   );
 }
 
-function Btn({ v, children, ghost }: { v: Vendor; children: React.ReactNode; ghost?: boolean }) {
-  const t = v.theme;
+function Button({
+  vendor,
+  children,
+  ghost = false,
+  href = "#catalogue",
+}: {
+  vendor: Vendor;
+  children: ReactNode;
+  ghost?: boolean;
+  href?: string;
+}) {
+  const th = vendor.theme;
+
   return (
     <a
-      href="#catalogue"
-      className="inline-flex items-center gap-2 px-5 py-3 text-sm font-bold transition hover:opacity-90"
+      href={href}
+      className="group inline-flex min-h-12 items-center justify-center gap-3 px-6 text-[11px] font-semibold tracking-[0.06em] transition-all duration-300 hover:-translate-y-0.5"
       style={
         ghost
-          ? { border: `1px solid ${t.line}`, borderRadius: t.radius, color: t.ink }
-          : { background: t.accent, color: t.accentInk, borderRadius: t.radius }
+          ? {
+              border: `1px solid ${th.line}`,
+              borderRadius: th.radius,
+              color: th.ink,
+              background: "transparent",
+            }
+          : {
+              background: th.accent,
+              color: th.accentInk,
+              borderRadius: th.radius,
+              boxShadow: `0 10px 25px -16px ${th.accent}`,
+            }
       }
     >
       {children}
+      <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
     </a>
   );
 }
 
-/* ─────────── Heroes ─────────── */
+function StoreMeta({ vendor }: { vendor: Vendor }) {
+  const th = vendor.theme;
+
+  return (
+    <div className="flex flex-wrap gap-x-5 gap-y-3 text-xs">
+      <span className="inline-flex items-center gap-2 opacity-65">
+        <MapPin className="size-3.5" style={{ color: th.accent }} />
+        {vendor.location}
+      </span>
+      <span className="inline-flex items-center gap-2 opacity-65">
+        <Clock className="size-3.5" style={{ color: th.accent }} />
+        {vendor.hours}
+      </span>
+    </div>
+  );
+}
+
+/* ───────────────────── Hero sections ───────────────────── */
 
 function HeroBlock({ vendor: v, tpl }: P) {
-  const t = v.theme;
-  const meta = (
-    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs opacity-75">
-      <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" /> {v.location}</span>
-      <span className="inline-flex items-center gap-1"><Clock className="size-3.5" /> {v.hours}</span>
+  const th = v.theme;
+  const type = category(v);
+
+  const heroImage = (
+    <img
+      src={v.cover}
+      alt={`${v.name} storefront`}
+      className="h-full w-full object-cover"
+      width={1600}
+      height={1400}
+    />
+  );
+
+  const rating = (
+    <div
+      className="flex items-center justify-between gap-5 border p-4"
+      style={{
+        background: th.bg,
+        borderColor: th.line,
+        borderRadius: th.radius,
+      }}
+    >
+      <div>
+        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] opacity-45">
+          Customer rating
+        </p>
+        <p className="mt-1 text-xl font-semibold tabular-nums">
+          {v.rating}
+          <span className="ml-1 text-xs font-normal opacity-45">/ 5.0</span>
+        </p>
+      </div>
+      <div className="text-right">
+        <div className="flex justify-end gap-0.5">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Star
+              key={n}
+              className="size-3"
+              fill={th.accent}
+              stroke={th.accent}
+            />
+          ))}
+        </div>
+        <p className="mt-1 text-[10px] opacity-55">
+          {v.reviews} reviews
+        </p>
+      </div>
     </div>
   );
 
   switch (tpl.hero) {
-    case "split":
-      return (
-        <section className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-2 md:items-center md:py-16">
-          <div>
-            <p className="text-xs font-bold tracking-[0.2em] uppercase" style={{ color: t.accent }}>{v.categoryLabel}</p>
-            <H v={v} tpl={tpl} className="mt-3 text-5xl sm:text-6xl">{v.name}</H>
-            <p className="mt-4 max-w-md text-lg opacity-80">{v.tagline}</p>
-            <div className="mt-5"><StoreBadges vendor={v} /></div>
-            <div className="mt-6 flex flex-wrap gap-3"><Btn v={v}>{cta(v)} <ArrowRight className="size-4" /></Btn><Btn v={v} ghost>About us</Btn></div>
-            <div className="mt-6">{meta}</div>
-          </div>
-          <div className="relative">
-            <img src={v.cover} alt={v.name} className="aspect-[4/5] w-full object-cover" style={{ borderRadius: t.radius }} />
-            <div className="absolute -bottom-4 -left-4 hidden px-4 py-3 text-sm font-bold shadow-xl sm:block" style={{ background: t.accent, color: t.accentInk, borderRadius: t.radius }}>
-              ★ {v.rating} · {v.reviews} reviews
-            </div>
-          </div>
-        </section>
-      );
     case "centered":
       return (
-        <section className="px-4 pt-12 pb-8 text-center sm:px-6">
-          <span className="mx-auto grid size-20 place-items-center text-2xl font-bold" style={{ background: t.accent, color: t.accentInk, borderRadius: "999px", fontFamily: t.heading }}>{v.monogram}</span>
-          <H v={v} tpl={tpl} className="mx-auto mt-5 max-w-3xl text-5xl sm:text-7xl">{v.name}</H>
-          <p className="mx-auto mt-4 max-w-xl text-lg opacity-75">{v.tagline}</p>
-          <div className="mt-5 flex justify-center"><StoreBadges vendor={v} /></div>
-          <div className="mt-6 flex justify-center gap-3"><Btn v={v}>{cta(v)}</Btn></div>
-          <img src={v.cover} alt={v.name} className="mx-auto mt-10 h-64 w-full max-w-5xl object-cover sm:h-96" style={{ borderRadius: t.radius }} />
+        <section className="mx-auto max-w-6xl px-4 pb-14 pt-14 text-center sm:px-6 sm:pb-20 sm:pt-20">
+          <div
+            className="mx-auto mb-6 grid size-14 place-items-center rounded-full text-lg font-semibold"
+            style={{
+              background: th.soft,
+              color: th.accent,
+              border: `1px solid ${th.line}`,
+              fontFamily: th.heading,
+            }}
+          >
+            {v.monogram}
+          </div>
+
+          <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
+
+          <Heading
+            vendor={v}
+            tpl={tpl}
+            className="mx-auto mt-5 max-w-4xl text-5xl sm:text-7xl"
+          >
+            {v.name}
+          </Heading>
+
+          <p className="mx-auto mt-5 max-w-xl text-sm leading-8 opacity-65 sm:text-base">
+            {v.tagline}
+          </p>
+
+          <div className="mt-6 flex justify-center">
+            <StoreBadges vendor={v} />
+          </div>
+
+          <div className="mt-8 flex justify-center">
+            <Button vendor={v}>{cta(v)}</Button>
+          </div>
+
+          <div
+            className="mt-12 overflow-hidden"
+            style={{ borderRadius: th.radius }}
+          >
+            <div className="aspect-[16/9] max-h-[580px]">{heroImage}</div>
+          </div>
         </section>
       );
+
     case "banner":
       return (
-        <section className="relative">
-          <img src={v.cover} alt={v.name} className="h-[420px] w-full object-cover sm:h-[520px]" />
-          <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${t.bg}, ${t.bg}55 50%, transparent)` }} />
-          <div className="absolute inset-x-0 bottom-0 mx-auto max-w-6xl px-4 pb-8 sm:px-6">
-            <H v={v} tpl={tpl} className="text-5xl sm:text-7xl">{v.name}</H>
-            <p className="mt-3 max-w-lg text-lg opacity-85">{v.tagline}</p>
-            <div className="mt-4 flex flex-wrap items-center gap-4"><Btn v={v}>{cta(v)}</Btn><StoreBadges vendor={v} /></div>
+        <section className="relative min-h-[560px] overflow-hidden sm:min-h-[680px]">
+          <div className="absolute inset-0">{heroImage}</div>
+
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(90deg, ${th.bg}f5 0%, ${th.bg}d9 38%, ${th.bg}55 100%)`,
+            }}
+          />
+
+          <div className="relative mx-auto flex min-h-[560px] max-w-6xl items-end px-4 py-16 sm:min-h-[680px] sm:px-6 sm:py-24">
+            <div className="max-w-2xl">
+              <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
+
+              <Heading
+                vendor={v}
+                tpl={tpl}
+                className="mt-5 text-5xl sm:text-7xl"
+              >
+                {v.name}
+              </Heading>
+
+              <p className="mt-5 max-w-lg text-sm leading-8 opacity-75 sm:text-base">
+                {v.tagline}
+              </p>
+
+              <div className="mt-7">
+                <StoreBadges vendor={v} />
+              </div>
+
+              <div className="mt-8">
+                <Button vendor={v}>{cta(v)}</Button>
+              </div>
+            </div>
           </div>
         </section>
       );
+
     case "poster":
       return (
-        <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-          <div className="relative overflow-hidden p-6 sm:p-12" style={{ background: t.accent, color: t.accentInk, borderRadius: t.radius }}>
-            <p className="text-xs font-bold tracking-[0.3em] uppercase opacity-80">{v.categoryLabel} · {v.location.split(",").pop()}</p>
-            <H v={v} tpl={tpl} className="mt-4 text-6xl sm:text-[8rem]">{v.name}</H>
-            <div className="mt-6 grid gap-6 md:grid-cols-[1fr_280px] md:items-end">
-              <p className="max-w-md text-lg font-medium">{v.tagline}</p>
-              <img src={v.cover} alt={v.name} className="aspect-square w-full rotate-2 object-cover shadow-2xl" style={{ borderRadius: t.radius }} />
+        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
+          <div
+            className="grid overflow-hidden md:grid-cols-[1fr_0.9fr]"
+            style={{
+              background: th.soft,
+              color: th.ink,
+              borderRadius: th.radius,
+            }}
+          >
+            <div className="flex flex-col justify-center p-7 sm:p-12">
+              <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
+
+              <Heading
+                vendor={v}
+                tpl={tpl}
+                className="mt-5 text-5xl sm:text-7xl"
+              >
+                {v.name}
+              </Heading>
+
+              <p className="mt-5 max-w-md text-sm leading-8 opacity-65 sm:text-base">
+                {v.tagline}
+              </p>
+
+              <div className="mt-7">
+                <StoreBadges vendor={v} />
+              </div>
+
+              <div className="mt-8">
+                <Button vendor={v}>{cta(v)}</Button>
+              </div>
+            </div>
+
+            <div className="min-h-[320px] overflow-hidden md:min-h-[540px]">
+              {heroImage}
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><StoreBadges vendor={v} /><Btn v={v}>{cta(v)}</Btn></div>
         </section>
       );
+
     case "minimal":
       return (
-        <section className="mx-auto max-w-6xl border-b px-4 py-14 sm:px-6" style={{ borderColor: t.line }}>
-          <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
+        <section
+          className="mx-auto max-w-6xl border-b px-4 py-16 sm:px-6 sm:py-20"
+          style={{ borderColor: th.line }}
+        >
+          <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
             <div>
-              <H v={v} tpl={tpl} className="text-4xl sm:text-6xl">{v.name}</H>
-              <p className="mt-3 max-w-xl opacity-70">{v.about}</p>
+              <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
+              <Heading
+                vendor={v}
+                tpl={tpl}
+                className="mt-4 text-5xl sm:text-7xl"
+              >
+                {v.name}
+              </Heading>
+              <p className="mt-5 max-w-xl text-sm leading-8 opacity-65">
+                {v.about}
+              </p>
             </div>
-            <div className="space-y-3 md:text-right"><StoreBadges vendor={v} /><Btn v={v}>{cta(v)} →</Btn></div>
+
+            <div className="flex flex-col items-start gap-5 md:items-end">
+              <StoreBadges vendor={v} />
+              <Button vendor={v}>{cta(v)}</Button>
+            </div>
           </div>
-          <div className="mt-8 grid grid-cols-3 gap-3">
-            {[0, 1, 2].map((i) => (
-              <img key={i} src={v.cover} alt="" className="h-28 w-full object-cover sm:h-44" style={{ borderRadius: t.radius, objectPosition: `${i * 50}% 50%` }} />
-            ))}
+
+          <div className="mt-12 overflow-hidden" style={{ borderRadius: th.radius }}>
+            <div className="aspect-[16/7]">{heroImage}</div>
           </div>
         </section>
       );
+
     case "magazine":
       return (
-        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-          <div className="flex items-center justify-between border-y py-2 text-[11px] font-bold tracking-[0.25em] uppercase" style={{ borderColor: t.ink }}>
-            <span>Issue Nº 26</span><span>{v.categoryLabel}</span><span className="hidden sm:inline">{v.location.split(",")[0]}</span>
+        <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+          <div
+            className="flex items-center justify-between border-y py-3 text-[9px] font-semibold uppercase tracking-[0.2em] opacity-55"
+            style={{ borderColor: th.line }}
+          >
+            <span>{v.categoryLabel}</span>
+            <span className="hidden sm:inline">A Peniel feature</span>
+            <span>{v.location.split(",")[0]}</span>
           </div>
-          <H v={v} tpl={tpl} className="mt-6 text-center text-6xl sm:text-8xl">{v.name}</H>
-          <div className="mt-8 grid gap-6 md:grid-cols-[1fr_1.4fr_1fr]">
-            <p className="text-sm leading-relaxed opacity-80 first-letter:float-left first-letter:mr-2 first-letter:text-5xl first-letter:font-bold" style={{ ["--tw" as string]: 0 }}>{v.about}</p>
-            <img src={v.cover} alt={v.name} className="aspect-[4/3] w-full object-cover" style={{ borderRadius: t.radius }} />
-            <div className="space-y-4">
-              <p className="text-2xl italic" style={{ fontFamily: t.heading }}>“{v.tagline}”</p>
+
+          <Heading
+            vendor={v}
+            tpl={tpl}
+            className="mt-8 text-center text-5xl sm:text-8xl"
+          >
+            {v.name}
+          </Heading>
+
+          <div className="mt-10 grid items-center gap-8 md:grid-cols-[0.8fr_1.5fr_0.8fr]">
+            <p className="text-sm leading-8 opacity-65">{v.about}</p>
+
+            <div className="overflow-hidden" style={{ borderRadius: th.radius }}>
+              <div className="aspect-[4/3]">{heroImage}</div>
+            </div>
+
+            <div className="flex flex-col items-start gap-5">
+              <p
+                className="text-2xl leading-tight"
+                style={{ fontFamily: th.heading }}
+              >
+                {v.tagline}
+              </p>
               <StoreBadges vendor={v} />
-              <Btn v={v}>{cta(v)}</Btn>
+              <Button vendor={v}>{cta(v)}</Button>
             </div>
           </div>
         </section>
       );
+
     case "marquee":
-    default:
       return (
         <section>
-          <div className="overflow-hidden py-3 whitespace-nowrap" style={{ background: t.ink, color: t.bg }}>
-            <div className="inline-block animate-[marquee_22s_linear_infinite] text-sm font-bold tracking-widest uppercase">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <span key={i} className="mx-6">★ {v.tagline} ★ {v.delivery.split(".")[0]}</span>
+          <div
+            className="overflow-hidden border-y py-3"
+            style={{
+              background: th.soft,
+              color: th.ink,
+              borderColor: th.line,
+            }}
+          >
+            <div className="whitespace-nowrap text-center text-[9px] font-semibold uppercase tracking-[0.25em]">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <span key={i} className="mx-8">
+                  {v.tagline} <span style={{ color: th.accent }}>✦</span>{" "}
+                  {v.categoryLabel}
+                </span>
               ))}
             </div>
           </div>
-          <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 sm:px-6 md:grid-cols-[1.2fr_1fr] md:items-center">
+
+          <div className="mx-auto grid max-w-6xl items-center gap-9 px-4 py-14 sm:px-6 sm:py-20 md:grid-cols-[1fr_1.1fr]">
             <div>
-              <H v={v} tpl={tpl} className="text-6xl sm:text-8xl">{v.name}</H>
-              <div className="mt-5 flex flex-wrap items-center gap-4"><Btn v={v}>{cta(v)}</Btn><StoreBadges vendor={v} /></div>
+              <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
+              <Heading
+                vendor={v}
+                tpl={tpl}
+                className="mt-5 text-5xl sm:text-7xl"
+              >
+                {v.name}
+              </Heading>
+              <p className="mt-5 max-w-md text-sm leading-8 opacity-65 sm:text-base">
+                {v.tagline}
+              </p>
+              <div className="mt-7">
+                <StoreBadges vendor={v} />
+              </div>
+              <div className="mt-8">
+                <Button vendor={v}>{cta(v)}</Button>
+              </div>
             </div>
-            <img src={v.cover} alt={v.name} className="aspect-video w-full -rotate-1 object-cover" style={{ borderRadius: t.radius, border: `4px solid ${t.ink}` }} />
+
+            <div className="overflow-hidden" style={{ borderRadius: th.radius }}>
+              <div className="aspect-[5/4]">{heroImage}</div>
+            </div>
+          </div>
+        </section>
+      );
+
+    case "split":
+    default:
+      return (
+        <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-10 sm:px-6 sm:pb-24 sm:pt-16 md:grid-cols-[0.9fr_1.1fr] md:gap-14">
+          <div className="order-2 md:order-1">
+            <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
+
+            <Heading
+              vendor={v}
+              tpl={tpl}
+              className="mt-5 max-w-xl text-[clamp(2.8rem,7vw,5.7rem)]"
+            >
+              {v.name}
+            </Heading>
+
+            <p className="mt-5 max-w-md text-sm leading-8 opacity-65 sm:text-base">
+              {v.tagline}
+            </p>
+
+            <div className="mt-6">
+              <StoreBadges vendor={v} />
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button vendor={v}>{cta(v)}</Button>
+              <Button vendor={v} ghost>
+                Discover us
+              </Button>
+            </div>
+
+            <div className="mt-9 border-t pt-5" style={{ borderColor: th.line }}>
+              <StoreMeta vendor={v} />
+            </div>
+          </div>
+
+          <div className="relative order-1 md:order-2">
+            <div
+              className="aspect-[5/4] overflow-hidden sm:aspect-[4/5] md:aspect-[5/6]"
+              style={{
+                borderRadius: th.radius,
+                background: th.soft,
+              }}
+            >
+              {heroImage}
+            </div>
+
+            <div className="absolute -bottom-5 left-4 right-4 sm:left-auto sm:right-5 sm:w-[250px]">
+              {rating}
+            </div>
           </div>
         </section>
       );
   }
 }
 
-/* ─────────── Catalogues ─────────── */
+/* ───────────────────── Product cards ───────────────────── */
 
-function AddBtn({ v }: { v: Vendor }) {
+function AddButton({ vendor }: { vendor: Vendor }) {
+  const th = vendor.theme;
+
   return (
-    <span className="grid size-8 shrink-0 place-items-center" style={{ background: t(v).accent, color: t(v).accentInk, borderRadius: "999px" }}>
-      <Plus className="size-4" />
+    <span
+      className="grid size-10 shrink-0 place-items-center rounded-full transition-all duration-300 group-hover:scale-105"
+      style={{
+        background: th.accent,
+        color: th.accentInk,
+      }}
+    >
+      <Plus className="size-4" strokeWidth={1.8} />
     </span>
   );
 }
-const t = (v: Vendor) => v.theme;
 
-function Card({ v, p, i, tall }: { v: Vendor; p: Product; i: number; tall?: boolean }) {
+function ProductCard({
+  vendor: v,
+  product: p,
+  index,
+  tall = false,
+}: {
+  vendor: Vendor;
+  product: Product;
+  index: number;
+  tall?: boolean;
+}) {
+  const th = v.theme;
+  const fashion = category(v) === "fashion";
+
   return (
-    <ItemLink vendor={v} product={p} className="group block overflow-hidden border transition hover:-translate-y-0.5" style={{ borderColor: t(v).line, borderRadius: t(v).radius, background: t(v).soft }}>
-      <ItemArt vendor={v} seed={i} label={p.name} className={tall ? "aspect-[3/4]" : "aspect-[4/3]"} />
-      <div className="flex items-end justify-between gap-2 p-4">
-        <div className="min-w-0">
-          {p.tag && <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t(v).accent }}>{p.tag}</p>}
-          <p className="truncate font-semibold">{p.name}</p>
-          <p className="text-sm font-bold" style={{ color: t(v).accent }}>{naira(p.price)}</p>
+    <ItemLink
+      vendor={v}
+      product={p}
+      className="group block overflow-hidden border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      style={{
+        borderColor: th.line,
+        borderRadius: th.radius,
+        background: th.bg,
+      }}
+    >
+      <div className="relative overflow-hidden">
+        <ItemArt
+          vendor={v}
+          seed={index}
+          label={p.name}
+          className={[
+            tall || fashion ? "aspect-[3/4]" : "aspect-[4/3]",
+            "w-full transition-transform duration-700 group-hover:scale-[1.04]",
+          ].join(" ")}
+        />
+
+        {p.tag && (
+          <span
+            className="absolute left-3 top-3 px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.15em]"
+            style={{
+              background: th.bg,
+              color: th.ink,
+              borderRadius: th.radius,
+            }}
+          >
+            {p.tag}
+          </span>
+        )}
+
+        <span className="absolute bottom-3 right-3">
+          <AddButton vendor={v} />
+        </span>
+      </div>
+
+      <div className="p-3.5 sm:p-4">
+        <p className="truncate text-sm font-semibold tracking-[-0.02em]">
+          {p.name}
+        </p>
+        {p.desc && !fashion && (
+          <p className="mt-1 line-clamp-2 text-xs leading-5 opacity-55">
+            {p.desc}
+          </p>
+        )}
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <p
+            className="text-sm font-semibold tabular-nums"
+            style={{ color: th.accent }}
+          >
+            {naira(p.price)}
+          </p>
+          <span className="text-[9px] font-medium uppercase tracking-[0.12em] opacity-45">
+            View item
+          </span>
         </div>
-        <AddBtn v={v} />
       </div>
     </ItemLink>
   );
 }
 
+/* ───────────────────── Catalogue layouts ───────────────────── */
+
 function CatalogBlock({ vendor: v, tpl }: P) {
   const items = v.products;
+  const th = v.theme;
+  const type = category(v);
+
   switch (tpl.catalog) {
     case "list":
       return (
-        <div className="divide-y" style={{ borderColor: t(v).line }}>
-          {v.groups.map((g) => {
-            const gi = items.filter((p) => p.group === g);
-            if (!gi.length) return null;
+        <div className="space-y-12 sm:space-y-16">
+          {v.groups.map((group, groupIndex) => {
+            const groupItems = items.filter((p) => p.group === group);
+            if (!groupItems.length) return null;
+
             return (
-              <div key={g} className="py-6">
-                <p className="mb-3 text-xs font-bold tracking-[0.2em] uppercase opacity-60">{g}</p>
-                {gi.map((p) => (
-                  <ItemLink key={p.id} vendor={v} product={p} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3">
-                    <span className="min-w-0">
-                      <span className="block font-semibold" style={{ fontFamily: t(v).heading }}>{p.name}</span>
-                      <span className="block truncate text-sm opacity-65">{p.desc}</span>
-                    </span>
-                    <span className="flex items-center gap-3"><b>{naira(p.price)}</b><AddBtn v={v} /></span>
-                  </ItemLink>
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      );
-    case "masonry":
-      return (
-        <div className="columns-2 gap-4 md:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid">
-          {items.map((p, i) => <Card key={p.id} v={v} p={p} i={i} tall={i % 3 === 0} />)}
-        </div>
-      );
-    case "rail":
-      return (
-        <div className="space-y-8">
-          {v.groups.map((g) => {
-            const gi = items.filter((p) => p.group === g);
-            if (!gi.length) return null;
-            return (
-              <div key={g}>
-                <p className="mb-3 text-lg font-bold" style={{ fontFamily: t(v).heading }}>{g}</p>
-                <div className="flex snap-x gap-4 overflow-x-auto pb-2 hide-scrollbar">
-                  {gi.map((p, i) => (
-                    <div key={p.id} className="w-60 shrink-0 snap-start"><Card v={v} p={p} i={i} /></div>
+              <div key={group}>
+                <div className="mb-5 flex items-end justify-between gap-4">
+                  <div>
+                    <Eyebrow color={th.accent}>
+                      {String(groupIndex + 1).padStart(2, "0")} / COLLECTION
+                    </Eyebrow>
+                    <h3
+                      className="mt-2 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl"
+                      style={{ fontFamily: th.heading }}
+                    >
+                      {group}
+                    </h3>
+                  </div>
+                  <span className="pb-1 text-[10px] uppercase tracking-[0.12em] opacity-45">
+                    {groupItems.length} items
+                  </span>
+                </div>
+
+                <div
+                  className="mb-5 h-px"
+                  style={{
+                    background: `linear-gradient(90deg, ${th.accent}, ${th.line} 45%, transparent)`,
+                  }}
+                />
+
+                <div className="grid gap-3">
+                  {groupItems.map((p, i) => (
+                    <ItemLink
+                      key={p.id}
+                      vendor={v}
+                      product={p}
+                      className="group block overflow-hidden border transition-all duration-300 hover:shadow-lg"
+                      style={{
+                        borderColor: th.line,
+                        borderRadius: th.radius,
+                        background: th.bg,
+                      }}
+                    >
+                      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5">
+                        <div className="relative w-full shrink-0 overflow-hidden sm:w-28">
+                          <ItemArt
+                            vendor={v}
+                            seed={i + groupIndex * 3}
+                            label={p.name}
+                            className="aspect-[16/10] w-full sm:aspect-square"
+                          />
+                          {p.tag && (
+                            <span
+                              className="absolute left-2 top-2 px-2 py-1 text-[8px] font-semibold uppercase"
+                              style={{ background: th.bg, color: th.accent }}
+                            >
+                              {p.tag}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                          <div className="min-w-0 flex-1">
+                            <h4
+                              className="text-base font-semibold tracking-tight sm:text-lg"
+                              style={{ fontFamily: th.heading }}
+                            >
+                              {p.name}
+                            </h4>
+                            {p.desc && (
+                              <p className="mt-1.5 max-w-lg text-xs leading-6 opacity-60 sm:text-sm">
+                                {p.desc}
+                              </p>
+                            )}
+                            {p.meta && (
+                              <span className="mt-3 inline-flex items-center gap-1.5 text-[10px] opacity-55">
+                                <Clock className="size-3" style={{ color: th.accent }} />
+                                {p.meta}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex shrink-0 items-center justify-between gap-4 border-t pt-3 sm:min-w-[130px] sm:flex-col sm:items-end sm:border-0 sm:pt-0">
+                            <div className="sm:text-right">
+                              <p className="text-[9px] uppercase tracking-[0.14em] opacity-45">
+                                {v.fulfilment === "booking" ? "Price from" : "Price"}
+                              </p>
+                              <p
+                                className="mt-1 text-lg font-semibold tabular-nums"
+                                style={{ color: th.accent }}
+                              >
+                                {naira(p.price)}
+                              </p>
+                            </div>
+                            <span
+                              className="inline-flex items-center gap-2 text-xs font-semibold"
+                              style={{ color: th.accent }}
+                            >
+                              View details <ArrowRight className="size-3.5" />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </ItemLink>
                   ))}
                 </div>
               </div>
@@ -240,108 +717,430 @@ function CatalogBlock({ vendor: v, tpl }: P) {
           })}
         </div>
       );
-    case "board":
+
+    case "masonry":
       return (
-        <div className="grid gap-x-10 gap-y-8 p-6 sm:p-10 md:grid-cols-2" style={{ background: t(v).soft, borderRadius: t(v).radius, border: `2px solid ${t(v).ink}` }}>
-          {v.groups.map((g) => {
-            const gi = items.filter((p) => p.group === g);
-            if (!gi.length) return null;
+        <div className="columns-2 gap-3 sm:gap-5 md:columns-3 [&>*]:mb-3 [&>*]:break-inside-avoid sm:[&>*]:mb-5">
+          {items.map((p, i) => (
+            <div key={p.id}>
+              <ProductCard
+                vendor={v}
+                product={p}
+                index={i}
+                tall={i % 3 === 0}
+              />
+            </div>
+          ))}
+        </div>
+      );
+
+    case "rail":
+      return (
+        <div className="space-y-10">
+          {v.groups.map((group) => {
+            const groupItems = items.filter((p) => p.group === group);
+            if (!groupItems.length) return null;
+
             return (
-              <div key={g}>
-                <p className="mb-3 border-b-2 pb-1 text-xl font-bold uppercase" style={{ fontFamily: t(v).heading, borderColor: t(v).accent }}>{g}</p>
-                {gi.map((p) => (
-                  <ItemLink key={p.id} vendor={v} product={p} className="flex items-baseline gap-2 py-1.5 text-sm">
-                    <span className="font-semibold">{p.name}</span>
-                    <span className="flex-1 border-b border-dotted opacity-40" style={{ borderColor: t(v).ink }} />
-                    <span className="font-bold">{naira(p.price)}</span>
-                  </ItemLink>
-                ))}
+              <div key={group}>
+                <div className="mb-4 flex items-baseline justify-between">
+                  <h3
+                    className="text-xl font-semibold tracking-tight"
+                    style={{ fontFamily: th.heading }}
+                  >
+                    {group}
+                  </h3>
+                  <span className="text-[10px] uppercase tracking-[0.12em] opacity-45">
+                    {groupItems.length} items
+                  </span>
+                </div>
+
+                <div className="hide-scrollbar flex snap-x gap-4 overflow-x-auto pb-4">
+                  {groupItems.map((p, i) => (
+                    <div key={p.id} className="w-[220px] shrink-0 snap-start sm:w-64">
+                      <ProductCard vendor={v} product={p} index={i} />
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })}
         </div>
       );
+
+    case "board":
+      return (
+        <div
+          className="grid gap-x-12 gap-y-10 p-6 sm:grid-cols-2 sm:p-10"
+          style={{
+            background: th.soft,
+            borderRadius: th.radius,
+            border: `1px solid ${th.line}`,
+          }}
+        >
+          {v.groups.map((group) => {
+            const groupItems = items.filter((p) => p.group === group);
+            if (!groupItems.length) return null;
+
+            return (
+              <div key={group}>
+                <h3
+                  className="mb-4 border-b pb-3 text-lg font-semibold"
+                  style={{ fontFamily: th.heading, borderColor: th.accent }}
+                >
+                  {group}
+                </h3>
+                <div className="space-y-4">
+                  {groupItems.map((p) => (
+                    <ItemLink
+                      key={p.id}
+                      vendor={v}
+                      product={p}
+                      className="flex items-baseline gap-2 text-sm transition-opacity hover:opacity-65"
+                    >
+                      <span className="font-medium">{p.name}</span>
+                      <span
+                        className="flex-1 border-b border-dotted opacity-30"
+                        style={{ borderColor: th.ink }}
+                      />
+                      <span className="font-semibold tabular-nums">
+                        {naira(p.price)}
+                      </span>
+                    </ItemLink>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+
     case "bento":
       return (
-        <div className="grid auto-rows-[180px] grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid auto-rows-[180px] grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
           {items.map((p, i) => (
             <ItemLink
               key={p.id}
               vendor={v}
               product={p}
-              className={"relative overflow-hidden p-4 " + (i === 0 ? "col-span-2 row-span-2" : i === 3 ? "col-span-2" : "")}
-              style={{ background: i % 2 ? t(v).soft : t(v).accent, color: i % 2 ? t(v).ink : t(v).accentInk, borderRadius: t(v).radius }}
+              className={[
+                "group relative overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1",
+                i === 0 ? "col-span-2 row-span-2" : i === 3 ? "col-span-2" : "",
+              ].join(" ")}
+              style={{
+                background: i % 2 === 0 ? th.soft : th.accent,
+                color: i % 2 === 0 ? th.ink : th.accentInk,
+                borderRadius: th.radius,
+              }}
             >
-              <span className="text-[10px] font-bold tracking-widest uppercase opacity-70">{p.group}</span>
-              <span className={"mt-1 block font-bold " + (i === 0 ? "text-3xl" : "text-lg")} style={{ fontFamily: t(v).heading }}>{p.name}</span>
-              {i === 0 && <span className="mt-2 block max-w-xs text-sm opacity-80">{p.desc}</span>}
-              <span className="absolute bottom-4 left-4 text-sm font-bold">{naira(p.price)}</span>
-              <span className="absolute right-4 bottom-4 grid size-8 place-items-center rounded-full" style={{ background: t(v).bg, color: t(v).ink }}><Plus className="size-4" /></span>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.15em] opacity-60">
+                {p.group}
+              </span>
+              <span
+                className={[
+                  "mt-2 block font-semibold leading-tight",
+                  i === 0 ? "text-3xl sm:text-4xl" : "text-lg",
+                ].join(" ")}
+                style={{ fontFamily: th.heading }}
+              >
+                {p.name}
+              </span>
+              {i === 0 && p.desc && (
+                <span className="mt-3 block max-w-xs text-sm leading-6 opacity-70">
+                  {p.desc}
+                </span>
+              )}
+              <span className="absolute bottom-5 left-5 text-sm font-semibold tabular-nums">
+                {naira(p.price)}
+              </span>
+              <span
+                className="absolute bottom-5 right-5 grid size-9 place-items-center rounded-full"
+                style={{
+                  background: i % 2 === 0 ? th.accent : th.bg,
+                  color: i % 2 === 0 ? th.accentInk : th.ink,
+                }}
+              >
+                <Plus className="size-4" />
+              </span>
             </ItemLink>
           ))}
         </div>
       );
+
     case "polaroid":
       return (
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-4">
           {items.map((p, i) => (
-            <ItemLink key={p.id} vendor={v} product={p} className="block p-2.5 pb-4 shadow-lg transition hover:rotate-0" style={{ background: t(v).bg, color: t(v).ink, border: `1px solid ${t(v).line}`, transform: `rotate(${((i % 3) - 1) * 2}deg)` }}>
-              <ItemArt vendor={v} seed={i} className="aspect-square" />
-              <p className="mt-2 truncate text-center text-lg" style={{ fontFamily: t(v).heading }}>{p.name}</p>
-              <p className="text-center text-sm font-bold" style={{ color: t(v).accent }}>{naira(p.price)}</p>
+            <ItemLink
+              key={p.id}
+              vendor={v}
+              product={p}
+              className="group block border p-2.5 pb-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-3 sm:pb-5"
+              style={{
+                background: th.bg,
+                color: th.ink,
+                borderColor: th.line,
+                borderRadius: th.radius,
+              }}
+            >
+              <ItemArt
+                vendor={v}
+                seed={i}
+                label={p.name}
+                className="aspect-square"
+              />
+              <p
+                className="mt-3 truncate text-center text-sm font-medium"
+                style={{ fontFamily: th.heading }}
+              >
+                {p.name}
+              </p>
+              <p
+                className="mt-1 text-center text-sm font-semibold tabular-nums"
+                style={{ color: th.accent }}
+              >
+                {naira(p.price)}
+              </p>
             </ItemLink>
           ))}
         </div>
       );
+
     case "cards":
     default:
       return (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {items.map((p, i) => <Card key={p.id} v={v} p={p} i={i} />)}
+        <div
+          className={[
+            "grid gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8",
+            type === "fashion" || type === "beauty"
+              ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+              : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+          ].join(" ")}
+        >
+          {items.map((p, i) => (
+            <ProductCard
+              key={p.id}
+              vendor={v}
+              product={p}
+              index={i}
+              tall={type === "fashion"}
+            />
+          ))}
         </div>
       );
   }
 }
 
-/** Mix-and-match storefront: each template pairs a hero and catalogue style with its own type & colour. */
+/* ───────────────────── Trust information ───────────────────── */
+
+function TrustSection({ vendor: v }: { vendor: Vendor }) {
+  const th = v.theme;
+
+  const items = [
+    {
+      icon: Truck,
+      title: "Delivery & fulfilment",
+      detail: v.delivery.split(".")[0],
+    },
+    {
+      icon: Star,
+      title: "Customer rating",
+      detail: `${v.rating} average · ${v.reviews} reviews`,
+    },
+    {
+      icon: Clock,
+      title: "Opening hours",
+      detail: v.hours,
+    },
+  ];
+
+  return (
+    <section
+      id="reviews"
+      className="border-y"
+      style={{ borderColor: th.line, background: th.soft }}
+    >
+      <div className="mx-auto grid max-w-6xl grid-cols-1 px-4 sm:grid-cols-3 sm:px-6">
+        {items.map((item, index) => (
+          <div
+            key={item.title}
+            className={[
+              "flex items-start gap-3 py-5 sm:px-5 sm:py-6",
+              index > 0 ? "border-t sm:border-l sm:border-t-0" : "",
+            ].join(" ")}
+            style={{ borderColor: th.line }}
+          >
+            <span
+              className="grid size-10 shrink-0 place-items-center rounded-full"
+              style={{
+                background: th.bg,
+                color: th.accent,
+                border: `1px solid ${th.line}`,
+              }}
+            >
+              <item.icon className="size-4" strokeWidth={1.7} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[9px] font-semibold uppercase tracking-[0.15em] opacity-50">
+                {item.title}
+              </span>
+              <span className="mt-1 block text-sm font-medium leading-6">
+                {item.detail}
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────── Main storefront ───────────────────── */
+
 export function ComposedStore({ vendor, tpl }: P) {
   const v = vendor;
+  const th = v.theme;
+  const type = category(v);
+
+  const catalogueTitle =
+    type === "fashion"
+      ? "The collection"
+      : type === "beauty"
+        ? "Our treatments & services"
+        : type === "food"
+          ? "Explore our menu"
+          : type === "hospitality"
+            ? "Rooms & experiences"
+            : v.fulfilment === "booking"
+              ? "Explore our services"
+              : v.fulfilment === "order"
+                ? "Explore our collection"
+                : "Explore available options";
+
+  const catalogueDescription =
+    type === "fashion"
+      ? "Discover thoughtfully designed pieces, carefully selected fabrics and timeless styles."
+      : type === "beauty"
+        ? "Explore our services and find the right experience for you."
+        : type === "food"
+          ? "Explore our selection and find something you will love."
+          : type === "hospitality"
+            ? "Discover comfortable spaces and experiences for your next stay."
+            : v.fulfilment === "booking"
+              ? "Find the service that is right for you and choose your preferred option."
+              : v.fulfilment === "order"
+                ? "Discover what we have prepared for you."
+                : "Explore the options available for your stay.";
+
+  const catalogueLabel =
+    type === "fashion"
+      ? "Selected pieces"
+      : type === "beauty"
+        ? "Our services"
+        : type === "food"
+          ? "Freshly prepared"
+          : type === "hospitality"
+            ? "Stay with us"
+            : "Our catalogue";
+
   return (
-    <div>
+    <div className="min-h-screen" style={{ background: th.bg, color: th.ink }}>
       <HeroBlock vendor={v} tpl={tpl} />
-      <section className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="grid gap-3 py-6 text-sm sm:grid-cols-3">
-          {[
-            [Truck, v.delivery.split(".")[0]],
-            [Star, `${v.rating} average from ${v.reviews} reviews`],
-            [Clock, v.hours],
-          ].map(([Icon, txt], i) => {
-            const I = Icon as typeof Truck;
-            return (
-              <div key={i} className="flex items-center gap-3 border px-4 py-3" style={{ borderColor: t(v).line, borderRadius: t(v).radius }}>
-                <I className="size-4 shrink-0" style={{ color: t(v).accent }} />
-                <span className="min-w-0 truncate">{txt as string}</span>
-              </div>
-            );
-          })}
+
+      <TrustSection vendor={v} />
+
+      {/* Catalogue */}
+      <section
+        id="catalogue"
+        className="mx-auto max-w-6xl scroll-mt-28 px-4 py-16 sm:px-6 sm:py-24"
+      >
+        <div className="mb-10 flex flex-col gap-5 sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-xl">
+            <Eyebrow color={th.accent}>{catalogueLabel}</Eyebrow>
+            <h2
+              className={[
+                "mt-3 text-3xl font-semibold leading-tight tracking-[-0.05em] sm:text-5xl",
+                tpl.caps ? "uppercase" : "",
+              ].join(" ")}
+              style={{ fontFamily: th.heading }}
+            >
+              {catalogueTitle}
+            </h2>
+            <p className="mt-4 max-w-lg text-sm leading-7 opacity-60">
+              {catalogueDescription}
+            </p>
+          </div>
+
+          <span
+            className="inline-flex w-fit items-center gap-2 border px-3.5 py-2.5 text-[10px] font-medium uppercase tracking-[0.12em]"
+            style={{
+              borderColor: th.line,
+              borderRadius: th.radius,
+              background: th.soft,
+            }}
+          >
+            <span className="size-1.5 rounded-full" style={{ background: th.accent }} />
+            {v.products.length} {v.products.length === 1 ? "item" : "items"}
+          </span>
         </div>
-      </section>
-      <section id="catalogue" className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <div className="mb-6 flex items-end justify-between gap-3">
-          <h2 className={"text-3xl font-bold " + (tpl.caps ? "uppercase" : "")} style={{ fontFamily: t(v).heading }}>
-            {v.fulfilment === "order" ? "Shop the menu" : v.fulfilment === "booking" ? "Services" : "Rooms & rates"}
-          </h2>
-          <span className="text-xs opacity-60">{v.products.length} items</span>
-        </div>
+
         <CatalogBlock vendor={v} tpl={tpl} />
       </section>
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <div className="grid gap-6 p-6 sm:p-10 md:grid-cols-[1fr_auto] md:items-center" style={{ background: t(v).soft, borderRadius: t(v).radius }}>
-          <div>
-            <p className={"text-2xl font-bold " + (tpl.caps ? "uppercase" : "")} style={{ fontFamily: t(v).heading }}>About {v.name}</p>
-            <p className="mt-2 max-w-2xl text-sm opacity-75">{v.about}</p>
+
+      {/* Brand story */}
+      <section
+        id="about"
+        className="border-y"
+        style={{ borderColor: th.line, background: th.soft }}
+      >
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 sm:py-20 md:grid-cols-[1fr_0.7fr] md:items-center md:gap-16">
+          <div className="max-w-2xl">
+            <Eyebrow color={th.accent}>The story behind the brand</Eyebrow>
+            <h2
+              className={[
+                "mt-4 text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-5xl",
+                tpl.caps ? "uppercase" : "",
+              ].join(" ")}
+              style={{ fontFamily: th.heading }}
+            >
+              A little about {v.name}
+            </h2>
+            <p className="mt-5 text-sm leading-8 opacity-65 sm:text-base">
+              {v.about}
+            </p>
+
+            <div className="mt-7 flex flex-wrap items-center gap-4 text-xs opacity-65">
+              <span className="inline-flex items-center gap-2">
+                <ShieldCheck className="size-4" style={{ color: th.accent }} />
+                Verified Peniel store
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Sparkles className="size-4" style={{ color: th.accent }} />
+                {v.rating} customer rating
+              </span>
+            </div>
           </div>
-          <Btn v={v}>{cta(v)} <ArrowRight className="size-4" /></Btn>
+
+          <div
+            className="flex flex-col items-start gap-5 border p-6 sm:p-8"
+            style={{
+              background: th.bg,
+              borderColor: th.line,
+              borderRadius: th.radius,
+            }}
+          >
+            <Eyebrow color={th.accent}>Ready when you are</Eyebrow>
+            <p
+              className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl"
+              style={{ fontFamily: th.heading }}
+            >
+              Find something you will love.
+            </p>
+            <p className="text-sm leading-7 opacity-60">
+              Explore the collection and connect directly with {v.name}.
+            </p>
+            <Button vendor={v}>{cta(v)}</Button>
+          </div>
         </div>
       </section>
     </div>

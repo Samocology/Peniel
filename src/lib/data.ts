@@ -82,7 +82,7 @@ export type Vendor = {
   phone: string;
   email: string;
   fulfilment: "order" | "booking" | "reservation";
-  /** storefront theme — vendor brand owns the visual, platform stays subtle */
+  /** storefront theme - vendor brand owns the visual, platform stays subtle */
   theme: {
     bg: string;
     ink: string;
@@ -116,19 +116,19 @@ export const vendors: Vendor[] = [
     reviews: 324,
     orders: "1.2K+ orders completed",
     location: "15 Admiralty Way, Lekki Phase 1, Lagos",
-    hours: "Mon – Sun: 8:00 AM – 10:00 PM",
+    hours: "Mon - Sun: 8:00 AM - 10:00 PM",
     delivery: "Delivery within Lekki, VI, Ikoyi & environs. ₦1,500 fee. Free above ₦20,000.",
     phone: "0812 345 6789",
     email: "hello@abigailskitchen.ng",
     fulfilment: "order",
     theme: {
-      bg: "#12160f",
-      ink: "#f6f2e8",
+      bg: "#0e0c0a",
+      ink: "#f5efe3",
       accent: "#c9a227",
-      accentInk: "#1a1a12",
-      soft: "#1c2118",
-      line: "rgba(246,242,232,0.14)",
-      radius: "18px",
+      accentInk: "#1a140a",
+      soft: "#18150f",
+      line: "rgba(245,239,227,0.14)",
+      radius: "16px",
       heading: "var(--font-script)",
     },
     groups: ["Popular", "Main Dishes", "Sides", "Drinks", "Combos", "Catering"],
@@ -148,7 +148,7 @@ export const vendors: Vendor[] = [
     name: "Fresh From the Farm",
     tagline: "From the soil to your kitchen.",
     about:
-      "We deliver farm-fresh produce, cleaned and prepped ingredients, meal kits and farm boxes across Lagos. Tell us the dish and how many people you're cooking for — we do the maths.",
+      "We deliver farm-fresh produce, cleaned and prepped ingredients, meal kits and farm boxes across Lagos. Tell us the dish and how many people you're cooking for - we do the maths.",
     type: "fresh-food",
     categorySlug: "fresh-food",
     categoryLabel: "Fresh Food & Farm",
@@ -161,7 +161,7 @@ export const vendors: Vendor[] = [
     reviews: 154,
     orders: "820+ boxes delivered",
     location: "Farm hub, Ikorodu • Delivery across Lagos",
-    hours: "Mon – Sat: 7:00 AM – 7:00 PM",
+    hours: "Mon - Sat: 7:00 AM - 7:00 PM",
     delivery: "Next-day delivery island & mainland. Free above ₦25,000.",
     phone: "0803 111 2244",
     email: "orders@freshfromthefarm.ng",
@@ -178,14 +178,14 @@ export const vendors: Vendor[] = [
     },
     groups: ["Meal Kits", "Farm Boxes", "Fresh Produce", "Proteins", "Prepped & Cleaned"],
     products: [
-      { id: "ff-1", name: "Egusi Soup Kit", desc: "Ground egusi, ugu, palm oil, crayfish, seasoning — measured", price: 12500, tag: "Signature", group: "Meal Kits", meta: "Serves 6" },
+      { id: "ff-1", name: "Egusi Soup Kit", desc: "Ground egusi, ugu, palm oil, crayfish, seasoning - measured", price: 12500, tag: "Signature", group: "Meal Kits", meta: "Serves 6" },
       { id: "ff-2", name: "Efo Riro Kit", desc: "Shredded efo, locust bean, pepper mix, iru, palm oil", price: 10800, group: "Meal Kits", meta: "Serves 6" },
       { id: "ff-3", name: "Jollof Party Kit", desc: "Long grain rice, blended stew base, spices, oil", price: 15900, group: "Meal Kits", meta: "Serves 10" },
       { id: "ff-4", name: "Weekly Family Farm Box", desc: "Tomatoes, peppers, onions, leafy greens, yam, plantain", price: 22000, tag: "Subscription", group: "Farm Boxes" },
       { id: "ff-5", name: "Fresh Tomatoes (1kg)", desc: "Roma tomatoes, sorted and washed", price: 2500, group: "Fresh Produce" },
       { id: "ff-6", name: "Goat Meat (2kg)", desc: "Cut, cleaned, ready to cook", price: 18000, group: "Proteins" },
       { id: "ff-7", name: "Cleaned Cow Tripe (Shaki)", desc: "Deep-cleaned, par-boiled, portioned", price: 9500, group: "Prepped & Cleaned" },
-      { id: "ff-8", name: "Blended Pepper Mix (1L)", desc: "Rodo, tatashe, onion — blended fresh daily", price: 4200, group: "Prepped & Cleaned" },
+      { id: "ff-8", name: "Blended Pepper Mix (1L)", desc: "Rodo, tatashe, onion - blended fresh daily", price: 4200, group: "Prepped & Cleaned" },
     ],
   },
   {
@@ -206,7 +206,7 @@ export const vendors: Vendor[] = [
     reviews: 236,
     orders: "2.4K+ appointments",
     location: "15 Admiralty Way, Lekki Phase 1, Lagos",
-    hours: "Tue – Sun: 9:00 AM – 8:00 PM",
+    hours: "Tue - Sun: 9:00 AM - 8:00 PM",
     delivery: "In-lounge service. Home service available within Lekki.",
     phone: "0812 345 6789",
     email: "hello@glamourbeautylounge.com",
@@ -237,7 +237,7 @@ export const vendors: Vendor[] = [
     name: "Kemi's Couture",
     tagline: "Threads of Africa, cut for now.",
     about:
-      "Made-to-measure and ready-to-wear pieces from a Victoria Island atelier. Ankara, aso-oke, adire and tailored suiting — produced in small runs.",
+      "Made-to-measure and ready-to-wear pieces from a Victoria Island atelier. Ankara, aso-oke, adire and tailored suiting - produced in small runs.",
     type: "fashion",
     categorySlug: "fashion",
     categoryLabel: "Fashion",
@@ -250,8 +250,8 @@ export const vendors: Vendor[] = [
     reviews: 87,
     orders: "640+ pieces shipped",
     location: "Adeola Odeku, Victoria Island, Lagos",
-    hours: "Mon – Sat: 10:00 AM – 7:00 PM",
-    delivery: "Nationwide delivery 2–5 days. Free above ₦150,000.",
+    hours: "Mon - Sat: 10:00 AM - 7:00 PM",
+    delivery: "Nationwide delivery 2-5 days. Free above ₦150,000.",
     phone: "0701 998 3311",
     email: "atelier@kemiscouture.com",
     fulfilment: "order",
@@ -267,11 +267,11 @@ export const vendors: Vendor[] = [
     },
     groups: ["New Season", "Ready to Wear", "Made to Measure", "Accessories"],
     products: [
-      { id: "kc-1", name: "Adire Column Dress", desc: "Hand-dyed adire, bias cut, floor length", price: 165000, tag: "New", group: "New Season", meta: "UK 6–16" },
+      { id: "kc-1", name: "Adire Column Dress", desc: "Hand-dyed adire, bias cut, floor length", price: 165000, tag: "New", group: "New Season", meta: "UK 6-16" },
       { id: "kc-2", name: "Aso-Oke Blazer", desc: "Structured shoulder, silk-lined, single button", price: 210000, group: "New Season" },
       { id: "kc-3", name: "Ankara Wrap Skirt", desc: "Wax print, adjustable tie waist", price: 78000, group: "Ready to Wear" },
       { id: "kc-4", name: "Kaftan Shirt", desc: "Cotton poplin with embroidered placket", price: 92000, group: "Ready to Wear" },
-      { id: "kc-5", name: "Bespoke Agbada (3pc)", desc: "Measured, fitted, two fittings included", price: 480000, tag: "Atelier", group: "Made to Measure", meta: "3–4 weeks" },
+      { id: "kc-5", name: "Bespoke Agbada (3pc)", desc: "Measured, fitted, two fittings included", price: 480000, tag: "Atelier", group: "Made to Measure", meta: "3-4 weeks" },
       { id: "kc-6", name: "Beaded Clutch", desc: "Hand-beaded, satin lining, chain strap", price: 54000, group: "Accessories" },
     ],
   },
@@ -280,7 +280,7 @@ export const vendors: Vendor[] = [
     name: "Mama Cee Confectionery",
     tagline: "Every celebration deserves cake.",
     about:
-      "Port Harcourt bakery baking custom cakes, cupcakes, small chops and dessert tables. Choose a size, pick a flavour, tell us the message — we bake to order.",
+      "Port Harcourt bakery baking custom cakes, cupcakes, small chops and dessert tables. Choose a size, pick a flavour, tell us the message - we bake to order.",
     type: "bakery",
     categorySlug: "bakeries",
     categoryLabel: "Cakes & Bakery",
@@ -293,7 +293,7 @@ export const vendors: Vendor[] = [
     reviews: 72,
     orders: "410+ cakes baked",
     location: "GRA Phase 2, Port Harcourt",
-    hours: "Mon – Sat: 9:00 AM – 6:00 PM",
+    hours: "Mon - Sat: 9:00 AM - 6:00 PM",
     delivery: "Pre-order 48hrs. Pickup or PH delivery from ₦3,000.",
     phone: "0806 552 7788",
     email: "orders@mamacee.ng",
@@ -356,7 +356,7 @@ export const vendors: Vendor[] = [
       { id: "eh-1", name: "Classic King Room", desc: "28sqm, king bed, city view, breakfast included", price: 145000, group: "Rooms", meta: "per night" },
       { id: "eh-2", name: "Twin Deluxe", desc: "Two double beds, work desk, breakfast included", price: 168000, group: "Rooms", meta: "per night" },
       { id: "eh-3", name: "Skyline Suite", desc: "Living area, marble bath, lounge access", price: 320000, tag: "Best view", group: "Suites", meta: "per night" },
-      { id: "eh-4", name: "Executive Day Office", desc: "9am–6pm private room with Wi-Fi & coffee", price: 55000, group: "Day Use" },
+      { id: "eh-4", name: "Executive Day Office", desc: "9am-6pm private room with Wi-Fi & coffee", price: 55000, group: "Day Use" },
       { id: "eh-5", name: "Airport Pickup", desc: "Private car from Murtala Muhammed to hotel", price: 35000, group: "Extras" },
     ],
   },
@@ -378,8 +378,8 @@ export const vendors: Vendor[] = [
     reviews: 210,
     orders: "5.6K+ devices sold",
     location: "Computer Village, Ikeja, Lagos",
-    hours: "Mon – Sat: 8:30 AM – 7:00 PM",
-    delivery: "1–2 day dispatch nationwide. Pickup available.",
+    hours: "Mon - Sat: 8:30 AM - 7:00 PM",
+    delivery: "1-2 day dispatch nationwide. Pickup available.",
     phone: "0809 442 1177",
     email: "sales@lagostechhub.com",
     fulfilment: "order",
@@ -421,7 +421,7 @@ export type CartLine = {
 };
 
 export const cartLines: CartLine[] = [
-  { vendor: "Abigail's Kitchen", vendorSlug: "abigails-kitchen", item: "Jollof Rice (Party Size)", meta: "Large (Serves 10–15) • Add grilled chicken", qty: 1, price: 15000 },
+  { vendor: "Abigail's Kitchen", vendorSlug: "abigails-kitchen", item: "Jollof Rice (Party Size)", meta: "Large (Serves 10-15) • Add grilled chicken", qty: 1, price: 15000 },
   { vendor: "Abigail's Kitchen", vendorSlug: "abigails-kitchen", item: "Suya Platter", meta: "Regular", qty: 1, price: 8000 },
   { vendor: "Glamour Beauty Lounge", vendorSlug: "glamour-beauty-lounge", item: "Signature Full Body Massage", meta: "Sat 24 May • 2:00 PM • Esther B.", qty: 1, price: 25000 },
   { vendor: "Fresh From the Farm", vendorSlug: "fresh-from-the-farm", item: "Fresh Tomatoes (1kg)", meta: "Roma tomatoes", qty: 2, price: 2500 },
@@ -438,9 +438,9 @@ export type Order = {
   id: string;
   vendor: string;
   vendorSlug: string;
-  kind: "order" | "booking";
+  kind: "order" | "booking" | "reservation";
   placed: string;
-  status: "Preparing" | "Out for delivery" | "Delivered" | "Confirmed" | "Cancelled";
+  status: "New" | "Preparing" | "Out for delivery" | "Delivered" | "Confirmed" | "Cancelled";
   total: number;
   items: string;
 };

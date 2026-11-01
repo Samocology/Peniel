@@ -7,9 +7,9 @@ import { StatCard } from "@/components/site/bits";
 export const Route = createFileRoute("/admin/verification")({
   head: () => ({
     meta: [
-      { title: "Verification review — Vendra admin" },
+      { title: "Verification review - Peniel admin" },
       { name: "description", content: "Review vendor verification applications against served customers, satisfaction, complaints and identity checks." },
-      { property: "og:title", content: "Verification review — Vendra admin" },
+      { property: "og:title", content: "Verification review - Peniel admin" },
       { property: "og:description", content: "Verification is earned, never bought." },
     ],
   }),
@@ -64,12 +64,12 @@ function AdminVerification() {
           <Panel title="What we check">
             <ul className="space-y-3 text-sm">
               {[
-                "At least 5 different customers served successfully — this only unlocks the application, it never verifies a business on its own",
+                "At least 5 different customers served successfully - this only unlocks the application, it never verifies a business on its own",
                 "Customer satisfaction and review quality",
                 "Complaint and refund history",
                 "No fraud or payment abuse signals",
                 "Valid identity and business details",
-                "Compliance with Vendra policies",
+                "Compliance with Peniel policies",
               ].map((c) => (
                 <li key={c} className="flex gap-2.5">
                   <BadgeCheck className="mt-0.5 size-4 shrink-0 text-primary" />
