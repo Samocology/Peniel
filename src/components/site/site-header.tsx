@@ -43,7 +43,7 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
         <div className="hidden items-center gap-2 sm:flex">
           {user ? (
             <Button asChild variant="ghost" size="sm">
-              <Link to="/home">My home</Link>
+              <Link to="/">My home</Link>
             </Button>
           ) : (
             <Button asChild variant="ghost" size="sm">

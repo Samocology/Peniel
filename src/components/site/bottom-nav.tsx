@@ -48,7 +48,7 @@ export function CustomerBottomNav() {
   return (
     <BottomBar
       items={[
-        { to: "/home", label: "Home", icon: <House />, exact: true },
+        { to: "/", label: "Home", icon: <House />, exact: true },
         { to: "/marketplace", label: "Explore", icon: <Compass /> },
         { to: "/cart", label: "Cart", icon: <ShoppingBasket />, badge: cart },
         { to: "/messages", label: "Chats", icon: <MessagesSquare />, badge: unread },
