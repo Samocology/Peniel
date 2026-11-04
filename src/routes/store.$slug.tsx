@@ -5,7 +5,7 @@ import { defaultTemplateFor, getTemplate } from "@/lib/templates";
 import { mergeVendor, useApp } from "@/lib/peniel-store";
 import { StoreFooter, StoreTopBar } from "@/components/store/store-kit";
 import { BuilderStore } from "@/components/store/layouts-a";
-import { GridStore, PlayfulStore, ReservationStore } from "@/components/store/layouts-b";
+import { ReservationStore } from "@/components/store/layouts-b";
 import { ComposedStore } from "@/components/store/layouts-c";
 
 export const Route = createFileRoute("/store/$slug")({
@@ -55,9 +55,10 @@ function StorePage() {
     : L === "builder" ? <BuilderStore vendor={vendor} />
     : L === "editorial" ? <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "centered", catalog: "list" }} />
     : L === "gallery" ? <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "magazine", catalog: "masonry" }} />
-    : L === "playful" ? <PlayfulStore vendor={vendor} />
+    : L === "playful" ? <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "centered", catalog: "polaroid" }} />
     : L === "reservation" ? <ReservationStore vendor={vendor} />
-    : <GridStore vendor={vendor} />;
+    : L === "grid" ? <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "poster", catalog: "cards" }} />
+    : <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "poster", catalog: "bento" }} />;
 
   return (
     <div className="min-h-screen" style={{ background: vendor.theme.bg, color: vendor.theme.ink }}>

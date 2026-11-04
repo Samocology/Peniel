@@ -12,6 +12,20 @@ import { toast } from "sonner";
 import { app, useApp } from "@/lib/peniel-store";
 import type { CSSProperties, ReactNode } from "react";
 import { naira, type Product, type Vendor } from "@/lib/data";
+import restaurantItem1 from "@/assets/items/restaurant-1.jpg";
+import restaurantItem2 from "@/assets/items/restaurant-2.jpg";
+import freshFoodItem1 from "@/assets/items/fresh-food-1.jpg";
+import freshFoodItem2 from "@/assets/items/fresh-food-2.jpg";
+import beautyItem1 from "@/assets/items/beauty-1.jpg";
+import beautyItem2 from "@/assets/items/beauty-2.jpg";
+import fashionItem1 from "@/assets/items/fashion-1.jpg";
+import fashionItem2 from "@/assets/items/fashion-2.jpg";
+import bakeryItem1 from "@/assets/items/bakery-1.jpg";
+import bakeryItem2 from "@/assets/items/bakery-2.jpg";
+import hotelItem from "@/assets/items/hotel-1.jpg";
+import coverTech from "@/assets/cover-tech.jpg";
+
+
 
 /* ───────────────────────── Store Top Bar ───────────────────────── */
 
@@ -147,11 +161,7 @@ export function StoreTopBar({ vendor }: { vendor: Vendor }) {
             onClick={() => {
               app.toggleFavorite(vendor.slug);
 
-              toast.success(
-                saved
-                  ? "Removed from favourites"
-                  : "Saved to favourites",
-              );
+              toast.success(saved ? "Removed from favourites" : "Saved to favourites");
             }}
             aria-label={saved ? "Remove from favourites" : "Save store"}
             className="inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-[10px] font-medium transition-all hover:-translate-y-0.5 sm:px-3 sm:text-[11px]"
@@ -161,13 +171,8 @@ export function StoreTopBar({ vendor }: { vendor: Vendor }) {
               color: saved ? t.accent : t.ink,
             }}
           >
-            <Heart
-              className={`size-3.5 ${saved ? "fill-current" : ""}`}
-              strokeWidth={1.8}
-            />
-            <span className="hidden sm:inline">
-              {saved ? "Saved" : "Save"}
-            </span>
+            <Heart className={`size-3.5 ${saved ? "fill-current" : ""}`} strokeWidth={1.8} />
+            <span className="hidden sm:inline">{saved ? "Saved" : "Save"}</span>
           </button>
 
           <Link
@@ -192,6 +197,8 @@ export function StoreTopBar({ vendor }: { vendor: Vendor }) {
 
 export function StoreFooter({ vendor }: { vendor: Vendor }) {
   const t = vendor.theme;
+  const { user } = useApp();
+  if (user) return null;
 
   return (
     <footer
@@ -220,10 +227,7 @@ export function StoreFooter({ vendor }: { vendor: Vendor }) {
             </span>
 
             <div>
-              <p
-                className="text-lg font-semibold tracking-tight"
-                style={{ fontFamily: t.heading }}
-              >
+              <p className="text-lg font-semibold tracking-tight" style={{ fontFamily: t.heading }}>
                 {vendor.name}
               </p>
 
@@ -233,9 +237,7 @@ export function StoreFooter({ vendor }: { vendor: Vendor }) {
             </div>
           </div>
 
-          <p className="mt-5 max-w-sm text-sm leading-7 opacity-60">
-            {vendor.about}
-          </p>
+          <p className="mt-5 max-w-sm text-sm leading-7 opacity-60">{vendor.about}</p>
 
           <div className="mt-5">
             <StoreBadges vendor={vendor} />
@@ -262,9 +264,7 @@ export function StoreFooter({ vendor }: { vendor: Vendor }) {
             <span>{vendor.location}</span>
           </div>
 
-          <p className="mt-3 pl-9 text-xs leading-6 opacity-55">
-            {vendor.hours}
-          </p>
+          <p className="mt-3 pl-9 text-xs leading-6 opacity-55">{vendor.hours}</p>
         </div>
 
         {/* Contact */}
@@ -278,31 +278,21 @@ export function StoreFooter({ vendor }: { vendor: Vendor }) {
             search={{ v: vendor.slug }}
             className="inline-flex items-center gap-2.5 text-sm font-semibold transition-opacity hover:opacity-60"
           >
-            <MessageCircle
-              className="size-4"
-              style={{ color: t.accent }}
-            />
+            <MessageCircle className="size-4" style={{ color: t.accent }} />
             Chat with {vendor.name}
           </Link>
 
           <p className="mt-3 max-w-xs text-xs leading-6 opacity-50">
-            Your contact details stay private on Peniel. All conversations
-            are protected.
+            Your contact details stay private on Peniel. All conversations are protected.
           </p>
         </div>
       </div>
 
-      <div
-        className="border-t"
-        style={{ borderColor: t.line }}
-      >
+      <div className="border-t" style={{ borderColor: t.line }}>
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-[10px] opacity-50 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p>© 2026 {vendor.name}. All rights reserved.</p>
 
-          <Link
-            to="/"
-            className="transition-opacity hover:opacity-100"
-          >
+          <Link to="/" className="transition-opacity hover:opacity-100">
             Powered by Peniel · Payments secured by Peniel Pay
           </Link>
         </div>
@@ -342,9 +332,7 @@ export function StoreBadges({ vendor }: { vendor: Vendor }) {
 
         <span className="tabular-nums">{vendor.rating}</span>
 
-        <span className="font-normal opacity-50">
-          ({vendor.reviews} reviews)
-        </span>
+        <span className="font-normal opacity-50">({vendor.reviews} reviews)</span>
       </span>
 
       <span className="hidden text-xs opacity-25 sm:inline">·</span>
@@ -356,13 +344,7 @@ export function StoreBadges({ vendor }: { vendor: Vendor }) {
 
 /* ───────────────────────── Group Tabs ───────────────────────── */
 
-export function GroupTabs({
-  vendor,
-  active = 0,
-}: {
-  vendor: Vendor;
-  active?: number;
-}) {
+export function GroupTabs({ vendor, active = 0 }: { vendor: Vendor; active?: number }) {
   const t = vendor.theme;
 
   return (
@@ -436,88 +418,34 @@ export function ItemArt({
   className?: string;
   label?: string;
 }) {
-  const t = vendor.theme;
-
-  const variations = [
-    "radial-gradient(ellipse at 20% 20%, rgba(255,255,255,0.48), transparent 48%), linear-gradient(135deg, var(--art-accent), var(--art-soft))",
-    "radial-gradient(ellipse at 80% 15%, rgba(255,255,255,0.38), transparent 45%), linear-gradient(145deg, var(--art-soft), var(--art-accent))",
-    "radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.35), transparent 55%), linear-gradient(125deg, var(--art-accent), var(--art-soft))",
-    "radial-gradient(ellipse at 15% 85%, rgba(255,255,255,0.42), transparent 48%), linear-gradient(160deg, var(--art-soft), var(--art-accent))",
-  ];
-
-  const background = variations[Math.abs(seed) % variations.length];
+  const images: Record<Vendor["type"], string[]> = {
+    restaurant: [restaurantItem1, restaurantItem2],
+    "fresh-food": [freshFoodItem1, freshFoodItem2],
+    beauty: [beautyItem1, beautyItem2],
+    fashion: [fashionItem1, fashionItem2],
+    bakery: [bakeryItem1, bakeryItem2],
+    hotel: [hotelItem],
+    electronics: [coverTech],
+  };
+  const gallery = images[vendor.type];
+  const image = gallery[Math.abs(seed) % gallery.length] ?? vendor.cover;
 
   return (
-    <div
-      className={"relative isolate overflow-hidden " + (className ?? "")}
-      style={
-        {
-          background,
-          borderRadius: t.radius,
-          "--art-accent": `${t.accent}35`,
-          "--art-soft": t.soft,
-        } as CSSProperties
-      }
-    >
-      {/* Soft decorative shapes */}
-      <div
-        className="pointer-events-none absolute -right-8 -top-10 size-32 rounded-full border opacity-30"
-        style={{
-          borderColor: t.accent,
-          borderWidth: "1px",
-        }}
-      />
-
-      <div
-        className="pointer-events-none absolute -bottom-12 -left-8 size-36 rounded-full border opacity-25"
-        style={{
-          borderColor: t.accent,
-          borderWidth: "1px",
-        }}
-      />
-
-      <div
-        className="pointer-events-none absolute inset-0 opacity-20"
-        style={{
-          background: `linear-gradient(135deg, transparent 40%, ${t.accent}25 100%)`,
-        }}
-      />
-
-      {label && (
-        <div className="absolute inset-0 flex items-end p-4 sm:p-5">
-          <span
-            className="max-w-[85%] text-[9px] font-semibold uppercase tracking-[0.16em] opacity-60"
-            style={{ color: t.ink }}
-          >
-            {label}
-          </span>
-        </div>
-      )}
-
-      <span
-        className="absolute right-4 top-4 text-[9px] font-medium tracking-[0.18em] opacity-35"
-        style={{ color: t.ink }}
-      >
-        {String(seed + 1).padStart(2, "0")}
-      </span>
-    </div>
+    <img
+      src={image}
+      alt={label ?? `${vendor.name} product`}
+      loading="lazy"
+      className={"block size-full object-cover " + (className ?? "")}
+      style={{ borderRadius: vendor.theme.radius }}
+    />
   );
 }
 
 /* ───────────────────────── Price ───────────────────────── */
 
-export function Price({
-  value,
-  vendor,
-}: {
-  value: number;
-  vendor: Vendor;
-}) {
+export function Price({ value, vendor }: { value: number; vendor: Vendor }) {
   return (
-    <span
-      className="text-[15px] font-semibold tabular-nums"
-      style={{ color: vendor.theme.accent }}
-    >
+    <span className="text-[15px] font-semibold tabular-nums" style={{ color: vendor.theme.accent }}>
       {naira(value)}
     </span>
   );

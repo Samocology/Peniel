@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -9,6 +9,7 @@ import {
   CreditCard,
   ImagePlus,
   ListPlus,
+  MessagesSquare,
   Play,
   Search,
   Star,
@@ -26,6 +27,7 @@ import { searchVendors } from "@/lib/discovery";
 import { getMarketplaceLocationLabel } from "@/lib/location";
 import { app, useApp } from "@/lib/peniel-store";
 import { LocationPicker } from "@/components/site/location-picker";
+import { ItemArt } from "@/components/store/store-kit";
 import bizRestaurant from "@/assets/biz-restaurant.jpg";
 import bizSalon from "@/assets/biz-salon.jpg";
 import bizFashion from "@/assets/biz-fashion.jpg";
@@ -156,6 +158,8 @@ function Landing() {
   const featured = vendors.filter((v) => v.featured);
   const appState = useApp();
   const [searchQuery, setSearchQuery] = useState("");
+  if (appState.user?.role === "customer") return <CustomerHome />;
+  if (appState.user?.role === "vendor") return <VendorWorkspaceHome />;
   const selectedLocation = getMarketplaceLocationLabel(appState.customer.city);
   const matchingVendors = searchVendors(searchQuery, selectedLocation);
   const showLiveResults = Boolean(searchQuery.trim()) || selectedLocation !== "Lagos State";
@@ -230,9 +234,14 @@ function Landing() {
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 p-3">
-                {vendors[0]!.products.slice(0, 3).map((p) => (
+                {vendors[0]!.products.slice(0, 3).map((p, index) => (
                   <div key={p.id} className="rounded-xl border border-border p-2">
-                    <div className="brand-gradient mb-2 h-14 rounded-lg" />
+                    <ItemArt
+                      vendor={vendors[0]!}
+                      seed={index}
+                      label={p.name}
+                      className="mb-2 h-14 w-full rounded-lg"
+                    />
                     <p className="truncate text-[11px] font-semibold">{p.name}</p>
                     <p className="text-[11px] text-muted-foreground">₦{p.price.toLocaleString()}</p>
                   </div>
@@ -552,6 +561,212 @@ function Landing() {
       </section>
 
       <SiteFooter />
+    </div>
+  );
+}
+
+function CustomerHome() {
+  const state = useApp();
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const name = state.user?.name.split(" ")[0] || state.customer.name.split(" ")[0];
+  const featured = vendors.filter((vendor) => vendor.featured).slice(0, 3);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+      <main className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:space-y-10 sm:px-6 sm:py-10">
+        <section className="relative overflow-hidden rounded-[2rem] bg-sidebar px-5 py-8 text-sidebar-foreground shadow-lift sm:px-10 sm:py-12">
+          <div
+            aria-hidden="true"
+            className="surface-grid pointer-events-none absolute inset-0 opacity-20"
+          />
+          <div className="relative grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">
+                <span className="size-1.5 rounded-full bg-gold" /> Your Peniel home
+              </span>
+              <h1 className="mt-4 max-w-xl font-display text-3xl leading-tight font-bold sm:text-5xl">
+                Welcome back, {name}.
+                <span className="mt-1 block text-gold">What are you looking for today?</span>
+              </h1>
+              <p className="mt-3 max-w-lg text-sm leading-6 text-white/70 sm:text-base">
+                Discover independent businesses, keep your orders close, and find something worth
+                coming back for.
+              </p>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void navigate({ to: "/search", search: { q: query.trim() || undefined } });
+                }}
+                className="mt-6 flex max-w-xl flex-col gap-2 rounded-2xl bg-card p-2 text-foreground sm:flex-row"
+              >
+                <div className="relative min-w-0 flex-1">
+                  <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search shops, food, fashion…"
+                    className="h-11 border-0 pl-9 shadow-none focus-visible:ring-0"
+                  />
+                </div>
+                <Button type="submit" className="h-11 px-6">
+                  Explore <ArrowRight className="size-4" />
+                </Button>
+              </form>
+            </div>
+            <div className="hidden grid-cols-2 gap-3 lg:grid">
+              {featured.slice(0, 2).map((vendor, index) => (
+                <Link
+                  key={vendor.slug}
+                  to="/store/$slug"
+                  params={{ slug: vendor.slug }}
+                  className={
+                    "group relative overflow-hidden rounded-2xl " +
+                    (index === 0 ? "mt-8 h-64" : "h-52")
+                  }
+                >
+                  <img
+                    src={vendor.cover}
+                    alt={vendor.name}
+                    className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                  <span className="absolute right-3 bottom-3 left-3">
+                    <span className="block truncate font-display font-bold text-white">
+                      {vendor.name}
+                    </span>
+                    <span className="mt-1 inline-flex items-center gap-1 text-xs text-white/80">
+                      <Star className="size-3 fill-gold text-gold" /> {vendor.rating.toFixed(1)} ·{" "}
+                      {vendor.categoryLabel}
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-3 sm:grid-cols-3">
+          {[
+            {
+              label: "Explore businesses",
+              detail: "Browse the marketplace",
+              to: "/marketplace",
+              icon: Store,
+            },
+            {
+              label: "Your orders",
+              detail: `${state.orders.length} recent activities`,
+              to: "/orders",
+              icon: Truck,
+            },
+            {
+              label: "Messages",
+              detail: "Chat with businesses",
+              to: "/messages",
+              icon: MessagesSquare,
+            },
+          ].map(({ label, detail, to, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-card transition hover:-translate-y-0.5 hover:border-primary/30 sm:p-5"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+                <Icon className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-display font-bold">{label}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">{detail}</span>
+              </span>
+              <ArrowRight className="size-4 shrink-0 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-primary" />
+            </Link>
+          ))}
+        </section>
+
+        <section>
+          <SectionHeading
+            title="Picked for you"
+            subtitle="Local favourites with great products and service."
+            action={
+              <Button asChild variant="outline" size="sm" className="gap-1">
+                <Link to="/marketplace">
+                  See all <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+            }
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((vendor) => (
+              <Link
+                key={vendor.slug}
+                to="/store/$slug"
+                params={{ slug: vendor.slug }}
+                className="group overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:-translate-y-1 hover:shadow-lift"
+              >
+                <div className="relative h-44 overflow-hidden">
+                  <img
+                    src={vendor.cover}
+                    alt={vendor.name}
+                    loading="lazy"
+                    className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {vendor.verified && (
+                    <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-card/95 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                      <BadgeCheck className="size-3.5" /> Verified
+                    </span>
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block truncate font-display font-bold">{vendor.name}</span>
+                      <span className="mt-1 block truncate text-xs text-muted-foreground">
+                        {vendor.categoryLabel} ·{" "}
+                        {vendor.location.split(",").slice(-2).join(",").trim()}
+                      </span>
+                    </span>
+                    <span className="inline-flex shrink-0 items-center gap-1 text-sm font-bold">
+                      <Star className="size-3.5 fill-gold text-gold" />
+                      {vendor.rating.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function VendorWorkspaceHome() {
+  return (
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+      <main className="mx-auto grid min-h-[70vh] max-w-4xl place-items-center px-4 py-12">
+        <section className="w-full rounded-3xl border border-border bg-card p-6 text-center shadow-card sm:p-10">
+          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary-soft text-primary">
+            <Store className="size-7" />
+          </span>
+          <p className="mt-5 text-xs font-bold tracking-[0.18em] text-primary uppercase">
+            Business workspace
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-bold">
+            Your storefront, all in one place.
+          </h1>
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
+            Manage orders, products, customers and your store settings from your business dashboard.
+          </p>
+          <Button asChild className="mt-6 h-11 px-6">
+            <Link to="/vendor">
+              Open business dashboard <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        </section>
+      </main>
     </div>
   );
 }

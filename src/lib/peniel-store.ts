@@ -1,5 +1,12 @@
 import { useSyncExternalStore } from "react";
-import { cartLines as seedCart, getVendor, vendors, type CartLine, type Product, type Vendor } from "./data";
+import {
+  cartLines as seedCart,
+  getVendor,
+  vendors,
+  type CartLine,
+  type Product,
+  type Vendor,
+} from "./data";
 import { sanitizeChat } from "./chat-guard";
 
 /**
@@ -7,16 +14,20 @@ import { sanitizeChat } from "./chat-guard";
  * across every open tab/window of the app via the `storage` event.
  */
 export type Plan = "starter" | "growth" | "business";
-export type OrderStatus = "New" | "Confirmed" | "Preparing" | "Out for delivery" | "Delivered" | "Cancelled";
+export type OrderStatus =
+  "New" | "Confirmed" | "Preparing" | "Out for delivery" | "Delivered" | "Cancelled";
 export type OrderLine = { id: string; item: string; meta: string; qty: number; price: number };
 
-export type Profile = Partial<Pick<Vendor, "name" | "tagline" | "about" | "location" | "hours" | "delivery">> & {
+export type Profile = Partial<
+  Pick<Vendor, "name" | "tagline" | "about" | "location" | "hours" | "delivery">
+> & {
   deliveryFee?: number;
   freeAbove?: number;
   published?: boolean;
   acceptingOrders?: boolean;
   acceptingBookings?: boolean;
   paused?: boolean;
+  brandColor?: string;
 };
 
 export type Account = {
@@ -27,6 +38,7 @@ export type Account = {
   verification: "none" | "applied";
   promos: { code: string; offer: string; active: boolean; uses: number; revenue: number }[];
   hidden: string[];
+  stock?: Record<string, number>;
   products?: Product[];
   payoutBank?: {
     bankName: string;
@@ -37,7 +49,14 @@ export type Account = {
 };
 
 export type ChatMsg = { from: "customer" | "vendor"; text: string; at: number; blocked?: boolean };
-export type Thread = { id: string; vendorSlug: string; customer: string; messages: ChatMsg[]; readC: number; readV: number };
+export type Thread = {
+  id: string;
+  vendorSlug: string;
+  customer: string;
+  messages: ChatMsg[];
+  readC: number;
+  readV: number;
+};
 export type CartItem = CartLine & { id: string };
 
 export type VendorOrder = {
@@ -52,9 +71,21 @@ export type VendorOrder = {
   lineItems?: OrderLine[];
 };
 
+export type CustomerAddress = { id: string; label: string; address: string };
+export type SupportTicket = {
+  id: string;
+  vendorSlug: string;
+  topic: string;
+  message: string;
+  createdAt: number;
+  status: "Open" | "In progress" | "Resolved";
+};
+
 type State = {
   vendorSlug: string;
   customer: { name: string; city: string };
+  addresses?: CustomerAddress[];
+  supportTickets?: SupportTicket[];
   user?: { name: string; email: string; role: "customer" | "vendor" } | undefined;
   accounts: Record<string, Account>;
   cart: CartItem[];
@@ -68,21 +99,91 @@ type State = {
 const KEY = "peniel-app-v2";
 
 const seedOrders: VendorOrder[] = [
-  { id: "#ORD-7F4X2", vendorSlug: "abigails-kitchen", customer: "Tosin A.", items: "2 items", mode: "Delivery · VI", total: 26760, status: "New" },
-  { id: "#ORD-7F4X1", vendorSlug: "abigails-kitchen", customer: "Ada N.", items: "1 item", mode: "Pickup", total: 12400, status: "New" },
-  { id: "#ORD-7F4W9", vendorSlug: "abigails-kitchen", customer: "Bola S.", items: "2 items", mode: "Delivery · Lekki", total: 16000, status: "Out for delivery" },
-  { id: "#ORD-7F4W8", vendorSlug: "abigails-kitchen", customer: "Kelechi O.", items: "4 items", mode: "Delivery · Yaba", total: 41200, status: "Preparing" },
-  { id: "#ORD-7F4W7", vendorSlug: "abigails-kitchen", customer: "Chidi O.", items: "1 item", mode: "Pickup", total: 22000, status: "Delivered" },
-  { id: "#ORD-7F4W5", vendorSlug: "abigails-kitchen", customer: "Halima B.", items: "3 items", mode: "Delivery · Ikoyi", total: 33500, status: "Delivered" },
-  { id: "#ORD-7F4W2", vendorSlug: "abigails-kitchen", customer: "Uche E.", items: "1 item", mode: "Delivery · Surulere", total: 9800, status: "Cancelled" },
+  {
+    id: "#ORD-7F4X2",
+    vendorSlug: "abigails-kitchen",
+    customer: "Tosin A.",
+    items: "2 items",
+    mode: "Delivery · VI",
+    total: 26760,
+    status: "New",
+  },
+  {
+    id: "#ORD-7F4X1",
+    vendorSlug: "abigails-kitchen",
+    customer: "Ada N.",
+    items: "1 item",
+    mode: "Pickup",
+    total: 12400,
+    status: "New",
+  },
+  {
+    id: "#ORD-7F4W9",
+    vendorSlug: "abigails-kitchen",
+    customer: "Bola S.",
+    items: "2 items",
+    mode: "Delivery · Lekki",
+    total: 16000,
+    status: "Out for delivery",
+  },
+  {
+    id: "#ORD-7F4W8",
+    vendorSlug: "abigails-kitchen",
+    customer: "Kelechi O.",
+    items: "4 items",
+    mode: "Delivery · Yaba",
+    total: 41200,
+    status: "Preparing",
+  },
+  {
+    id: "#ORD-7F4W7",
+    vendorSlug: "abigails-kitchen",
+    customer: "Chidi O.",
+    items: "1 item",
+    mode: "Pickup",
+    total: 22000,
+    status: "Delivered",
+  },
+  {
+    id: "#ORD-7F4W5",
+    vendorSlug: "abigails-kitchen",
+    customer: "Halima B.",
+    items: "3 items",
+    mode: "Delivery · Ikoyi",
+    total: 33500,
+    status: "Delivered",
+  },
+  {
+    id: "#ORD-7F4W2",
+    vendorSlug: "abigails-kitchen",
+    customer: "Uche E.",
+    items: "1 item",
+    mode: "Delivery · Surulere",
+    total: 9800,
+    status: "Cancelled",
+  },
 ];
 
-const newAccount = (): Account => ({ plan: "starter", picks: 0, profile: {}, verification: "none", promos: [], hidden: [], products: [] });
+const newAccount = (): Account => ({
+  plan: "starter",
+  picks: 0,
+  profile: {},
+  verification: "none",
+  promos: [],
+  hidden: [],
+  stock: {},
+  products: [],
+});
 
 function makeInitial(): State {
   return {
     vendorSlug: "abigails-kitchen",
     customer: { name: "Tosin A.", city: "Lagos State" },
+    addresses: [
+      { id: "home", label: "Home", address: "12 Adeola Odeku St, Victoria Island" },
+      { id: "office", label: "Office", address: "3 Kofo Abayomi St, Victoria Island" },
+    ],
+    supportTickets: [],
     accounts: {},
     cart: seedCart.map((l, i) => ({ ...l, id: "seed-" + i })),
     favorites: [],
@@ -96,8 +197,16 @@ function makeInitial(): State {
         readC: 2,
         readV: 1,
         messages: [
-          { from: "customer", text: "Hi! Can you do party jollof for 30 guests next Saturday?", at: 1760680000000 },
-          { from: "vendor", text: "Yes we can! For 30 guests we'd suggest 3 large trays. Want a quote?", at: 1760680600000 },
+          {
+            from: "customer",
+            text: "Hi! Can you do party jollof for 30 guests next Saturday?",
+            at: 1760680000000,
+          },
+          {
+            from: "vendor",
+            text: "Yes we can! For 30 guests we'd suggest 3 large trays. Want a quote?",
+            at: 1760680600000,
+          },
         ],
       },
     ],
@@ -121,6 +230,7 @@ function read() {
     state = {
       ...makeInitial(),
       ...restored,
+      addresses: restored.addresses ?? [],
       completedCheckouts: restored.completedCheckouts ?? {},
       orders: (restored.orders ?? seedOrders).map((order) => ({
         ...order,
@@ -157,7 +267,10 @@ function set(fn: (s: State) => State) {
 
 const acct = (s: State, slug = s.vendorSlug) => s.accounts[slug] ?? newAccount();
 const patchAcct = (slug: string, p: (a: Account) => Partial<Account>) =>
-  set((s) => ({ ...s, accounts: { ...s.accounts, [slug]: { ...acct(s, slug), ...p(acct(s, slug)) } } }));
+  set((s) => ({
+    ...s,
+    accounts: { ...s.accounts, [slug]: { ...acct(s, slug), ...p(acct(s, slug)) } },
+  }));
 
 /** Free (Starter) vendors may pick a storefront once; paid plans can switch any time. */
 export function canPickStorefront(plan: Plan, picksSoFar: number) {
@@ -172,7 +285,13 @@ export function totalsFor(lines: CartLine[], promo?: string) {
   const discount = Math.round(subtotal * (promo ? (PROMO_CODES[promo] ?? 0) : 0));
   const delivery = lines.length ? 2500 : 0;
   const platformFee = Math.round((subtotal - discount) * 0.02);
-  return { subtotal, discount, delivery, platformFee, total: subtotal - discount + delivery + platformFee };
+  return {
+    subtotal,
+    discount,
+    delivery,
+    platformFee,
+    total: subtotal - discount + delivery + platformFee,
+  };
 }
 
 export const app = {
@@ -198,7 +317,8 @@ export const app = {
   },
   /** Plan changes only happen through the upgrade checkout (simulated payment). */
   upgrade: (plan: Plan) => patchAcct(app.get().vendorSlug, () => ({ plan })),
-  saveProfile: (profile: Profile) => patchAcct(app.get().vendorSlug, (a) => ({ profile: { ...a.profile, ...profile } })),
+  saveProfile: (profile: Profile) =>
+    patchAcct(app.get().vendorSlug, (a) => ({ profile: { ...a.profile, ...profile } })),
   applyVerification: () => {
     if (!isPaid(app.account().plan)) return false;
     patchAcct(app.get().vendorSlug, () => ({ verification: "applied" }));
@@ -206,15 +326,28 @@ export const app = {
   },
   addPromo(code: string, offer: string) {
     if (!isPaid(app.account().plan)) return false;
-    patchAcct(app.get().vendorSlug, (a) => ({ promos: [{ code: code.toUpperCase(), offer, active: true, uses: 0, revenue: 0 }, ...a.promos] }));
+    patchAcct(app.get().vendorSlug, (a) => ({
+      promos: [{ code: code.toUpperCase(), offer, active: true, uses: 0, revenue: 0 }, ...a.promos],
+    }));
     return true;
   },
   togglePromo: (code: string) =>
-    patchAcct(app.get().vendorSlug, (a) => ({ promos: a.promos.map((p) => (p.code === code ? { ...p, active: !p.active } : p)) })),
+    patchAcct(app.get().vendorSlug, (a) => ({
+      promos: a.promos.map((p) => (p.code === code ? { ...p, active: !p.active } : p)),
+    })),
   toggleHidden: (productId: string) =>
     patchAcct(app.get().vendorSlug, (a) => ({
-      hidden: a.hidden.includes(productId) ? a.hidden.filter((x) => x !== productId) : [...a.hidden, productId],
+      hidden: a.hidden.includes(productId)
+        ? a.hidden.filter((x) => x !== productId)
+        : [...a.hidden, productId],
     })),
+  setStock(productId: string, quantity: number) {
+    if (!Number.isInteger(quantity) || quantity < 0) return false;
+    patchAcct(app.get().vendorSlug, (a) => ({
+      stock: { ...(a.stock ?? {}), [productId]: quantity },
+    }));
+    return true;
+  },
   addProduct: (product: Product) =>
     patchAcct(app.get().vendorSlug, (a) => ({
       products: [...(a.products ?? []), product],
@@ -260,7 +393,10 @@ export const app = {
       const createdOrders: VendorOrder[] = groupedLines.map(([vendorSlug, lines], index) => {
         const vendor = getVendor(vendorSlug);
         const itemCount = lines.reduce((sum, line) => sum + line.qty, 0);
-        const checkoutSuffix = checkoutId.replace(/[^a-z0-9]/gi, "").slice(-6).toUpperCase();
+        const checkoutSuffix = checkoutId
+          .replace(/[^a-z0-9]/gi, "")
+          .slice(-6)
+          .toUpperCase();
         const id = `ORD-${createdAt.toString(36).toUpperCase()}-${checkoutSuffix}-${index + 1}`;
         const gross = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
         const plannedDiscount =
@@ -285,7 +421,13 @@ export const app = {
           total: gross - discountShare,
           status: "New",
           createdAt,
-          lineItems: lines.map(({ id: lineId, item, meta, qty, price }) => ({ id: lineId, item, meta, qty, price })),
+          lineItems: lines.map(({ id: lineId, item, meta, qty, price }) => ({
+            id: lineId,
+            item,
+            meta,
+            qty,
+            price,
+          })),
         };
       });
       orderIds = createdOrders.map((order) => order.id);
@@ -302,12 +444,24 @@ export const app = {
 
   addToCart: (line: CartLine) =>
     set((s) => {
-      const same = s.cart.find((c) => c.vendorSlug === line.vendorSlug && c.item === line.item && c.meta === line.meta);
-      if (same) return { ...s, cart: s.cart.map((c) => (c === same ? { ...c, qty: c.qty + line.qty } : c)) };
+      const same = s.cart.find(
+        (c) => c.vendorSlug === line.vendorSlug && c.item === line.item && c.meta === line.meta,
+      );
+      if (same)
+        return {
+          ...s,
+          cart: s.cart.map((c) => (c === same ? { ...c, qty: c.qty + line.qty } : c)),
+        };
       return { ...s, cart: [...s.cart, { ...line, id: Date.now().toString(36) }] };
     }),
   setQty: (id: string, qty: number) =>
-    set((s) => ({ ...s, cart: qty <= 0 ? s.cart.filter((c) => c.id !== id) : s.cart.map((c) => (c.id === id ? { ...c, qty } : c)) })),
+    set((s) => ({
+      ...s,
+      cart:
+        qty <= 0
+          ? s.cart.filter((c) => c.id !== id)
+          : s.cart.map((c) => (c.id === id ? { ...c, qty } : c)),
+    })),
   clearCart: () => set((s) => ({ ...s, cart: [], promo: undefined })),
   applyPromo(code: string) {
     const c = code.trim().toUpperCase();
@@ -316,19 +470,62 @@ export const app = {
     return true;
   },
   toggleFavorite: (slug: string) =>
-    set((s) => ({ ...s, favorites: s.favorites.includes(slug) ? s.favorites.filter((x) => x !== slug) : [...s.favorites, slug] })),
+    set((s) => ({
+      ...s,
+      favorites: s.favorites.includes(slug)
+        ? s.favorites.filter((x) => x !== slug)
+        : [...s.favorites, slug],
+    })),
   signIn: (name: string, email: string, role: "customer" | "vendor") =>
     set((s) => ({ ...s, user: { name, email, role }, customer: { ...s.customer, name } })),
   signOut: () => set((s) => ({ ...s, user: undefined })),
-  saveCustomer: (c: State["customer"]) => set((s) => ({ ...s, customer: c })),
+  saveCustomer: (c: State["customer"]) =>
+    set((s) => ({
+      ...s,
+      customer: c,
+      user: s.user ? { ...s.user, name: c.name } : s.user,
+    })),
+  saveCustomerAddress: (label: string, address: string) =>
+    set((s) => ({
+      ...s,
+      addresses: [
+        { id: Date.now().toString(36), label: label.trim(), address: address.trim() },
+        ...(s.addresses ?? []),
+      ],
+    })),
+  removeCustomerAddress: (id: string) =>
+    set((s) => ({ ...s, addresses: (s.addresses ?? []).filter((address) => address.id !== id) })),
+  submitSupportTicket(topic: string, message: string) {
+    const cleanTopic = topic.trim();
+    const cleanMessage = message.trim();
+    if (!cleanTopic || !cleanMessage) return false;
+    const ticket: SupportTicket = {
+      id: `SUP-${Date.now().toString(36).toUpperCase()}`,
+      vendorSlug: app.get().vendorSlug,
+      topic: cleanTopic,
+      message: cleanMessage,
+      createdAt: Date.now(),
+      status: "Open",
+    };
+    set((s) => ({ ...s, supportTickets: [ticket, ...(s.supportTickets ?? [])] }));
+    return true;
+  },
 
   /** Opens (or creates) the customer's chat with a vendor and returns its id. */
   openThread(vendorSlug: string) {
     const s = app.get();
-    const found = s.threads.find((t) => t.vendorSlug === vendorSlug && t.customer === s.customer.name);
+    const found = s.threads.find(
+      (t) => t.vendorSlug === vendorSlug && t.customer === s.customer.name,
+    );
     if (found) return found.id;
     const id = "t-" + vendorSlug + "-" + Date.now().toString(36);
-    set((x) => ({ ...x, threads: [{ id, vendorSlug, customer: x.customer.name, messages: [], readC: 0, readV: 0 }, ...x.threads] }));
+    set((x) => ({
+      ...x,
+      threads: [
+        { id, vendorSlug, customer: x.customer.name, messages: [], readC: 0, readV: 0 },
+        ...x.threads,
+      ],
+    }));
     return id;
   },
   send(threadId: string, from: ChatMsg["from"], raw: string) {
@@ -353,7 +550,9 @@ export const app = {
     set((s) => ({
       ...s,
       threads: s.threads.map((t) =>
-        t.id === threadId ? { ...t, [side === "customer" ? "readC" : "readV"]: t.messages.length } : t,
+        t.id === threadId
+          ? { ...t, [side === "customer" ? "readC" : "readV"]: t.messages.length }
+          : t,
       ),
     })),
 };
@@ -381,6 +580,7 @@ export function mergeVendor(v: Vendor, a?: Account): Vendor {
     location: p.location || v.location,
     hours: p.hours || v.hours,
     delivery: p.delivery || v.delivery,
+    theme: p.brandColor ? { ...v.theme, accent: p.brandColor } : v.theme,
     products: [...v.products, ...(a.products ?? [])].filter((x) => !a.hidden.includes(x.id)),
   };
 }

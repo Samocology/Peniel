@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Search } from "lucide-react";
+import { useState } from "react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
@@ -9,7 +10,11 @@ export const Route = createFileRoute("/admin/customers")({
   head: () => ({
     meta: [
       { title: "Customers - Peniel admin" },
-      { name: "description", content: "Every shopper on Peniel with order counts, lifetime spend, location and account standing." },
+      {
+        name: "description",
+        content:
+          "Every shopper on Peniel with order counts, lifetime spend, location and account standing.",
+      },
       { property: "og:title", content: "Customers - Peniel admin" },
       { property: "og:description", content: "Understand who is buying on Peniel." },
     ],
@@ -27,8 +32,20 @@ const rows = [
 ] as const;
 
 function AdminCustomers() {
+  const [query, setQuery] = useState("");
+  const visibleRows = rows.filter((row) =>
+    row
+      .slice(0, 3)
+      .some((value) => String(value).toLowerCase().includes(query.trim().toLowerCase())),
+  );
+
   return (
-    <DashShell nav={adminNav} kicker="Platform admin" title="Customers" subtitle="128,904 registered shoppers">
+    <DashShell
+      nav={adminNav}
+      kicker="Platform admin"
+      title="Customers"
+      subtitle="128,904 registered shoppers"
+    >
       <div className="grid gap-4 sm:grid-cols-4">
         <StatCard label="Total customers" value="128,904" tone="primary" />
         <StatCard label="Active this month" value="41,220" />
@@ -42,13 +59,19 @@ function AdminCustomers() {
           action={
             <span className="flex items-center gap-2 rounded-xl border border-input px-3 py-2">
               <Search className="size-4 text-muted-foreground" />
-              <input placeholder="Search customers" className="w-40 bg-transparent text-sm outline-none" />
+              <input
+                aria-label="Search customers"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search customers"
+                className="w-40 bg-transparent text-sm outline-none"
+              />
             </span>
           }
         >
           <DataTable
             head={["Customer", "Email", "City", "Orders", "Lifetime spend", "Standing"]}
-            rows={rows.map((r) => [
+            rows={visibleRows.map((r) => [
               <span className="font-medium">{r[0]}</span>,
               <span className="text-muted-foreground">{r[1]}</span>,
               <span className="text-muted-foreground">{r[2]}</span>,
@@ -57,13 +80,20 @@ function AdminCustomers() {
               <span
                 className={
                   "rounded-full px-2.5 py-1 text-xs font-semibold " +
-                  (r[5] === "Good standing" ? "bg-success/12 text-success" : "bg-gold/15 text-gold-foreground")
+                  (r[5] === "Good standing"
+                    ? "bg-success/12 text-success"
+                    : "bg-gold/15 text-gold-foreground")
                 }
               >
                 {r[5]}
               </span>,
             ])}
           />
+          {visibleRows.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No customers match “{query}”.
+            </p>
+          )}
         </Panel>
       </div>
     </DashShell>

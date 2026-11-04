@@ -1,14 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { naira, vendors } from "@/lib/data";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/payouts")({
   head: () => ({
     meta: [
       { title: "Payouts - Peniel admin" },
-      { name: "description", content: "Review and release vendor payouts, check bank destinations and see the settlement schedule." },
+      {
+        name: "description",
+        content:
+          "Review and release vendor payouts, check bank destinations and see the settlement schedule.",
+      },
       { property: "og:title", content: "Payouts - Peniel admin" },
       { property: "og:description", content: "Release vendor earnings safely." },
     ],
@@ -17,6 +23,19 @@ export const Route = createFileRoute("/admin/payouts")({
 });
 
 function AdminPayouts() {
+  const [statusByVendor, setStatusByVendor] = useState<Record<string, "Released" | "On hold">>({});
+  const releaseAllApproved = () => {
+    setStatusByVendor((current) =>
+      Object.fromEntries([
+        ...Object.entries(current),
+        ...vendors
+          .filter((_, index) => index !== 4)
+          .map((vendor) => [vendor.slug, "Released" as const]),
+      ]),
+    );
+    toast.success("Eligible payouts released. The name-mismatch transfer remains on hold.");
+  };
+
   return (
     <DashShell
       nav={adminNav}
@@ -24,7 +43,13 @@ function AdminPayouts() {
       title="Payouts"
       subtitle="8 payouts awaiting release"
       actions={
-        <button className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">Release all approved</button>
+        <button
+          type="button"
+          onClick={releaseAllApproved}
+          className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground"
+        >
+          Release all approved
+        </button>
       }
     >
       <div className="grid gap-4 sm:grid-cols-4">
@@ -41,10 +66,13 @@ function AdminPayouts() {
             rows={vendors.map((v, i) => [
               <span className="font-medium">{v.name}</span>,
               <span className="text-muted-foreground">
-                {["GTBank", "Access", "Zenith", "Kuda", "UBA", "First Bank", "Moniepoint"][i]} ····{1000 + i * 137}
+                {["GTBank", "Access", "Zenith", "Kuda", "UBA", "First Bank", "Moniepoint"][i]} ····
+                {1000 + i * 137}
               </span>,
               naira(180000 + i * 94000),
-              <span className="text-muted-foreground">Today, {8 + i}:0{i} AM</span>,
+              <span className="text-muted-foreground">
+                Today, {8 + i}:0{i} AM
+              </span>,
               <span
                 className={
                   "rounded-full px-2.5 py-1 text-xs font-semibold " +
@@ -53,10 +81,42 @@ function AdminPayouts() {
               >
                 {i === 4 ? "Name mismatch" : "Verified"}
               </span>,
-              <span className="flex gap-2">
-                <button className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Release</button>
-                <button className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold">Hold</button>
-              </span>,
+              statusByVendor[v.slug] ? (
+                <span
+                  className={
+                    "rounded-full px-2.5 py-1 text-xs font-semibold " +
+                    (statusByVendor[v.slug] === "Released"
+                      ? "bg-success/12 text-success"
+                      : "bg-gold/15 text-gold-foreground")
+                  }
+                >
+                  {statusByVendor[v.slug]}
+                </span>
+              ) : (
+                <span className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={i === 4}
+                    onClick={() => {
+                      setStatusByVendor((current) => ({ ...current, [v.slug]: "Released" }));
+                      toast.success(`${v.name}'s payout released`);
+                    }}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Release
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatusByVendor((current) => ({ ...current, [v.slug]: "On hold" }));
+                      toast("Payout placed on hold");
+                    }}
+                    className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
+                  >
+                    Hold
+                  </button>
+                </span>
+              ),
             ])}
           />
         </Panel>

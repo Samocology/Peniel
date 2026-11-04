@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Facebook, Instagram, ShieldCheck, Twitter } from "lucide-react";
 import { Logo } from "./logo";
+import { useApp } from "@/lib/peniel-store";
 
 const cols = [
   {
@@ -42,6 +43,9 @@ const cols = [
 ];
 
 export function SiteFooter() {
+  const { user } = useApp();
+  if (user) return null;
+
   return (
     <footer className="mt-20 bg-sidebar text-sidebar-foreground">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6">

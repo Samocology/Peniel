@@ -1,7 +1,7 @@
 import { PlanGate } from "@/components/dash/plan-gate";
 import { app, isPaid, useApp, useCurrentVendor } from "@/lib/peniel-store";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { AlertCircle, BadgeCheck, Check, Clock, Lock, ShieldCheck, Upload, X } from "lucide-react";
 import { DashShell, Panel } from "@/components/dash/shell";
@@ -9,14 +9,23 @@ import { vendorNav } from "@/components/dash/vendor-nav";
 
 export const Route = createFileRoute("/vendor/verification")({
   validateSearch: z.object({
-    stage: z.enum(["progress", "eligible", "apply", "review", "approved", "rejected"]).default("progress"),
+    stage: z
+      .enum(["progress", "eligible", "apply", "review", "approved", "rejected"])
+      .default("progress"),
   }),
   head: () => ({
     meta: [
       { title: "Verification - earn your Peniel badge" },
-      { name: "description", content: "Serve five different customers well to unlock your verification application. Verification is earned, never bought." },
+      {
+        name: "description",
+        content:
+          "Serve five different customers well to unlock your verification application. Verification is earned, never bought.",
+      },
       { property: "og:title", content: "Verification - earn your Peniel badge" },
-      { property: "og:description", content: "Trust on Peniel is earned through real customer service." },
+      {
+        property: "og:description",
+        content: "Trust on Peniel is earned through real customer service.",
+      },
     ],
   }),
   component: VerificationPage,
@@ -27,6 +36,7 @@ function VerificationPage() {
   const navigate = useNavigate({ from: "/vendor/verification" });
   const { vendor, account } = useCurrentVendor();
   const state = useApp();
+  const [documentFiles, setDocumentFiles] = useState<Record<string, string>>({});
   const isVendor = state.user?.role === "vendor";
   useEffect(() => {
     if (!isVendor) {
@@ -108,15 +118,21 @@ function VerificationPage() {
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                     <Clock className="size-3.5" /> Verification progress
                   </span>
-                  <h2 className="mt-3 font-display text-xl font-bold">{servedCustomers} of 5 customers successfully served</h2>
+                  <h2 className="mt-3 font-display text-xl font-bold">
+                    {servedCustomers} of 5 customers successfully served
+                  </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {Math.max(0, 5 - servedCustomers)} more different customers needed before you can apply.
+                    {Math.max(0, 5 - servedCustomers)} more different customers needed before you
+                    can apply.
                   </p>
                 </div>
                 <Lock className="size-5 shrink-0 text-muted-foreground" />
               </div>
               <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-muted">
-                <div className="h-full w-3/5 rounded-full bg-primary" />
+                <div
+                  className="h-full rounded-full bg-primary transition-[width]"
+                  style={{ width: `${Math.min(100, (servedCustomers / 5) * 100)}%` }}
+                />
               </div>
               <div className="mt-4 flex gap-2">
                 {[1, 2, 3, 4, 5].map((n) => (
@@ -124,19 +140,31 @@ function VerificationPage() {
                     key={n}
                     className={
                       "grid size-9 place-items-center rounded-full text-xs font-bold " +
-                      (n <= servedCustomers ? "bg-primary text-primary-foreground" : "border border-dashed border-border text-muted-foreground")
+                      (n <= servedCustomers
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-dashed border-border text-muted-foreground")
                     }
                   >
                     {n <= servedCustomers ? <Check className="size-4" /> : n}
                   </span>
                 ))}
               </div>
-              <button
-                disabled={!eligible || !isPaid(account.plan)}
-                className="mt-5 w-full rounded-xl bg-muted py-3 text-sm font-bold text-muted-foreground disabled:cursor-not-allowed sm:w-auto sm:px-6"
-              >
-                {eligible ? "Apply for verification" : "Application locked"}
-              </button>
+              {eligible ? (
+                <Link
+                  to="/vendor/verification"
+                  search={{ stage: "apply" }}
+                  className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90 sm:w-auto"
+                >
+                  {isPaid(account.plan) ? "Apply for verification" : "Upgrade to apply"}
+                </Link>
+              ) : (
+                <button
+                  disabled
+                  className="mt-5 w-full cursor-not-allowed rounded-xl bg-muted py-3 text-sm font-bold text-muted-foreground sm:w-auto sm:px-6"
+                >
+                  Application locked
+                </button>
+              )}
             </Panel>
           )}
 
@@ -149,7 +177,9 @@ function VerificationPage() {
                 Congratulations! You are now eligible to apply for verification.
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                You’ve served {servedCustomers} different customers with a {vendor.rating.toFixed(1)} rating. Eligibility unlocks the application - it is not automatic approval.
+                You’ve served {servedCustomers} different customers with a{" "}
+                {vendor.rating.toFixed(1)} rating. Eligibility unlocks the application - it is not
+                automatic approval.
               </p>
               <Link
                 to="/vendor/verification"
@@ -163,50 +193,77 @@ function VerificationPage() {
 
           {stage === "apply" && (
             <PlanGate feature="Verification applications">
-            <Panel title="Verification application">
-              <div className="space-y-5">
-                {[
-                  ["Business owner full name", ""],
-                  ["Business registration number", ""],
-                  ["Business phone", vendor.phone],
-                  ["Business address", vendor.location],
-                ].map(([l, v]) => (
-                  <div key={l}>
-                    <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted-foreground uppercase">{l}</span>
-                    <input
-                      defaultValue={v}
-                      className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-                    />
+              <Panel title="Verification application">
+                <div className="space-y-5">
+                  {[
+                    ["Business owner full name", ""],
+                    ["Business registration number", ""],
+                    ["Business phone", vendor.phone],
+                    ["Business address", vendor.location],
+                  ].map(([l, v]) => (
+                    <div key={l}>
+                      <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                        {l}
+                      </span>
+                      <input
+                        defaultValue={v}
+                        className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+                      />
+                    </div>
+                  ))}
+                  <div>
+                    <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                      Documents
+                    </span>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {documents.map((d) => (
+                        <label
+                          key={d}
+                          className="flex min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-border p-3.5 text-sm transition hover:border-primary/40"
+                        >
+                          <Upload className="size-4 shrink-0 text-muted-foreground" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium">{d}</span>
+                            <span className="block truncate text-[11px] text-muted-foreground">
+                              {documentFiles[d] ?? "Choose a PDF or image"}
+                            </span>
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            aria-label={`Upload ${d}`}
+                            onChange={(event) => {
+                              const file = event.currentTarget.files?.[0];
+                              if (file)
+                                setDocumentFiles((current) => ({ ...current, [d]: file.name }));
+                            }}
+                            className="sr-only"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Files are selected locally in this prototype; they are not uploaded to a
+                      server.
+                    </p>
                   </div>
-                ))}
-                <div>
-                  <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted-foreground uppercase">Documents</span>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {documents.map((d) => (
-                      <div key={d} className="flex items-center gap-3 rounded-xl border border-border p-3.5 text-sm">
-                        <Upload className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="min-w-0 flex-1 truncate">{d}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">Upload</span>
-                      </div>
-                    ))}
-                  </div>
+                  <label className="flex items-start gap-3 text-sm">
+                    <input type="checkbox" defaultChecked className="mt-1 accent-primary" />
+                    <span className="text-muted-foreground">
+                      I confirm this information is accurate and I accept Peniel's verification
+                      policy.
+                    </span>
+                  </label>
+                  <Link
+                    to="/vendor/verification"
+                    search={{ stage: "review" }}
+                    onClick={() => app.applyVerification()}
+                    className="inline-block rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+                  >
+                    Submit application
+                  </Link>
                 </div>
-                <label className="flex items-start gap-3 text-sm">
-                  <input type="checkbox" defaultChecked className="mt-1 accent-primary" />
-                  <span className="text-muted-foreground">
-                    I confirm this information is accurate and I accept Peniel's verification policy.
-                  </span>
-                </label>
-                <Link
-                  to="/vendor/verification"
-                  search={{ stage: "review" }}
-                  onClick={() => app.applyVerification()}
-                  className="inline-block rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
-                >
-                  Submit application
-                </Link>
-              </div>
-            </Panel>
+              </Panel>
             </PlanGate>
           )}
 
@@ -217,7 +274,8 @@ function VerificationPage() {
               </span>
               <h2 className="mt-3 font-display text-xl font-bold">Verification submitted</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Our team is reviewing your application. Most reviews finish within 3 business days. You'll be notified by email and in your dashboard.
+                Our team is reviewing your application. Most reviews finish within 3 business days.
+                You'll be notified by email and in your dashboard.
               </p>
             </Panel>
           )}
@@ -229,7 +287,8 @@ function VerificationPage() {
               </span>
               <h2 className="mt-3 font-display text-xl font-bold">You're verified</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Your badge is now visible on your storefront and in the marketplace. It can be suspended if serious issues are confirmed.
+                Your badge is now visible on your storefront and in the marketplace. It can be
+                suspended if serious issues are confirmed.
               </p>
             </Panel>
           )}
@@ -239,18 +298,27 @@ function VerificationPage() {
               <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-semibold text-destructive">
                 <X className="size-3.5" /> Application not approved
               </span>
-              <h2 className="mt-3 font-display text-xl font-bold">We couldn't verify your business yet</h2>
+              <h2 className="mt-3 font-display text-xl font-bold">
+                We couldn't verify your business yet
+              </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Reason: the business name on your CAC certificate does not match your storefront name.
+                Reason: the business name on your CAC certificate does not match your storefront
+                name.
               </p>
-              <p className="mt-3 text-sm">You can reapply after <span className="font-semibold">30 days</span> or once the document is corrected.</p>
+              <p className="mt-3 text-sm">
+                You can reapply after <span className="font-semibold">30 days</span> or once the
+                document is corrected.
+              </p>
             </Panel>
           )}
 
           <Panel title="Eligibility checklist">
             <ul className="space-y-3.5">
               {eligibility.map(([t, v, done]) => (
-                <li key={t} className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-start gap-3 text-sm">
+                <li
+                  key={t}
+                  className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-start gap-3 text-sm"
+                >
                   {done ? (
                     <Check className="mt-0.5 size-4 text-success" />
                   ) : (
@@ -276,11 +344,14 @@ function VerificationPage() {
                 <li key={t as string} className="grid grid-cols-[20px_minmax(0,1fr)] gap-3">
                   <span
                     className={
-                      "mt-1 size-3 rounded-full " + (on ? "bg-primary" : "border border-border bg-muted")
+                      "mt-1 size-3 rounded-full " +
+                      (on ? "bg-primary" : "border border-border bg-muted")
                     }
                   />
                   <span className="min-w-0">
-                    <span className={"block font-semibold " + (on ? "" : "text-muted-foreground")}>{t as string}</span>
+                    <span className={"block font-semibold " + (on ? "" : "text-muted-foreground")}>
+                      {t as string}
+                    </span>
                     <span className="block text-xs text-muted-foreground">{h as string}</span>
                   </span>
                 </li>
@@ -293,10 +364,10 @@ function VerificationPage() {
               <ShieldCheck className="size-4 text-primary" /> Verification is never for sale
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Premium plans give you better tools. Only real, well-served customers earn you the badge.
+              Premium plans give you better tools. Only real, well-served customers earn you the
+              badge.
             </p>
           </Panel>
-
         </div>
       </div>
     </DashShell>

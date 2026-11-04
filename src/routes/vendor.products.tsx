@@ -6,12 +6,17 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { naira } from "@/lib/data";
 import { app, useCurrentVendor } from "@/lib/peniel-store";
+import { ItemArt } from "@/components/store/store-kit";
 
 export const Route = createFileRoute("/vendor/products")({
   head: () => ({
     meta: [
       { title: "Products - Peniel business console" },
-      { name: "description", content: "Manage your menu and products: prices, stock, categories and visibility on your storefront." },
+      {
+        name: "description",
+        content:
+          "Manage your menu and products: prices, stock, categories and visibility on your storefront.",
+      },
       { property: "og:title", content: "Products - Peniel business console" },
       { property: "og:description", content: "Add, edit and organise everything you sell." },
     ],
@@ -48,7 +53,9 @@ function VendorProducts() {
           : "Product";
   const [q, setQ] = useState("");
   const [g, setG] = useState("All");
-  const list = vendor.products.filter((p) => (g === "All" || p.group === g) && p.name.toLowerCase().includes(q.toLowerCase()));
+  const list = vendor.products.filter(
+    (p) => (g === "All" || p.group === g) && p.name.toLowerCase().includes(q.toLowerCase()),
+  );
 
   return (
     <DashShell
@@ -58,7 +65,10 @@ function VendorProducts() {
       subtitle={`${vendor.products.length} ${itemLabel} on your storefront`}
       storeLink={{ label: "View storefront", slug: vendor.slug }}
       actions={
-        <Link to="/vendor/products/new" className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">
+        <Link
+          to="/vendor/products/new"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground"
+        >
           <Plus className="size-4" /> Add {itemTypeLabel.toLowerCase()}
         </Link>
       }
@@ -67,9 +77,20 @@ function VendorProducts() {
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
           <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border px-3 py-2">
             <Search className="size-4 shrink-0 text-muted-foreground" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search products"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            />
           </div>
-          <button onClick={() => { setQ(""); setG("All"); }} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-4 text-sm font-semibold">
+          <button
+            onClick={() => {
+              setQ("");
+              setG("All");
+            }}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-4 text-sm font-semibold"
+          >
             <Filter className="size-4" /> Reset
           </button>
         </div>
@@ -81,7 +102,9 @@ function VendorProducts() {
               onClick={() => setG(x)}
               className={
                 "rounded-full border px-3.5 py-1.5 " +
-                (x === g ? "border-primary bg-primary-soft font-semibold text-primary" : "border-border text-muted-foreground")
+                (x === g
+                  ? "border-primary bg-primary-soft font-semibold text-primary"
+                  : "border-border text-muted-foreground")
               }
             >
               {x}
@@ -92,9 +115,14 @@ function VendorProducts() {
         <div className="mt-5">
           <DataTable
             head={[itemTypeLabel, "Category", "Price", "Details", "Status"]}
-            rows={list.map((p) => [
+            rows={list.map((p, index) => [
               <span className="flex min-w-0 items-center gap-3">
-                <span className="size-9 shrink-0 rounded-lg bg-primary-soft" />
+                <ItemArt
+                  vendor={vendor}
+                  seed={index}
+                  label={p.name}
+                  className="size-9 shrink-0 rounded-lg"
+                />
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{p.name}</span>
                   <span className="block truncate text-xs text-muted-foreground">{p.desc}</span>
@@ -107,11 +135,15 @@ function VendorProducts() {
                 onClick={() => {
                   const hidden = account.hidden.includes(p.id);
                   app.toggleHidden(p.id);
-                  toast.success(hidden ? `${p.name} is live on your store` : `${p.name} hidden from your store`);
+                  toast.success(
+                    hidden ? `${p.name} is live on your store` : `${p.name} hidden from your store`,
+                  );
                 }}
                 className={
                   "rounded-full px-2.5 py-1 text-xs font-semibold " +
-                  (account.hidden.includes(p.id) ? "bg-muted text-muted-foreground" : "bg-success/12 text-success")
+                  (account.hidden.includes(p.id)
+                    ? "bg-muted text-muted-foreground"
+                    : "bg-success/12 text-success")
                 }
               >
                 {account.hidden.includes(p.id) ? "Hidden" : "Live"}

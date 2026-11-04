@@ -1,17 +1,8 @@
-
 import { Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Clock,
-  MapPin,
-  Minus,
-  Plus,
-  Sparkles,
-  Truck,
-  Users,
-} from "lucide-react";
+import { ArrowRight, Clock, MapPin, Minus, Plus, Sparkles, Truck, Users } from "lucide-react";
 import { useState } from "react";
 import { type Vendor } from "@/lib/data";
+import { useApp } from "@/lib/peniel-store";
 import { ItemArt, ItemLink, Price, StoreBadges } from "./store-kit";
 
 export function StoreSidebar({ vendor }: { vendor: Vendor }) {
@@ -45,6 +36,7 @@ export function StoreSidebar({ vendor }: { vendor: Vendor }) {
 
 export function BuilderStore({ vendor }: { vendor: Vendor }) {
   const t = vendor.theme;
+  const { user } = useApp();
 
   const palette = {
     forest: "#214B36",
@@ -76,9 +68,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
 
   const [dish, setDish] = useState<(typeof dishes)[number]["name"]>("Egusi Soup");
   const [people, setPeople] = useState(6);
-  const [protein, setProtein] = useState<(typeof proteins)[number]["name"]>(
-    "Goat meat",
-  );
+  const [protein, setProtein] = useState<(typeof proteins)[number]["name"]>("Goat meat");
 
   const ingredientsByDish: Record<(typeof dishes)[number]["name"], string[]> = {
     "Egusi Soup": [
@@ -131,12 +121,9 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
   };
 
   const scale = people / 6;
-  const total = Math.round(
-    (basePrices[dish] + proteinPrices[protein]) * scale,
-  );
+  const total = Math.round((basePrices[dish] + proteinPrices[protein]) * scale);
 
-  const formatPrice = (amount: number) =>
-    `₦${amount.toLocaleString("en-NG")}`;
+  const formatPrice = (amount: number) => `₦${amount.toLocaleString("en-NG")}`;
 
   const categories = [
     { name: "Meal Kits", icon: "01" },
@@ -206,9 +193,9 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
             className="mt-6 max-w-md text-[14px] leading-7 sm:text-base sm:leading-8"
             style={{ color: palette.muted }}
           >
-            From the farm to your kitchen, we bring you fresh produce,
-            carefully prepared ingredients and thoughtfully measured meal
-            kits. Tell us what is cooking. We will handle the preparation.
+            From the farm to your kitchen, we bring you fresh produce, carefully prepared
+            ingredients and thoughtfully measured meal kits. Tell us what is cooking. We will handle
+            the preparation.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -242,10 +229,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
           >
             <StoreBadges vendor={vendor} />
 
-            <div
-              className="flex items-center gap-2 text-xs"
-              style={{ color: palette.muted }}
-            >
+            <div className="flex items-center gap-2 text-xs" style={{ color: palette.muted }}>
               <Truck className="size-4" style={{ color: palette.forest }} />
               Next-day delivery
             </div>
@@ -272,8 +256,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
             <div
               className="absolute inset-0"
               style={{
-                background:
-                  "linear-gradient(180deg, transparent 45%, rgba(20,42,28,0.75) 100%)",
+                background: "linear-gradient(180deg, transparent 45%, rgba(20,42,28,0.75) 100%)",
               }}
             />
 
@@ -359,13 +342,8 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                 style={{ color: palette.forest }}
               />
               <div>
-                <p className="text-xs font-semibold sm:text-sm">
-                  {benefit.title}
-                </p>
-                <p
-                  className="mt-1 text-[10px] sm:text-xs"
-                  style={{ color: palette.muted }}
-                >
+                <p className="text-xs font-semibold sm:text-sm">{benefit.title}</p>
+                <p className="mt-1 text-[10px] sm:text-xs" style={{ color: palette.muted }}>
                   {benefit.text}
                 </p>
               </div>
@@ -375,10 +353,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
       </section>
 
       {/* Meal kit builder */}
-      <section
-        id="meal-builder"
-        className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24"
-      >
+      <section id="meal-builder" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24">
         <div className="mb-9 max-w-xl">
           <p
             className="text-[10px] font-bold tracking-[0.2em] uppercase"
@@ -392,12 +367,9 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
           >
             Your meal, your way.
           </h2>
-          <p
-            className="mt-3 text-sm leading-6"
-            style={{ color: palette.muted }}
-          >
-            Choose your favourite dish, set your portions and select your
-            protein. We will prepare the ingredients for you.
+          <p className="mt-3 text-sm leading-6" style={{ color: palette.muted }}>
+            Choose your favourite dish, set your portions and select your protein. We will prepare
+            the ingredients for you.
           </p>
         </div>
 
@@ -423,10 +395,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold">What are we cooking?</h3>
-                <p
-                  className="mt-1 text-xs leading-5"
-                  style={{ color: palette.muted }}
-                >
+                <p className="mt-1 text-xs leading-5" style={{ color: palette.muted }}>
                   Pick a dish to get started.
                 </p>
 
@@ -442,20 +411,13 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                         onClick={() => setDish(item.name)}
                         className="flex items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-all hover:border-[#244C38]"
                         style={{
-                          borderColor: selected
-                            ? palette.forest
-                            : palette.line,
-                          background: selected
-                            ? palette.sageLight
-                            : palette.paper,
+                          borderColor: selected ? palette.forest : palette.line,
+                          background: selected ? palette.sageLight : palette.paper,
                         }}
                       >
                         <div>
                           <p className="text-sm font-semibold">{item.name}</p>
-                          <p
-                            className="mt-1 text-[11px]"
-                            style={{ color: palette.muted }}
-                          >
+                          <p className="mt-1 text-[11px]" style={{ color: palette.muted }}>
                             {item.description}
                           </p>
                         </div>
@@ -463,18 +425,12 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                         <span
                           className="grid size-5 shrink-0 place-items-center rounded-full border"
                           style={{
-                            borderColor: selected
-                              ? palette.forest
-                              : palette.line,
-                            background: selected
-                              ? palette.forest
-                              : "transparent",
+                            borderColor: selected ? palette.forest : palette.line,
+                            background: selected ? palette.forest : "transparent",
                             color: "#FFFFFF",
                           }}
                         >
-                          {selected && (
-                            <span className="text-[11px]">✓</span>
-                          )}
+                          {selected && <span className="text-[11px]">✓</span>}
                         </span>
                       </button>
                     );
@@ -483,10 +439,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
               </div>
             </div>
 
-            <div
-              className="my-7 border-t"
-              style={{ borderColor: palette.line }}
-            />
+            <div className="my-7 border-t" style={{ borderColor: palette.line }} />
 
             {/* Step 2 */}
             <div className="flex items-start gap-4">
@@ -501,10 +454,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold">How many people?</h3>
-                <p
-                  className="mt-1 text-xs leading-5"
-                  style={{ color: palette.muted }}
-                >
+                <p className="mt-1 text-xs leading-5" style={{ color: palette.muted }}>
                   We will adjust the portions to suit your table.
                 </p>
 
@@ -526,10 +476,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                       <p className="text-sm font-semibold">
                         {people} {people === 1 ? "person" : "people"}
                       </p>
-                      <p
-                        className="mt-1 text-[11px]"
-                        style={{ color: palette.muted }}
-                      >
+                      <p className="mt-1 text-[11px]" style={{ color: palette.muted }}>
                         Meal portions
                       </p>
                     </div>
@@ -569,10 +516,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
               </div>
             </div>
 
-            <div
-              className="my-7 border-t"
-              style={{ borderColor: palette.line }}
-            />
+            <div className="my-7 border-t" style={{ borderColor: palette.line }} />
 
             {/* Step 3 */}
             <div className="flex items-start gap-4">
@@ -587,10 +531,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold">Choose your protein</h3>
-                <p
-                  className="mt-1 text-xs leading-5"
-                  style={{ color: palette.muted }}
-                >
+                <p className="mt-1 text-xs leading-5" style={{ color: palette.muted }}>
                   Make it your own with your preferred protein.
                 </p>
 
@@ -606,13 +547,9 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                         onClick={() => setProtein(item.name)}
                         className="rounded-full border px-4 py-2.5 text-xs font-medium transition-all hover:border-[#244C38] sm:text-sm"
                         style={{
-                          background: selected
-                            ? palette.forest
-                            : palette.paper,
+                          background: selected ? palette.forest : palette.paper,
                           color: selected ? "#FFFFFF" : palette.ink,
-                          borderColor: selected
-                            ? palette.forest
-                            : palette.line,
+                          borderColor: selected ? palette.forest : palette.line,
                         }}
                       >
                         {item.name}
@@ -642,9 +579,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
               <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-white/65">
                 Made for your table
               </p>
-              <h3 className="mt-2 text-xl font-semibold">
-                Your meal kit
-              </h3>
+              <h3 className="mt-2 text-xl font-semibold">Your meal kit</h3>
               <p className="mt-1 text-xs text-white/70">
                 {dish} · {people} {people === 1 ? "person" : "people"}
               </p>
@@ -666,10 +601,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
 
               <ul className="mt-4 space-y-3">
                 {ingredientsByDish[dish].map((ingredient) => (
-                  <li
-                    key={ingredient}
-                    className="flex items-center gap-3 text-xs"
-                  >
+                  <li key={ingredient} className="flex items-center gap-3 text-xs">
                     <span
                       className="grid size-5 shrink-0 place-items-center rounded-full"
                       style={{
@@ -699,18 +631,13 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                 )}
               </ul>
 
-              <div
-                className="mt-6 rounded-2xl p-4"
-                style={{ background: palette.sageLight }}
-              >
+              <div className="mt-6 rounded-2xl p-4" style={{ background: palette.sageLight }}>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-xs" style={{ color: palette.muted }}>
                     Base meal kit
                   </span>
                   <span className="text-xs font-medium tabular-nums">
-                    {formatPrice(
-                      Math.round(basePrices[dish] * scale),
-                    )}
+                    {formatPrice(Math.round(basePrices[dish] * scale))}
                   </span>
                 </div>
 
@@ -719,16 +646,11 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                     {protein} protein
                   </span>
                   <span className="text-xs font-medium tabular-nums">
-                    {formatPrice(
-                      Math.round(proteinPrices[protein] * scale),
-                    )}
+                    {formatPrice(Math.round(proteinPrices[protein] * scale))}
                   </span>
                 </div>
 
-                <div
-                  className="mt-4 border-t pt-4"
-                  style={{ borderColor: palette.line }}
-                >
+                <div className="mt-4 border-t pt-4" style={{ borderColor: palette.line }}>
                   <div className="flex items-end justify-between gap-3">
                     <div>
                       <p className="text-xs" style={{ color: palette.muted }}>
@@ -741,10 +663,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                         {formatPrice(total)}
                       </p>
                     </div>
-                    <p
-                      className="pb-1 text-[10px]"
-                      style={{ color: palette.muted }}
-                    >
+                    <p className="pb-1 text-[10px]" style={{ color: palette.muted }}>
                       For {people} {people === 1 ? "person" : "people"}
                     </p>
                   </div>
@@ -801,10 +720,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                 Good things, grown well.
               </h2>
             </div>
-            <p
-              className="max-w-sm text-sm leading-6"
-              style={{ color: palette.muted }}
-            >
+            <p className="max-w-sm text-sm leading-6" style={{ color: palette.muted }}>
               Everything you need to make everyday cooking a little easier.
             </p>
           </div>
@@ -820,10 +736,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                   borderColor: palette.line,
                 }}
               >
-                <span
-                  className="text-[10px] font-semibold"
-                  style={{ color: palette.forest }}
-                >
+                <span className="text-[10px] font-semibold" style={{ color: palette.forest }}>
                   {category.icon}
                 </span>
                 {category.name}
@@ -839,23 +752,15 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
         <div className="space-y-20">
           {categories.map((category) => {
             const group = vendor.groups.find(
-              (g) =>
-                g.toLowerCase().trim() ===
-                category.name.toLowerCase().trim(),
+              (g) => g.toLowerCase().trim() === category.name.toLowerCase().trim(),
             );
 
-            const items = group
-              ? vendor.products.filter((p) => p.group === group)
-              : [];
+            const items = group ? vendor.products.filter((p) => p.group === group) : [];
 
             if (!items.length) return null;
 
             return (
-              <div
-                key={category.name}
-                id={`category-${category.icon}`}
-                className="scroll-mt-24"
-              >
+              <div key={category.name} id={`category-${category.icon}`} className="scroll-mt-24">
                 <div
                   className="mb-6 flex items-end justify-between gap-4 border-b pb-5"
                   style={{ borderColor: palette.line }}
@@ -874,10 +779,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                       {category.name}
                     </h2>
                   </div>
-                  <span
-                    className="shrink-0 text-xs"
-                    style={{ color: palette.muted }}
-                  >
+                  <span className="shrink-0 text-xs" style={{ color: palette.muted }}>
                     {items.length} {items.length === 1 ? "product" : "products"}
                   </span>
                 </div>
@@ -937,7 +839,8 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                           {p.desc}
                         </p>
 
-                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-4"
+                        <div
+                          className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-4"
                           style={{ borderColor: palette.line }}
                         >
                           <Price value={p.price} vendor={vendor} />
@@ -982,13 +885,9 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
               More time enjoying food. Less time preparing it.
             </h2>
 
-            <p
-              className="mt-5 max-w-lg text-sm leading-7"
-              style={{ color: palette.muted }}
-            >
-              Spend less time sorting, washing and measuring. Let us help
-              you get the ingredients ready so you can focus on the people
-              around your table.
+            <p className="mt-5 max-w-lg text-sm leading-7" style={{ color: palette.muted }}>
+              Spend less time sorting, washing and measuring. Let us help you get the ingredients
+              ready so you can focus on the people around your table.
             </p>
 
             <Link
@@ -1036,16 +935,9 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                   borderColor: palette.line,
                 }}
               >
-                <item.icon
-                  className="size-5"
-                  strokeWidth={1.7}
-                  style={{ color: palette.forest }}
-                />
+                <item.icon className="size-5" strokeWidth={1.7} style={{ color: palette.forest }} />
                 <h3 className="mt-5 text-sm font-semibold">{item.title}</h3>
-                <p
-                  className="mt-2 text-xs leading-6"
-                  style={{ color: palette.muted }}
-                >
+                <p className="mt-2 text-xs leading-6" style={{ color: palette.muted }}>
                   {item.body}
                 </p>
               </div>
@@ -1072,9 +964,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
               Freshness you can feel good about.
             </h2>
 
-            <p className="mt-5 max-w-xl text-sm leading-7 text-white/70">
-              {vendor.about}
-            </p>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-white/70">{vendor.about}</p>
 
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
@@ -1136,72 +1026,65 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer
-        className="border-t"
-        style={{
-          borderColor: palette.line,
-          background: palette.paper,
-        }}
-      >
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-10 sm:px-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p
-              className="text-lg font-semibold tracking-tight"
-              style={{ color: palette.forest }}
-            >
-              {vendor.name}
-            </p>
-            <p
-              className="mt-1 max-w-sm text-xs leading-5"
-              style={{ color: palette.muted }}
-            >
-              Fresh ingredients, thoughtful preparation, better meals.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-x-5 gap-y-3 text-xs">
-            <a
-              href="#collection"
-              className="transition hover:opacity-60"
-              style={{ color: palette.muted }}
-            >
-              Shop
-            </a>
-            <a
-              href="#meal-builder"
-              className="transition hover:opacity-60"
-              style={{ color: palette.muted }}
-            >
-              Build a meal kit
-            </a>
-            <Link
-              to="/messages"
-              search={{ v: vendor.slug }}
-              className="transition hover:opacity-60"
-              style={{ color: palette.muted }}
-            >
-              Contact
-            </Link>
-          </div>
-        </div>
-
-        <div
-          className="border-t px-5 py-4 sm:px-8"
-          style={{ borderColor: palette.line }}
+      {!user && (
+        <footer
+          className="border-t"
+          style={{
+            borderColor: palette.line,
+            background: palette.paper,
+          }}
         >
-          <div className="mx-auto flex max-w-7xl flex-col gap-2 text-[10px] sm:flex-row sm:items-center sm:justify-between"
-            style={{ color: palette.muted }}
-          >
-            <p>
-              © {new Date().getFullYear()} {vendor.name}. All rights reserved.
-            </p>
-            <Link to="/" className="transition hover:opacity-70">
-              Powered by Peniel · Payments secured by Peniel Pay
-            </Link>
+          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-10 sm:px-8 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-lg font-semibold tracking-tight" style={{ color: palette.forest }}>
+                {vendor.name}
+              </p>
+              <p className="mt-1 max-w-sm text-xs leading-5" style={{ color: palette.muted }}>
+                Fresh ingredients, thoughtful preparation, better meals.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-x-5 gap-y-3 text-xs">
+              <a
+                href="#collection"
+                className="transition hover:opacity-60"
+                style={{ color: palette.muted }}
+              >
+                Shop
+              </a>
+              <a
+                href="#meal-builder"
+                className="transition hover:opacity-60"
+                style={{ color: palette.muted }}
+              >
+                Build a meal kit
+              </a>
+              <Link
+                to="/messages"
+                search={{ v: vendor.slug }}
+                className="transition hover:opacity-60"
+                style={{ color: palette.muted }}
+              >
+                Contact
+              </Link>
+            </div>
           </div>
-        </div>
-      </footer>
+
+          <div className="border-t px-5 py-4 sm:px-8" style={{ borderColor: palette.line }}>
+            <div
+              className="mx-auto flex max-w-7xl flex-col gap-2 text-[10px] sm:flex-row sm:items-center sm:justify-between"
+              style={{ color: palette.muted }}
+            >
+              <p>
+                © {new Date().getFullYear()} {vendor.name}. All rights reserved.
+              </p>
+              <Link to="/" className="transition hover:opacity-70">
+                Powered by Peniel · Payments secured by Peniel Pay
+              </Link>
+            </div>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

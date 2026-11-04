@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   type ErrorComponentProps,
   Scripts,
@@ -13,6 +14,7 @@ import { type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { CustomerBottomNav } from "../components/site/bottom-nav";
 import { Toaster } from "../components/ui/sonner";
+import { useApp } from "../lib/peniel-store";
 
 function NotFoundComponent() {
   return (
@@ -125,11 +127,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const state = useApp();
+  const needsCustomerNavSpace =
+    state.user?.role === "customer" &&
+    !pathname.startsWith("/vendor") &&
+    !pathname.startsWith("/admin") &&
+    pathname !== "/auth";
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <div
+        className={
+          needsCustomerNavSpace ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0" : ""
+        }
+      >
         <Outlet />
       </div>
       <CustomerBottomNav />
