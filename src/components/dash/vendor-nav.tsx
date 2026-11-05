@@ -30,7 +30,6 @@ export const vendorNav: NavItem[] = [
   { label: "Orders", to: "/vendor/orders", icon: <PackageCheck className={i} />, primary: true },
   { label: "Products", to: "/vendor/products", icon: <Store className={i} />, primary: true },
   { label: "Chats", to: "/vendor/messages", icon: <MessagesSquare className={i} />, primary: true },
-  { label: "Profile", to: "/vendor/profile", icon: <CircleUserRound className={i} />, primary: true },
   { label: "Services", to: "/vendor/services", icon: <CalendarClock className={i} /> },
   { label: "Bookings", to: "/vendor/bookings", icon: <CalendarRange className={i} /> },
   { label: "Customers", to: "/vendor/customers", icon: <Users className={i} /> },
@@ -42,6 +41,7 @@ export const vendorNav: NavItem[] = [
   { label: "Verification", to: "/vendor/verification", icon: <BadgeCheck className={i} /> },
   { label: "Store settings", to: "/vendor/settings", icon: <Settings className={i} /> },
   { label: "Support", to: "/vendor/support", icon: <LifeBuoy className={i} /> },
+  { label: "Profile", to: "/vendor/profile", icon: <CircleUserRound className={i} />, primary: true },
 ];
 
 export function vendorNavFor(vendor: Vendor): NavItem[] {
@@ -69,7 +69,8 @@ export function vendorNavFor(vendor: Vendor): NavItem[] {
       if (item.to === "/vendor/products") return { ...item, label: catalogLabel };
       if (item.to === "/vendor/bookings") return { ...item, label: bookingLabel, primary: true };
       return item;
-    });
+    })
+    .sort((a, b) => Number(a.to === "/vendor/profile") - Number(b.to === "/vendor/profile"));
 }
 
 export const adminNav: NavItem[] = [

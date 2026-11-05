@@ -158,6 +158,7 @@ function Landing() {
   const featured = vendors.filter((v) => v.featured);
   const appState = useApp();
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
   if (appState.user?.role === "customer") return <CustomerHome />;
   if (appState.user?.role === "vendor") return <VendorWorkspaceHome />;
   const selectedLocation = getMarketplaceLocationLabel(appState.customer.city);
@@ -291,30 +292,48 @@ function Landing() {
             Find businesses, products and services near you.
           </p>
         </div>
-        <div className="mx-auto mt-6 flex max-w-3xl flex-col gap-2 rounded-2xl border border-border bg-card p-2 shadow-card sm:flex-row">
-          <div className="relative flex-1">
+        <form
+          role="search"
+          aria-label="Find businesses and services"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void navigate({
+              to: "/search",
+              search: {
+                q: searchQuery.trim() || undefined,
+                location: selectedLocation,
+              },
+            });
+          }}
+          className="mx-auto mt-6 grid max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-border/80 bg-card p-2 shadow-card sm:flex sm:gap-2.5"
+        >
+          <div className="relative min-w-0 sm:flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Restaurants, fashion, groceries, salons…"
-              className="h-11 border-0 pl-9 shadow-none focus-visible:ring-0"
+              aria-label="Search businesses, products, and services"
+              className="h-12 min-w-0 rounded-xl border-border/60 bg-background pl-9 pr-3 text-sm shadow-none placeholder:text-muted-foreground/75 focus-visible:border-primary/40 focus-visible:ring-primary/20"
             />
           </div>
-          <LocationPicker
-            value={selectedLocation}
-            onChange={(city) => app.saveCustomer({ ...appState.customer, city })}
-            className="h-11"
-          />
-          <Button asChild className="h-11 px-7">
-            <Link
-              to="/search"
-              search={{ q: searchQuery.trim() || undefined, location: selectedLocation }}
-            >
-              Search
-            </Link>
+          <div className="col-span-2 row-start-2 min-w-0 sm:col-span-1 sm:row-auto">
+            <LocationPicker
+              value={selectedLocation}
+              onChange={(city) => app.saveCustomer({ ...appState.customer, city })}
+              className="h-12 w-full rounded-xl bg-background sm:w-auto sm:min-w-[180px]"
+            />
+          </div>
+          <Button
+            type="submit"
+            size="icon"
+            aria-label="Search"
+            className="col-start-2 row-start-1 size-12 shrink-0 rounded-xl shadow-sm sm:col-auto sm:row-auto sm:w-auto sm:px-7"
+          >
+            <Search className="size-4" />
+            <span className="sr-only sm:not-sr-only">Search</span>
           </Button>
-        </div>
+        </form>
 
         {showLiveResults && (
           <div

@@ -748,7 +748,7 @@ function Marketplace() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-9 lg:grid-cols-[248px_minmax(0,1fr)] lg:px-8">
+      <div className="mx-auto grid min-w-0 max-w-7xl gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-9 lg:grid-cols-[248px_minmax(0,1fr)] lg:px-8">
 
         {/* filters */}
 
@@ -794,7 +794,7 @@ function Marketplace() {
 
         {/* results */}
 
-        <div>
+        <div className="min-w-0">
 
           <div className="mb-1 flex min-w-0 flex-col gap-3 sm:mb-0 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">

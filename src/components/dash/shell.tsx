@@ -1,9 +1,9 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Bell, Menu, Search, X } from "lucide-react";
+import { Bell, LogOut, Menu, Search, X } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { BottomBar } from "@/components/site/bottom-nav";
-import { unreadFor, useApp, useCurrentVendor } from "@/lib/peniel-store";
+import { app, unreadFor, useApp, useCurrentVendor } from "@/lib/peniel-store";
 import { vendorNavFor } from "./vendor-nav";
 
 export type NavItem = {
@@ -33,6 +33,7 @@ export function DashShell({
   storeLink?: { label: string; slug: string };
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [navQuery, setNavQuery] = useState("");
@@ -54,8 +55,19 @@ export function DashShell({
   const matchingNav = displayNav.filter((item) =>
     item.label.toLowerCase().includes(navQuery.trim().toLowerCase()),
   );
-  const primary = displayNav.filter((n) => n.primary).slice(0, 5);
+  const primaryItems = displayNav.filter(
+    (n) => n.primary && (!isVendor || n.to !== "/vendor/profile"),
+  );
+  const primary = isVendor
+    ? [
+        ...primaryItems.slice(0, 4),
+        ...displayNav.filter((n) => n.to === "/vendor/profile"),
+      ]
+    : primaryItems.slice(0, 5);
   const secondary = displayNav.filter((n) => !primary.includes(n));
+  const menuNav = isVendor
+    ? [...secondary, ...displayNav.filter((n) => n.to === "/vendor/profile")]
+    : secondary;
   const initials = isVendor ? me.monogram : "VA";
   const notifications = isVendor
     ? [
@@ -67,6 +79,12 @@ export function DashShell({
         { label: "4 open disputes", to: "/admin/disputes" },
         { label: "8 payouts awaiting release", to: "/admin/payouts" },
       ];
+
+  const signOut = () => {
+    app.signOut();
+    setMenu(false);
+    void navigate({ to: "/auth", search: { mode: "login" } });
+  };
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -109,10 +127,20 @@ export function DashShell({
               );
             })}
           </nav>
-          <div className="border-t border-border p-3">
+          <div className="space-y-1 border-t border-border p-3">
+            {isVendor && (
+              <button
+                type="button"
+                onClick={signOut}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-destructive/5 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <LogOut className="size-4" />
+                Sign out
+              </button>
+            )}
             <Link
               to="/"
-              className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
+              className="block rounded-lg px-3 py-2 text-xs text-muted-foreground transition hover:bg-muted"
             >
               ← Back to Peniel
             </Link>
@@ -240,7 +268,7 @@ export function DashShell({
                     : kicker}
                 </p>
                 <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-4">
-                  {secondary.map((n) => (
+                  {menuNav.map((n) => (
                     <Link
                       key={n.to}
                       to={n.to}
@@ -262,12 +290,22 @@ export function DashShell({
                     </Link>
                   ))}
                 </nav>
-                <div className="border-t border-border p-3">
+                <div className="space-y-1 border-t border-border p-3">
+                  {isVendor && (
+                    <button
+                      type="button"
+                      onClick={signOut}
+                      className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition hover:bg-destructive/5 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <LogOut className="size-4" />
+                      Sign out
+                    </button>
+                  )}
                   {storeLink && (
                     <Link
                       to="/store/$slug"
                       params={{ slug: storeLink.slug }}
-                      className="mb-1 block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-muted"
+                      className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-muted"
                     >
                       {storeLink.label}
                     </Link>

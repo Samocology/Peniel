@@ -31,10 +31,10 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in or create an account - Vendra" },
+      { title: "Sign in or create an account - Peniel" },
       {
         name: "description",
-        content: "Sign in to Vendra or create an account to shop and grow your business.",
+        content: "Sign in to Peniel or create an account to shop and grow your business.",
       },
     ],
   }),
@@ -73,7 +73,7 @@ function AuthPage() {
       ? String(formData.get("name") ?? "").trim()
       : state.user?.email === email
         ? state.user.name
-        : (email.split("@")[0] ?? "Vendra user")
+        : (email.split("@")[0] ?? "Peniel user")
             .split(/[._-]/)
             .filter(Boolean)
             .map((part) => part[0]!.toUpperCase() + part.slice(1))
@@ -152,7 +152,7 @@ function AuthPage() {
         <header className="relative z-10 flex items-center justify-between px-10 py-7 xl:px-14">
           <Link to="/" className="flex items-center gap-3">
             <Logo />
-            <span className="font-display text-xl font-semibold tracking-tight">Vendra</span>
+            <span className="font-display text-xl font-semibold tracking-tight">Peniel</span>
           </Link>
 
           <Link
@@ -181,7 +181,7 @@ function AuthPage() {
           </h1>
 
           <p className="mt-5 max-w-md text-sm leading-7 text-white/55">
-            Everything comes together on Vendra. Discover great products, connect with businesses
+            Everything comes together on Peniel. Discover great products, connect with businesses
             and create a storefront of your own.
           </p>
 
@@ -222,7 +222,7 @@ function AuthPage() {
 
         {!state.user && (
           <footer className="relative z-10 flex items-center justify-between border-t border-white/[0.08] px-10 py-5 text-[10px] text-white/35 xl:px-14">
-            <span>© {new Date().getFullYear()} Vendra</span>
+            <span>© {new Date().getFullYear()} Peniel</span>
             <span>Discover. Connect. Grow.</span>
           </footer>
         )}
@@ -237,7 +237,7 @@ function AuthPage() {
           <Link to="/" className="flex items-center gap-2.5">
             <Logo />
             <span className="font-display text-lg font-semibold tracking-tight text-[#20382A]">
-              Vendra
+              Peniel
             </span>
           </Link>
 
@@ -261,14 +261,14 @@ function AuthPage() {
                 <Sparkles className="size-3 text-[#557358]" />
               </span>
               <span className="text-[9px] font-bold tracking-[0.15em] text-[#526F54]">
-                {isSignup ? "YOUR VENDRA JOURNEY STARTS HERE" : "WELCOME BACK"}
+                {isSignup ? "YOUR PENIEL JOURNEY STARTS HERE" : "WELCOME BACK"}
               </span>
             </div>
 
             <h2 className="font-display text-[34px] leading-[1.08] font-semibold tracking-tight text-[#203027] sm:text-[42px]">
               {isSignup ? (
                 <>
-                  Your Vendra account
+                  Your Peniel account
                   <span className="mt-1 block text-[#557358]">starts here.</span>
                 </>
               ) : (
@@ -279,7 +279,7 @@ function AuthPage() {
             <p className="mt-3 max-w-[350px] text-sm leading-6 text-[#777F76]">
               {isSignup
                 ? "Discover great local finds, connect with businesses, or grow your own storefront-all in one place."
-                : "Sign in to continue your Vendra experience."}
+                : "Sign in to continue your Peniel experience."}
             </p>
           </div>
 
@@ -532,7 +532,7 @@ function AuthPage() {
               size="lg"
               className="group h-12 w-full rounded-xl bg-[#294331] text-[13px] font-semibold text-white shadow-none transition-all hover:bg-[#38563F] active:scale-[0.99] sm:h-[50px]"
             >
-              {isSignup ? "Create your account" : "Sign in to Vendra"}
+              {isSignup ? "Create your account" : "Sign in to Peniel"}
 
               <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
             </Button>
@@ -585,7 +585,7 @@ function AuthPage() {
 
           <div className="mt-5 text-center">
             <p className="text-[10px] leading-5 text-[#9AA197]">
-              By continuing, you agree to use Vendra respectfully and follow our platform
+              By continuing, you agree to use Peniel respectfully and follow our platform
               guidelines.
             </p>
           </div>
