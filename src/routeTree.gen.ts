@@ -18,6 +18,7 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ForBusinessesRouteImport } from './routes/for-businesses'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -104,6 +105,11 @@ const MarketplaceRoute = MarketplaceRouteImport.update({
 const MessagesRoute = MessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrdersRoute = OrdersRouteImport.update({
@@ -327,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
   '/messages': typeof MessagesRoute
+  '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
@@ -380,6 +387,7 @@ export interface FileRoutesByTo {
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
   '/messages': typeof MessagesRoute
+  '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
@@ -434,6 +442,7 @@ export interface FileRoutesById {
   '/for-businesses': typeof ForBusinessesRoute
   '/marketplace': typeof MarketplaceRoute
   '/messages': typeof MessagesRoute
+  '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
@@ -489,6 +498,7 @@ export interface FileRouteTypes {
     | '/for-businesses'
     | '/marketplace'
     | '/messages'
+    | '/onboarding'
     | '/orders'
     | '/payment'
     | '/pricing'
@@ -542,6 +552,7 @@ export interface FileRouteTypes {
     | '/for-businesses'
     | '/marketplace'
     | '/messages'
+    | '/onboarding'
     | '/orders'
     | '/payment'
     | '/pricing'
@@ -595,6 +606,7 @@ export interface FileRouteTypes {
     | '/for-businesses'
     | '/marketplace'
     | '/messages'
+    | '/onboarding'
     | '/orders'
     | '/payment'
     | '/pricing'
@@ -649,6 +661,7 @@ export interface RootRouteChildren {
   ForBusinessesRoute: typeof ForBusinessesRoute
   MarketplaceRoute: typeof MarketplaceRoute
   MessagesRoute: typeof MessagesRoute
+  OnboardingRoute: typeof OnboardingRoute
   OrdersRoute: typeof OrdersRouteWithChildren
   PaymentRoute: typeof PaymentRoute
   PricingRoute: typeof PricingRoute
@@ -754,6 +767,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/messages'
       preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orders': {
@@ -1086,6 +1106,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForBusinessesRoute: ForBusinessesRoute,
   MarketplaceRoute: MarketplaceRoute,
   MessagesRoute: MessagesRoute,
+  OnboardingRoute: OnboardingRoute,
   OrdersRoute: OrdersRouteWithChildren,
   PaymentRoute: PaymentRoute,
   PricingRoute: PricingRoute,

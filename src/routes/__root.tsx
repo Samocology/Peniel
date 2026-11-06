@@ -10,6 +10,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { type ReactNode } from "react";
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { CustomerBottomNav } from "../components/site/bottom-nav";
@@ -129,6 +131,13 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const state = useApp();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("peniel.onboarded")) return;
+    if (pathname === "/onboarding" || pathname === "/auth") return;
+    navigate({ to: "/onboarding" });
+  }, [pathname, navigate]);
   const needsCustomerNavSpace =
     state.user?.role === "customer" &&
     !pathname.startsWith("/vendor") &&
