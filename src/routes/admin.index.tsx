@@ -1,124 +1,530 @@
+
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  BadgeCheck,
+  ChartNoAxesCombined,
+  CircleAlert,
+  Clock3,
+  CreditCard,
+  Package,
+  ShieldCheck,
+  Store,
+  Wallet,
+} from "lucide-react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
-import { StatCard, StatusPill } from "@/components/site/bits";
+import { StatusPill } from "@/components/site/bits";
 import { naira, orders, platformSeries, vendors } from "@/lib/data";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
       { title: "Platform overview - Peniel admin" },
-      { name: "description", content: "Monitor vendors, orders, payments, payouts and verification across the whole Peniel platform." },
+      {
+        name: "description",
+        content:
+          "Monitor vendors, orders, payments, payouts and verification across the whole Peniel platform.",
+      },
       { property: "og:title", content: "Platform overview - Peniel admin" },
-      { property: "og:description", content: "One view of the entire marketplace." },
+      {
+        property: "og:description",
+        content: "One view of the entire marketplace.",
+      },
     ],
   }),
   component: AdminOverview,
 });
 
+const attentionItems = [
+  {
+    title: "Verification applications",
+    description: "Vendor accounts awaiting review",
+    count: "12",
+    to: "/admin/verification",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Open disputes",
+    description: "Orders requiring resolution",
+    count: "4",
+    to: "/admin/disputes",
+    icon: CircleAlert,
+  },
+  {
+    title: "Pending payouts",
+    description: "Payouts awaiting release",
+    count: "8",
+    to: "/admin/payouts",
+    icon: Wallet,
+  },
+  {
+    title: "Flagged reviews",
+    description: "Reviews reported for moderation",
+    count: "6",
+    to: "/admin/reviews",
+    icon: Clock3,
+  },
+];
+
+const categories = [
+  { name: "Restaurants", percentage: 32 },
+  { name: "Fashion", percentage: 21 },
+  { name: "Salons & Barbers", percentage: 14 },
+  { name: "Grocery", percentage: 11 },
+  { name: "Cakes & Bakeries", percentage: 8 },
+];
+
+function MetricCard({
+  label,
+  value,
+  hint,
+  icon: Icon,
+  trend,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  icon: React.ElementType;
+  trend?: "up" | "down";
+  accent?: boolean;
+}) {
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm sm:p-5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="min-w-0 text-[11px] font-medium leading-tight tracking-wide text-muted-foreground sm:text-xs">
+          {label}
+        </p>
+        <div
+          className={`flex size-8 shrink-0 items-center justify-center rounded-lg sm:size-9 sm:rounded-xl ${
+            accent
+              ? "bg-primary/10 text-primary"
+              : "bg-muted text-muted-foreground"
+          }`}
+        >
+          <Icon size={16} strokeWidth={1.8} />
+        </div>
+      </div>
+      <h3 className="mt-2 break-words text-base font-semibold leading-tight tracking-tight tabular-nums sm:mt-3 sm:text-2xl">
+        {value}
+      </h3>
+
+      <div className="mt-3 flex items-start gap-1.5 border-t border-border/70 pt-2.5 sm:mt-4 sm:pt-3">
+        {trend && (
+          <span
+            className={
+              trend === "up"
+                ? "flex items-center gap-0.5 text-[11px] font-semibold text-success"
+                : "flex items-center gap-0.5 text-[11px] font-semibold text-destructive"
+            }
+          >
+            {trend === "up" ? (
+              <ArrowUpRight size={13} />
+            ) : (
+              <ArrowDownRight size={13} />
+            )}
+          </span>
+        )}
+        <span className="text-[10px] leading-snug text-muted-foreground sm:text-[11px]">{hint}</span>
+      </div>
+    </div>
+  );
+}
+
 function AdminOverview() {
   return (
-    <DashShell nav={adminNav} kicker="Platform admin" title="Overview" subtitle="Everything happening on Peniel today">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Gross volume today" value={naira(48920000)} hint="+18% vs yesterday" tone="primary" />
-        <StatCard label="Active vendors" value="5,842" hint="+126 this week" />
-        <StatCard label="Orders today" value="9,431" hint="94% fulfilled on time" />
-        <StatCard label="Platform revenue" value={naira(978400)} hint="2% of volume" tone="gold" />
-      </div>
+    <DashShell
+      nav={adminNav}
+      kicker="Platform administration"
+      title="Overview"
+      subtitle="A clear picture of your marketplace performance."
+    >
+      <div className="space-y-5 sm:space-y-7">
+        {/* Welcome / status */}
+        <div className="flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <ChartNoAxesCombined size={19} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Marketplace overview</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Monitor your platform's activity and operations.
+              </p>
+            </div>
+          </div>
+          <div className="flex w-fit items-center gap-2 rounded-full border border-success/20 bg-success/5 px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
+            <span className="text-[11px] font-medium text-success">
+              Platform operational
+            </span>
+          </div>
+        </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <Panel title="Volume & vendor growth">
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={platformSeries}>
-                <defs>
-                  <linearGradient id="vol" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} stroke="var(--color-muted-foreground)" />
-                <YAxis hide />
-                <Tooltip formatter={(v, n) => (n === "volume" ? naira(Number(v)) : v)} />
-                <Area type="monotone" dataKey="volume" stroke="var(--color-primary)" strokeWidth={2.5} fill="url(#vol)" />
-              </AreaChart>
-            </ResponsiveContainer>
+        {/* Main metrics */}
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">Platform performance</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Key marketplace metrics
+              </p>
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              Today's snapshot
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+            <MetricCard
+              label="Gross volume today"
+              value={naira(48920000)}
+              hint="+18% compared to yesterday"
+              icon={CreditCard}
+              trend="up"
+              accent
+            />
+            <MetricCard
+              label="Active vendors"
+              value="5,842"
+              hint="+126 new vendors this week"
+              icon={Store}
+              trend="up"
+            />
+            <MetricCard
+              label="Orders today"
+              value="9,431"
+              hint="94% fulfilled on time"
+              icon={Package}
+              trend="up"
+            />
+            <MetricCard
+              label="Platform revenue"
+              value={naira(978400)}
+              hint="2% of today's gross volume"
+              icon={Wallet}
+              trend="up"
+              accent
+            />
+          </div>
+        </section>
+
+        {/* Analytics */}
+        <section className="grid gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <Panel title="Transaction volume">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Gross marketplace volume
+                </p>
+                <p className="mt-1 text-lg font-semibold tracking-tight">
+                  {naira(48920000)}
+                </p>
+              </div>
+              <span className="flex items-center gap-1 rounded-lg bg-success/10 px-2.5 py-1.5 text-[11px] font-semibold text-success">
+                <ArrowUpRight size={13} />
+                18% growth
+              </span>
+            </div>
+
+            <div className="h-48 w-full sm:h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={platformSeries}
+                  margin={{ top: 8, right: 5, left: -18, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="platformVolume" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="0%"
+                        stopColor="var(--color-primary)"
+                        stopOpacity={0.22}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-primary)"
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    stroke="var(--color-border)"
+                    strokeDasharray="4 5"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    dy={9}
+                  />
+                  <YAxis
+                    hide
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }}
+                    contentStyle={{
+                      background: "var(--color-card)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "12px",
+                      fontSize: "12px",
+                    }}
+                    formatter={(value, name) =>
+                      name === "volume"
+                        ? [naira(Number(value)), "Volume"]
+                        : [value, String(name)]
+                    }
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="volume"
+                    stroke="var(--color-primary)"
+                    strokeWidth={2.5}
+                    fill="url(#platformVolume)"
+                    activeDot={{
+                      r: 4,
+                      strokeWidth: 2,
+                      fill: "var(--color-primary)",
+                    }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Panel>
+
+          {/* Attention centre */}
+          <Panel title="Needs attention">
+            <div className="mb-3">
+              <p className="text-xs text-muted-foreground">
+                Items that require administrative action.
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              {attentionItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.title}
+                    to={item.to}
+                    className="group flex items-center gap-3 rounded-xl px-2.5 py-3 transition-colors hover:bg-muted/60"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+                      <Icon size={16} strokeWidth={1.8} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold">
+                        {item.title}
+                      </p>
+                      <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    <span className="flex h-7 min-w-7 items-center justify-center rounded-lg bg-muted px-2 text-xs font-semibold tabular-nums">
+                      {item.count}
+                    </span>
+                    <ArrowRight
+                      size={14}
+                      className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+          </Panel>
+        </section>
+
+        {/* Categories */}
+        <Panel title="Category distribution">
+          <div className="mb-5 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Marketplace activity by category
+            </p>
+            <span className="text-[10px] text-muted-foreground">
+              Top categories
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:gap-5">
+            {categories.map((category) => (
+              <div
+                key={category.name}
+                className="space-y-2 rounded-xl bg-muted/35 p-3 sm:rounded-none sm:bg-transparent sm:p-0"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-medium">
+                    {category.name}
+                  </span>
+                  <span className="text-xs font-semibold tabular-nums">
+                    {category.percentage}%
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    style={{ width: `${category.percentage}%` }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </Panel>
 
-        <div className="space-y-6">
-          <Panel title="Needs your attention">
-            <ul className="space-y-3 text-sm">
-              {[
-                ["12 verification applications", "/admin/verification"],
-                ["4 open disputes", "/admin/disputes"],
-                ["8 payouts awaiting release", "/admin/payouts"],
-                ["6 reviews flagged", "/admin/reviews"],
-              ].map(([t, to]) => (
-                <li key={t}>
-                  <Link to={to as string} className="flex items-center justify-between gap-3 rounded-xl border border-border px-3.5 py-3 transition hover:border-primary/40">
-                    <span className="min-w-0 truncate font-medium">{t}</span>
-                    <span className="shrink-0 text-xs font-semibold text-primary">Review</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-
-          <Panel title="Top categories">
-            <ul className="space-y-3 text-sm">
-              {[
-                ["Restaurants", "32%"],
-                ["Fashion", "21%"],
-                ["Salons & Barbers", "14%"],
-                ["Grocery", "11%"],
-                ["Cakes & Bakeries", "8%"],
-              ].map(([c, p]) => (
-                <li key={c} className="flex items-center justify-between gap-3">
-                  <span className="truncate text-muted-foreground">{c}</span>
-                  <span className="shrink-0 font-semibold">{p}</span>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        <Panel title="Latest orders">
-          <DataTable
-            head={["Reference", "Vendor", "Status", "Total"]}
-            rows={orders.map((o) => [
-              <span className="font-mono text-xs">{o.id}</span>,
-              <span className="font-medium">{o.vendor}</span>,
-              <StatusPill status={o.status} />,
-              naira(o.total),
-            ])}
-          />
-        </Panel>
-
-        <Panel title="Newest vendors">
-          <DataTable
-            head={["Business", "Category", "Rating", "Status"]}
-            rows={vendors.slice(0, 5).map((v) => [
-              <Link to="/admin/vendors" className="font-medium">
-                {v.name}
-              </Link>,
-              <span className="text-muted-foreground">{v.categoryLabel}</span>,
-              v.rating.toFixed(1),
-              <span
-                className={
-                  "rounded-full px-2.5 py-1 text-xs font-semibold " +
-                  (v.verified ? "bg-success/12 text-success" : "bg-muted text-muted-foreground")
-                }
+        {/* Tables */}
+        <section className="grid min-w-0 gap-4 sm:gap-5 xl:grid-cols-2">
+          <Panel title="Latest orders">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Recent marketplace transactions
+              </p>
+              <Link
+                to="/admin/orders"
+                className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
               >
-                {v.verified ? "Verified" : "New vendor"}
-              </span>,
-            ])}
-          />
-        </Panel>
+                View all <ArrowUpRight size={13} />
+              </Link>
+            </div>
+
+            <div className="space-y-2 sm:hidden">
+              {orders.map((order) => (
+                <div
+                  key={order.id}
+                  className="rounded-xl border border-border/80 bg-background/70 p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{order.vendor}</p>
+                      <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
+                        {order.id}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-sm font-bold tabular-nums">
+                      {naira(order.total)}
+                    </span>
+                  </div>
+                  <div className="mt-2.5 border-t border-border/70 pt-2">
+                    <StatusPill status={order.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden max-w-full overflow-x-auto sm:block">
+              <DataTable
+                head={["Reference", "Vendor", "Status", "Total"]}
+                rows={orders.map((o) => [
+                  <span className="font-mono text-[11px] text-muted-foreground">
+                    {o.id}
+                  </span>,
+                  <span className="font-medium">{o.vendor}</span>,
+                  <StatusPill status={o.status} />,
+                  <span className="whitespace-nowrap font-semibold">
+                    {naira(o.total)}
+                  </span>,
+                ])}
+              />
+            </div>
+          </Panel>
+
+          <Panel title="Newest vendors">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Recently joined businesses
+              </p>
+              <Link
+                to="/admin/vendors"
+                className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+              >
+                View all <ArrowUpRight size={13} />
+              </Link>
+            </div>
+
+            <div className="space-y-2 sm:hidden">
+              {vendors.slice(0, 5).map((vendor) => (
+                <Link
+                  key={vendor.slug}
+                  to="/admin/vendors"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-background/70 p-3 transition-colors hover:border-primary/30"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{vendor.name}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {vendor.categoryLabel}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <span className="text-xs font-semibold tabular-nums">
+                      ★ {vendor.rating.toFixed(1)}
+                    </span>
+                    <span
+                      className={
+                        "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold " +
+                        (vendor.verified
+                          ? "bg-success/10 text-success"
+                          : "bg-muted text-muted-foreground")
+                      }
+                    >
+                      {vendor.verified && <BadgeCheck size={11} />}
+                      {vendor.verified ? "Verified" : "New vendor"}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="hidden max-w-full overflow-x-auto sm:block">
+              <DataTable
+                head={["Business", "Category", "Rating", "Status"]}
+                rows={vendors.slice(0, 5).map((v) => [
+                  <Link
+                    to="/admin/vendors"
+                    className="font-medium transition-colors hover:text-primary"
+                  >
+                    {v.name}
+                  </Link>,
+                  <span className="whitespace-nowrap text-muted-foreground">
+                    {v.categoryLabel}
+                  </span>,
+                  <span className="font-medium tabular-nums">
+                    {v.rating.toFixed(1)}
+                  </span>,
+                  <span
+                    className={
+                      "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-semibold " +
+                      (v.verified
+                        ? "bg-success/10 text-success"
+                        : "bg-muted text-muted-foreground")
+                    }
+                  >
+                    {v.verified && <BadgeCheck size={11} />}
+                    {v.verified ? "Verified" : "New vendor"}
+                  </span>,
+                ])}
+              />
+            </div>
+          </Panel>
+        </section>
+
+        <div className="flex items-center justify-center gap-2 pb-2 text-[10px] text-muted-foreground">
+          <ChartNoAxesCombined size={13} />
+          Peniel marketplace administration
+        </div>
       </div>
     </DashShell>
   );

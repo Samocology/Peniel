@@ -1,7 +1,17 @@
+
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Search } from "lucide-react";
-import { useState } from "react";
-import { ShieldCheck } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowUpRight,
+  Banknote,
+  CreditCard,
+  Search,
+  ShieldCheck,
+  Wallet,
+  CircleDollarSign,
+  Activity,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
@@ -18,7 +28,10 @@ export const Route = createFileRoute("/admin/transactions")({
           "Every payment collected through Peniel Pay, with method, fee, vendor share and settlement state.",
       },
       { property: "og:title", content: "Transactions - Peniel admin" },
-      { property: "og:description", content: "All money movement in one ledger." },
+      {
+        property: "og:description",
+        content: "All money movement in one ledger.",
+      },
     ],
   }),
   component: AdminTransactions,
@@ -27,16 +40,25 @@ export const Route = createFileRoute("/admin/transactions")({
 const methods = ["Card", "Bank transfer", "USSD", "Peniel wallet"];
 
 function AdminTransactions() {
-  const rows = [...orders, ...orders, ...orders].slice(0, 10);
+  const rows = useMemo(() => [...orders, ...orders, ...orders].slice(0, 10), []);
   const [query, setQuery] = useState("");
-  const visibleRows = rows.filter((order) =>
-    `${order.id} ${order.vendor}`.toLowerCase().includes(query.trim().toLowerCase()),
+
+  const visibleRows = useMemo(
+    () =>
+      rows.filter((order) =>
+        `${order.id} ${order.vendor}`
+          .toLowerCase()
+          .includes(query.trim().toLowerCase()),
+      ),
+    [rows, query],
   );
+
   const exportLedger = () => {
     const csvRows = [
       ["Reference", "Vendor", "Method", "Amount", "Fee", "Vendor share"],
       ...visibleRows.map((order, index) => {
         const fee = Math.round(order.total * 0.02);
+
         return [
           `TXN-${order.id.slice(-5)}`,
           order.vendor,
@@ -47,14 +69,22 @@ function AdminTransactions() {
         ];
       }),
     ];
+
     const csv = csvRows
-      .map((row) => row.map((value) => `"${value.replaceAll('"', '""')}"`).join(","))
+      .map((row) =>
+        row.map((value) => `"${value.replaceAll('"', '""')}"`).join(","),
+      )
       .join("\r\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    );
+
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "peniel-transactions.csv";
     anchor.click();
+
     URL.revokeObjectURL(url);
     toast.success(`${visibleRows.length} transaction rows exported.`);
   };
@@ -62,89 +92,246 @@ function AdminTransactions() {
   return (
     <DashShell
       nav={adminNav}
-      kicker="Platform admin"
+      kicker="Platform administration"
       title="Transactions"
-      subtitle="Collected through Peniel Pay"
+      subtitle="Monitor payments, platform fees and vendor settlements."
       actions={
         <button
           type="button"
           onClick={exportLedger}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold transition hover:border-primary/40"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold transition hover:border-primary/40 hover:bg-muted/50 sm:w-auto"
         >
-          <Download className="size-4" /> Export ledger
+          <ArrowDownToLine className="size-4" />
+          Export ledger
         </button>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-4">
-        <StatCard label="Volume today" value={naira(48920000)} tone="primary" />
-        <StatCard label="Platform fees" value={naira(978400)} tone="gold" />
-        <StatCard label="Held in escrow" value={naira(6412000)} />
-        <StatCard label="Failed payments" value="0.8%" />
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
+        <StatCard
+          label="Volume today"
+          value={naira(48920000)}
+          tone="primary"
+        />
+        <StatCard
+          label="Platform fees"
+          value={naira(978400)}
+          tone="gold"
+        />
+        <StatCard
+          label="Held in escrow"
+          value={naira(6412000)}
+        />
+        <StatCard
+          label="Failed payments"
+          value="0.8%"
+        />
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <Panel
           title="Payment ledger"
           action={
-            <label className="flex items-center gap-2 rounded-xl border border-input px-3 py-2">
-              <Search className="size-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground">
+              {visibleRows.length} records
+            </span>
+          }
+        >
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 aria-label="Search transaction ledger"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search ledger"
-                className="w-28 bg-transparent text-xs outline-none sm:w-40"
+                placeholder="Search by reference or vendor"
+                className="h-10 w-full rounded-xl border border-input bg-background pl-9 pr-3 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
               />
-            </label>
-          }
-        >
-          <DataTable
-            head={["Reference", "Vendor", "Method", "Amount", "Fee", "Vendor share"]}
-            rows={visibleRows.map((o, i) => [
-              <span className="font-mono text-xs">TXN-{o.id.slice(-5)}</span>,
-              <span className="font-medium">{o.vendor}</span>,
-              <span className="text-muted-foreground">{methods[i % methods.length]}</span>,
-              naira(o.total),
-              naira(Math.round(o.total * 0.02)),
-              naira(o.total - Math.round(o.total * 0.02)),
-            ])}
-          />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              disabled={!query}
+              className="text-left text-xs font-semibold text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 sm:text-right"
+            >
+              Clear search
+            </button>
+          </div>
+
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <div className="min-w-[680px]">
+              <DataTable
+                head={[
+                  "Reference",
+                  "Vendor",
+                  "Method",
+                  "Amount",
+                  "Fee",
+                  "Vendor share",
+                ]}
+                rows={visibleRows.map((order, index) => {
+                  const fee = Math.round(order.total * 0.02);
+
+                  return [
+                    <span className="font-mono text-xs font-medium text-foreground">
+                      TXN-{order.id.slice(-5)}
+                    </span>,
+                    <span className="font-medium text-foreground">
+                      {order.vendor}
+                    </span>,
+                    <span className="text-xs text-muted-foreground">
+                      {methods[index % methods.length]}
+                    </span>,
+                    <span className="font-medium tabular-nums">
+                      {naira(order.total)}
+                    </span>,
+                    <span className="text-muted-foreground tabular-nums">
+                      {naira(fee)}
+                    </span>,
+                    <span className="font-semibold tabular-nums text-foreground">
+                      {naira(order.total - fee)}
+                    </span>,
+                  ];
+                })}
+              />
+            </div>
+          </div>
+
           {visibleRows.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              No transactions match “{query}”.
-            </p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="mb-3 grid size-10 place-items-center rounded-full bg-muted">
+                <Search className="size-4 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-semibold">No transactions found</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                No records match "{query}".
+              </p>
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="mt-3 text-xs font-semibold text-primary hover:underline"
+              >
+                Clear search
+              </button>
+            </div>
           )}
+
+          <div className="mt-4 flex flex-col gap-1 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              Showing {visibleRows.length} of {rows.length} transactions
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Transaction fees calculated at 2%
+            </p>
+          </div>
         </Panel>
 
-        <Panel title="How money flows">
-          <ul className="space-y-4 text-sm">
-            {[
-              ["Customer pays Peniel", "One checkout, every business."],
-              [
-                "Funds held briefly",
-                "Released once the order is confirmed delivered or the booking is served.",
-              ],
-              [
-                "Vendor share settled",
-                "Paid into the vendor's verified bank account on their payout schedule.",
-              ],
-            ].map(([t, b], i) => (
-              <li key={t} className="flex gap-3">
-                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  {i + 1}
+        <div className="space-y-5">
+          <Panel title="How money flows">
+            <div className="space-y-4">
+              {[
+                {
+                  icon: CreditCard,
+                  title: "Customer makes payment",
+                  description:
+                    "Customers pay securely through Peniel Pay at checkout.",
+                },
+                {
+                  icon: Wallet,
+                  title: "Funds are held",
+                  description:
+                    "Funds remain held until the order is confirmed delivered or the booking is served.",
+                },
+                {
+                  icon: Banknote,
+                  title: "Vendor gets settled",
+                  description:
+                    "The vendor's share is paid to their verified bank account according to the payout schedule.",
+                },
+              ].map((step, index) => {
+                const Icon = step.icon;
+
+                return (
+                  <div key={step.title} className="flex gap-3">
+                    <div className="relative flex shrink-0 flex-col items-center">
+                      <span className="grid size-9 place-items-center rounded-xl border border-border bg-muted/60">
+                        <Icon className="size-4 text-primary" />
+                      </span>
+                      {index !== 2 && (
+                        <span className="mt-1 h-5 w-px bg-border" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 pb-1">
+                      <p className="text-sm font-semibold">{step.title}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {step.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 rounded-xl border border-primary/15 bg-primary/[0.04] p-3">
+              <div className="flex gap-2.5">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Vendors never need to connect their own payment gateway or
+                  manage API keys.
+                </p>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Ledger overview">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid size-8 place-items-center rounded-lg bg-muted">
+                    <CircleDollarSign className="size-4 text-muted-foreground" />
+                  </span>
+                  <span className="text-xs font-medium">Payment volume</span>
+                </div>
+                <span className="text-xs font-semibold">
+                  {naira(48920000)}
                 </span>
-                <span className="min-w-0">
-                  <span className="block font-medium">{t}</span>
-                  <span className="block text-xs text-muted-foreground">{b}</span>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid size-8 place-items-center rounded-lg bg-muted">
+                    <Activity className="size-4 text-muted-foreground" />
+                  </span>
+                  <span className="text-xs font-medium">Platform revenue</span>
+                </div>
+                <span className="text-xs font-semibold">
+                  {naira(978400)}
                 </span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 flex gap-2 border-t border-border pt-4 text-xs text-muted-foreground">
-            <ShieldCheck className="size-4 shrink-0 text-primary" />
-            Vendors never connect their own payment gateway or handle API keys.
-          </p>
-        </Panel>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid size-8 place-items-center rounded-lg bg-muted">
+                    <ArrowUpRight className="size-4 text-muted-foreground" />
+                  </span>
+                  <span className="text-xs font-medium">Escrow balance</span>
+                </div>
+                <span className="text-xs font-semibold">
+                  {naira(6412000)}
+                </span>
+              </div>
+            </div>
+          </Panel>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-start gap-2 rounded-xl border border-border bg-muted/20 px-3.5 py-3">
+        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Financial records should always be reconciled against confirmed
+          payment-provider transactions and actual settlement records.
+        </p>
       </div>
     </DashShell>
   );

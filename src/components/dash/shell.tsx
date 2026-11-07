@@ -364,12 +364,12 @@ export function Panel({
   return (
     <section className={"rounded-2xl border border-border bg-card " + className}>
       {title && (
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-5 py-3.5">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:px-5 sm:py-3.5">
           <h2 className="truncate font-display text-base font-bold">{title}</h2>
           {action}
         </div>
       )}
-      <div className="p-5">{children}</div>
+      <div className="p-4 sm:p-5">{children}</div>
     </section>
   );
 }
