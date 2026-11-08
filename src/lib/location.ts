@@ -39,7 +39,7 @@ export const MARKETPLACE_LOCATIONS = [
 ] as const;
 
 const LOCATION_ALIASES: Record<string, string[]> = {
-  "Federal Capital Territory": ["federal capital territory", "abuja"],
+  "Federal Capital Territory": ["federal capital territory", "abuja", "fct"],
   "Lagos State": ["lagos", "lekki", "ikoyi", "victoria island", "surulere", "ikeja"],
   "Abia State": ["abia", "umuahia", "aba"],
   "Adamawa State": ["adamawa", "yola", "jimeta"],
@@ -78,27 +78,56 @@ const LOCATION_ALIASES: Record<string, string[]> = {
   "Zamfara State": ["zamfara", "gusau"],
 };
 
+const LOCATION_NAME_TO_STATE = new Map<string, string>();
+
+for (const state of MARKETPLACE_LOCATIONS) {
+  LOCATION_NAME_TO_STATE.set(state.toLowerCase(), state);
+  LOCATION_NAME_TO_STATE.set(state.toLowerCase().replace(/\s+state$/i, ""), state);
+}
+
+for (const [state, aliases] of Object.entries(LOCATION_ALIASES)) {
+  for (const alias of aliases) {
+    LOCATION_NAME_TO_STATE.set(alias.toLowerCase(), state);
+  }
+}
+
+function resolveLocationState(value: string): string | undefined {
+  const cleaned = value
+    .replace(/,\s*(?:NG|Nigeria)\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned) return undefined;
+
+  if (LOCATION_NAME_TO_STATE.has(cleaned.toLowerCase())) {
+    return LOCATION_NAME_TO_STATE.get(cleaned.toLowerCase());
+  }
+
+  const parts = cleaned
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  for (let index = parts.length - 1; index >= 0; index -= 1) {
+    const part = parts[index];
+    if (!part) continue;
+    const resolved = LOCATION_NAME_TO_STATE.get(part.toLowerCase());
+    if (resolved) return resolved;
+  }
+
+  return undefined;
+}
+
 export function normalizeLocationLabel(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return "Lagos State";
 
-  if (/\bNG\b/i.test(trimmed)) {
-    const withoutNg = trimmed.replace(/,\s*NG$/i, "").trim();
-    if (withoutNg.toLowerCase() === "abuja" || withoutNg.toLowerCase() === "fct")
-      return "Federal Capital Territory";
-    const stateName = MARKETPLACE_LOCATIONS.find(
-      (state) => state.toLowerCase() === `${withoutNg.toLowerCase()} state`,
-    );
-    return stateName ?? withoutNg;
-  }
+  const resolved = resolveLocationState(trimmed);
+  if (resolved) return resolved;
 
   if (trimmed.toLowerCase() === "fct" || trimmed.toLowerCase() === "abuja")
     return "Federal Capital Territory";
   if (/state$/i.test(trimmed)) return trimmed;
-  if (trimmed.toLowerCase() === "lagos") return "Lagos State";
-  if (trimmed.toLowerCase() === "port harcourt") return "Rivers State";
-  if (trimmed.toLowerCase() === "ibadan") return "Oyo State";
-  if (trimmed.toLowerCase() === "kano") return "Kano State";
   if (!trimmed.includes(",")) return `${trimmed}`;
   return trimmed;
 }

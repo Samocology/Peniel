@@ -22,6 +22,7 @@ import { Logo } from "@/components/site/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { app, useApp } from "@/lib/peniel-store";
+import { authApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: z.object({
@@ -49,12 +50,14 @@ function AuthPage() {
   const [role, setRole] = useState(requestedRole ?? state.user?.role ?? "customer");
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isSignup = mode === "signup";
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPasswordError("");
+    setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
 
@@ -66,33 +69,53 @@ function AuthPage() {
 
     if (isSignup && password !== formData.get("confirmPassword")) {
       setPasswordError("Passwords do not match. Please try again.");
+      setIsSubmitting(false);
       return;
     }
 
-    const accountName = isSignup
-      ? String(formData.get("name") ?? "").trim()
-      : state.user?.email === email
-        ? state.user.name
-        : (email.split("@")[0] ?? "Peniel user")
-            .split(/[._-]/)
-            .filter(Boolean)
-            .map((part) => part[0]!.toUpperCase() + part.slice(1))
-            .join(" ");
+    try {
+      const result = await (isSignup
+        ? authApi.signup({
+            email,
+            password,
+            name: String(formData.get("name") ?? "").trim(),
+            intentRole: role,
+          })
+        : authApi.login({ email, password }));
 
-    app.signIn(accountName, email, role);
+      if (!result.ok) {
+        setPasswordError(result.error ?? "Could not authenticate. Please try again.");
+        return;
+      }
 
-    const destination =
-      returnTo === "/vendor/verification"
-        ? "/vendor/verification"
-        : returnTo === "/vendor/onboarding"
-          ? "/vendor/onboarding"
-          : role === "vendor"
-            ? isSignup
-              ? "/vendor/onboarding"
-              : "/vendor"
-            : "/";
+      if (!result.data.authenticated) {
+        toast.success("Account created. Check your email to verify it, then sign in.");
+        return;
+      }
 
-    void navigate({ to: destination });
+      const accountName =
+        result.data.user?.name ||
+        (isSignup ? String(formData.get("name") ?? "").trim() : "") ||
+        (email.split("@")[0] ?? "Peniel user")
+          .split(/[._-]/)
+          .filter(Boolean)
+          .map((part) => part[0]!.toUpperCase() + part.slice(1))
+          .join(" ");
+      app.signIn(accountName, email, isSignup ? role : (state.user?.role ?? "customer"));
+
+      const allowedReturnTo = ["/vendor/onboarding", "/vendor/verification", "/"].includes(
+        returnTo ?? "",
+      )
+        ? returnTo!
+        : "/";
+      const destination = isSignup && role === "vendor" ? "/vendor/onboarding" : allowedReturnTo;
+      void navigate({ to: destination });
+    } catch (error) {
+      console.error("Authentication request failed", error);
+      setPasswordError("The authentication service is unavailable. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const authSearch = { role, returnTo };
@@ -437,72 +460,74 @@ function AuthPage() {
 
             {/* Account type */}
 
-            <fieldset className="pt-0.5">
-              <legend className="mb-2.5 text-[12px] font-semibold text-[#39443B]">
-                Continue as
-              </legend>
+            {isSignup && (
+              <fieldset className="pt-0.5">
+                <legend className="mb-2.5 text-[12px] font-semibold text-[#39443B]">
+                  Continue as
+                </legend>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                {[
-                  {
-                    value: "customer" as const,
-                    label: "Customer",
-                    detail: "Shop and discover",
-                    icon: ShoppingBag,
-                  },
-                  {
-                    value: "vendor" as const,
-                    label: "Business owner",
-                    detail: "Manage your store",
-                    icon: Store,
-                  },
-                ].map(({ value, label, detail, icon: Icon }) => {
-                  const selected = role === value;
+                <div className="grid grid-cols-2 gap-2.5">
+                  {[
+                    {
+                      value: "customer" as const,
+                      label: "Customer",
+                      detail: "Shop and discover",
+                      icon: ShoppingBag,
+                    },
+                    {
+                      value: "vendor" as const,
+                      label: "Business owner",
+                      detail: "Manage your store",
+                      icon: Store,
+                    },
+                  ].map(({ value, label, detail, icon: Icon }) => {
+                    const selected = role === value;
 
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => setRole(value)}
-                      className={`relative flex min-h-[65px] items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition-all sm:min-h-[72px] sm:px-3 ${
-                        selected
-                          ? "border-[#789477] bg-[#EFF4ED] ring-1 ring-[#789477]/15"
-                          : "border-[#E4E8E1] bg-white hover:border-[#B8C7B5]"
-                      }`}
-                    >
-                      <span
-                        className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
-                          selected ? "bg-[#DCE8D9] text-[#426747]" : "bg-[#F2F4F0] text-[#8D978B]"
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setRole(value)}
+                        className={`relative flex min-h-[65px] items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition-all sm:min-h-[72px] sm:px-3 ${
+                          selected
+                            ? "border-[#789477] bg-[#EFF4ED] ring-1 ring-[#789477]/15"
+                            : "border-[#E4E8E1] bg-white hover:border-[#B8C7B5]"
                         }`}
                       >
-                        <Icon className="size-4" />
-                      </span>
-
-                      <span className="min-w-0">
                         <span
-                          className={`block text-[11px] font-semibold sm:text-xs ${
-                            selected ? "text-[#34523A]" : "text-[#495149]"
+                          className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
+                            selected ? "bg-[#DCE8D9] text-[#426747]" : "bg-[#F2F4F0] text-[#8D978B]"
                           }`}
                         >
-                          {label}
+                          <Icon className="size-4" />
                         </span>
 
-                        <span className="mt-1 block text-[9px] text-[#939B91] sm:text-[10px]">
-                          {detail}
-                        </span>
-                      </span>
+                        <span className="min-w-0">
+                          <span
+                            className={`block text-[11px] font-semibold sm:text-xs ${
+                              selected ? "text-[#34523A]" : "text-[#495149]"
+                            }`}
+                          >
+                            {label}
+                          </span>
 
-                      {selected && (
-                        <span className="absolute top-2 right-2 flex size-3 items-center justify-center rounded-full bg-[#567657] text-white">
-                          <Check className="size-2" />
+                          <span className="mt-1 block text-[9px] text-[#939B91] sm:text-[10px]">
+                            {detail}
+                          </span>
                         </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </fieldset>
+
+                        {selected && (
+                          <span className="absolute top-2 right-2 flex size-3 items-center justify-center rounded-full bg-[#567657] text-white">
+                            <Check className="size-2" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            )}
 
             {/* Error */}
 
@@ -515,13 +540,13 @@ function AuthPage() {
               </p>
             )}
 
-            {/* Demo information */}
+            {/* Account security information */}
 
             <div className="flex items-center gap-2 rounded-lg bg-[#EFF2EC] px-3 py-2.5">
               <ShieldCheck className="size-3.5 shrink-0 text-[#668066]" />
 
               <p className="text-[10px] leading-4 text-[#778274]">
-                Demo prototype. Profiles are saved in this browser only.
+                Sign-in is handled by Peniel’s secure authentication service.
               </p>
             </div>
 
@@ -530,55 +555,17 @@ function AuthPage() {
             <Button
               type="submit"
               size="lg"
+              disabled={isSubmitting}
               className="group h-12 w-full rounded-xl bg-[#294331] text-[13px] font-semibold text-white shadow-none transition-all hover:bg-[#38563F] active:scale-[0.99] sm:h-[50px]"
             >
-              {isSignup ? "Create your account" : "Sign in to Peniel"}
+              {isSubmitting
+                ? "Please wait…"
+                : isSignup
+                  ? "Create your account"
+                  : "Sign in to Peniel"}
 
               <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
             </Button>
-
-            <div className="relative py-1 text-center">
-              <span className="relative z-10 bg-[#F7F8F5] px-3 text-[10px] font-medium text-[#929A91]">
-                or continue with
-              </span>
-              <span
-                aria-hidden="true"
-                className="absolute inset-x-0 top-1/2 border-t border-[#E5E9E2]"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => toast.info("Google sign-in isn't connected in this demo yet.")}
-              className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#DFE4DD] bg-white text-[13px] font-semibold text-[#39443B] transition-colors hover:border-[#B9C8B6] hover:bg-[#FBFCFA] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6B886B]"
-            >
-              <svg aria-hidden="true" viewBox="0 0 48 48" className="size-[18px]">
-                <path
-                  fill="#EA4335"
-                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"
-                  transform="translate(0 4)"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 38.01 46.98 31.84 46.98 24.55Z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19Z"
-                  transform="translate(1 0)"
-                />
-                <path
-                  fill="#34A853"
-                  d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.14 1.45-4.89 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z"
-                  transform="translate(0 -4)"
-                />
-              </svg>
-              Continue with Google
-            </button>
-
-            <p className="text-center text-[10px] text-[#929A91]">
-              Demo only · Google sign-in isn’t connected
-            </p>
           </form>
 
           {/* Footer */}

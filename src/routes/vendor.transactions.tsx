@@ -1,19 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  CreditCard,
-  Download,
-  Landmark,
-  Wifi,
-  ArrowUpRight,
-  LockKeyhole,
-} from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { CreditCard, Download, Landmark, Wifi, ArrowUpRight, LockKeyhole } from "lucide-react";
+import { type FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard, StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { app, useApp, useCurrentVendor } from "@/lib/peniel-store";
+import { useVendorId, minorToNaira } from "@/lib/vendor-hooks";
+import { payoutsApi, type VendorBalance, type PayoutRecord } from "@/lib/api-client";
 
 export const Route = createFileRoute("/vendor/transactions")({
   head: () => ({
@@ -37,47 +32,56 @@ export const Route = createFileRoute("/vendor/transactions")({
 const inputClass =
   "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
 
-const labelClass =
-  "mb-1.5 block text-xs font-semibold text-muted-foreground";
+const labelClass = "mb-1.5 block text-xs font-semibold text-muted-foreground";
 
 function VendorFinance() {
   const { vendor, account } = useCurrentVendor();
   const state = useApp();
 
   const [editingBank, setEditingBank] = useState(false);
-  const [historyTab, setHistoryTab] = useState<"transactions" | "payouts">(
-    "transactions",
-  );
+  const [historyTab, setHistoryTab] = useState<"transactions" | "payouts">("transactions");
+  const [liveBalance, setLiveBalance] = useState<VendorBalance | null>(null);
+  const [livePayouts, setLivePayouts] = useState<PayoutRecord[]>([]);
+  const [liveLoading, setLiveLoading] = useState(true);
 
-  const orders = state.orders.filter(
-    (order) => order.vendorSlug === vendor.slug,
-  );
+  const vendorId = useVendorId(vendor.slug);
 
-  const activeOrders = orders.filter(
-    (order) => order.status !== "Cancelled",
-  );
+  // Fetch live balance and payout history when a backend vendor is available
+  useEffect(() => {
+    if (!vendorId) {
+      setLiveLoading(false);
+      return;
+    }
+    let active = true;
+    Promise.all([payoutsApi.balance(vendorId), payoutsApi.history(vendorId)]).then(
+      ([balanceResult, payoutsResult]) => {
+        if (!active) return;
+        if (balanceResult.ok) setLiveBalance(balanceResult.data);
+        if (payoutsResult.ok) setLivePayouts(payoutsResult.data);
+        setLiveLoading(false);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [vendorId]);
 
-  const completed = activeOrders.filter(
-    (order) => order.status === "Delivered",
-  );
+  const orders = state.orders.filter((order) => order.vendorSlug === vendor.slug);
+
+  const activeOrders = orders.filter((order) => order.status !== "Cancelled");
+
+  const completed = activeOrders.filter((order) => order.status === "Delivered");
 
   const pending = activeOrders
     .filter((order) => order.status !== "Delivered")
     .reduce((sum, order) => sum + order.total, 0);
 
-  const sales = activeOrders.reduce(
-    (sum, order) => sum + order.total,
-    0,
-  );
+  const sales = activeOrders.reduce((sum, order) => sum + order.total, 0);
 
-  const fees = activeOrders.reduce(
-    (sum, order) => sum + Math.round(order.total * 0.02),
-    0,
-  );
+  const fees = activeOrders.reduce((sum, order) => sum + Math.round(order.total * 0.02), 0);
 
   const available = completed.reduce(
-    (sum, order) =>
-      sum + order.total - Math.round(order.total * 0.02),
+    (sum, order) => sum + order.total - Math.round(order.total * 0.02),
     0,
   );
 
@@ -87,6 +91,13 @@ function VendorFinance() {
       : vendor.fulfilment === "booking"
         ? "appointments"
         : "reservations";
+
+  // Prefer live backend balance when available
+  const balanceValue = liveBalance ? liveBalance.availableMinor / 100 : available;
+  const grossValue = liveBalance ? liveBalance.grossMinor / 100 : sales;
+  const deductionsValue = liveBalance ? liveBalance.deductionsMinor / 100 : fees;
+  const paidOutValue = liveBalance ? liveBalance.paidOutMinor / 100 : 0;
+  const pendingPayoutValue = liveBalance ? liveBalance.pendingPayoutMinor / 100 : 0;
 
   const saveBank = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -136,27 +147,47 @@ function VendorFinance() {
       {/* Financial overview */}
       <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Recorded sales"
-          value={naira(sales)}
-          hint={`${activeOrders.length} ${activity}; excludes cancelled`}
+          label={liveBalance ? "Gross sales" : "Recorded sales"}
+          value={naira(grossValue)}
+          hint={
+            liveBalance
+              ? "From verified ledger entries"
+              : `${activeOrders.length} ${activity}; excludes cancelled`
+          }
           tone="primary"
         />
         <StatCard
-          label="Estimated fees"
-          value={naira(fees)}
-          hint="2% estimate on recorded activity"
+          label={liveBalance ? "Platform fees" : "Estimated fees"}
+          value={naira(deductionsValue)}
+          hint={
+            liveBalance ? "Commission and refund deductions" : "2% estimate on recorded activity"
+          }
         />
         <StatCard
-          label="Ready after fulfilment"
-          value={naira(available)}
-          hint="Delivered activity, less estimated fee"
+          label="Available balance"
+          value={naira(balanceValue)}
+          hint={
+            liveBalance
+              ? "After payouts and pending payouts"
+              : "Delivered activity, less estimated fee"
+          }
           tone="gold"
         />
         <StatCard
-          label="Pending fulfilment"
-          value={naira(pending)}
-          hint="Not yet delivered or completed"
+          label="Pending payouts"
+          value={naira(pendingPayoutValue)}
+          hint="Payouts not yet completed"
         />
+        {liveLoading && (
+          <div className="col-span-4 flex items-center justify-center py-10 text-center">
+            <p className="text-xs text-muted-foreground">Loading finance data…</p>
+          </div>
+        )}
+        {liveBalance && livePayouts.length > 0 && (
+          <div className="col-span-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            Live balance and payout history from Peniel backend.
+          </div>
+        )}
       </div>
 
       {/* Card and payout bank */}
@@ -185,9 +216,7 @@ function VendorFinance() {
                     className="size-9 shrink-0 rounded-xl border border-white/20 bg-white p-1 object-contain"
                   />
                   <div>
-                    <p className="text-[13px] font-bold tracking-[0.16em]">
-                      PENIEL
-                    </p>
+                    <p className="text-[13px] font-bold tracking-[0.16em]">PENIEL</p>
                     <p className="mt-0.5 text-[8px] font-medium tracking-[0.2em] text-white/55">
                       BUSINESS
                     </p>
@@ -198,9 +227,7 @@ function VendorFinance() {
                   <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.14em] text-white/80">
                     Preview
                   </span>
-                  <span className="text-[8px] tracking-[0.16em] text-white/45">
-                    NIGERIA
-                  </span>
+                  <span className="text-[8px] tracking-[0.16em] text-white/45">NIGERIA</span>
                 </div>
               </div>
 
@@ -253,19 +280,14 @@ function VendorFinance() {
             <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-muted/50 p-3">
               <LockKeyhole className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               <p className="text-xs leading-5 text-muted-foreground">
-                This is a visual card preview for your business profile. No
-                physical or virtual card has been issued. Card payments and
-                ATM withdrawals are not available.
+                This is a visual card preview for your business profile. No physical or virtual card
+                has been issued. Card payments and ATM withdrawals are not available.
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                toast.info(
-                  "Peniel card issuing is not connected in this demo.",
-                )
-              }
+              onClick={() => toast.info("Peniel card issuing is not connected in this demo.")}
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground transition hover:bg-muted"
             >
               <CreditCard className="size-4" />
@@ -309,9 +331,8 @@ function VendorFinance() {
               </div>
 
               <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                Demo details saved{" "}
-                {new Date(account.payoutBank.linkedAt).toLocaleString()};
-                account ownership has not been verified.
+                Demo details saved {new Date(account.payoutBank.linkedAt).toLocaleString()}; account
+                ownership has not been verified.
               </p>
 
               <button
@@ -327,8 +348,8 @@ function VendorFinance() {
             <form onSubmit={saveBank} className="space-y-3.5">
               <div className="rounded-xl bg-muted/40 p-3">
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Add the bank account you intend to use for business
-                  settlements. These details are stored locally for this demo.
+                  Add the bank account you intend to use for business settlements. These details are
+                  stored locally for this demo.
                 </p>
               </div>
 
@@ -343,18 +364,13 @@ function VendorFinance() {
                   <option value="" disabled>
                     Select a bank
                   </option>
-                  {[
-                    "Access Bank",
-                    "First Bank",
-                    "GTBank",
-                    "UBA",
-                    "Zenith Bank",
-                    "Other",
-                  ].map((bank) => (
-                    <option key={bank} value={bank}>
-                      {bank}
-                    </option>
-                  ))}
+                  {["Access Bank", "First Bank", "GTBank", "UBA", "Zenith Bank", "Other"].map(
+                    (bank) => (
+                      <option key={bank} value={bank}>
+                        {bank}
+                      </option>
+                    ),
+                  )}
                 </select>
               </label>
 
@@ -385,9 +401,9 @@ function VendorFinance() {
               </label>
 
               <p className="text-xs leading-5 text-muted-foreground">
-                Demo only: the full account number is not saved. Only the bank
-                name, account name and last four digits are stored in this
-                browser. No bank verification or transfer occurs.
+                Demo only: the full account number is not saved. Only the bank name, account name
+                and last four digits are stored in this browser. No bank verification or transfer
+                occurs.
               </p>
 
               <div className="flex flex-col-reverse gap-2 sm:flex-row">
@@ -452,18 +468,14 @@ function VendorFinance() {
         </div>
 
         <div className="grid min-w-0 gap-5 lg:grid-cols-2">
-          <div
-            className={`${historyTab === "transactions" ? "" : "hidden lg:block"} min-w-0`}
-          >
+          <div className={`${historyTab === "transactions" ? "" : "hidden lg:block"} min-w-0`}>
             <Panel title="Transaction history" className="h-full min-w-0">
               {orders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
                     <CreditCard className="size-5 text-muted-foreground" />
                   </div>
-                  <p className="mt-3 text-sm font-semibold">
-                    No transactions yet
-                  </p>
+                  <p className="mt-3 text-sm font-semibold">No transactions yet</p>
                   <p className="mt-1 max-w-xs text-xs leading-5 text-muted-foreground">
                     Recorded transactions for this business will appear here.
                   </p>
@@ -474,17 +486,12 @@ function VendorFinance() {
                     <p className="text-xs text-muted-foreground">
                       {orders.length} recorded transactions
                     </p>
-                    <span className="text-[10px] text-muted-foreground">
-                      All statuses
-                    </span>
+                    <span className="text-[10px] text-muted-foreground">All statuses</span>
                   </div>
 
                   <div className="space-y-2.5 sm:hidden">
                     {orders.map((order) => {
-                      const fee =
-                        order.status === "Cancelled"
-                          ? 0
-                          : Math.round(order.total * 0.02);
+                      const fee = order.status === "Cancelled" ? 0 : Math.round(order.total * 0.02);
 
                       return (
                         <article
@@ -511,17 +518,13 @@ function VendorFinance() {
                           </div>
                           <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 text-xs">
                             <div className="min-w-0">
-                              <p className="text-[10px] text-muted-foreground">
-                                Fee estimate
-                              </p>
+                              <p className="text-[10px] text-muted-foreground">Fee estimate</p>
                               <p className="mt-0.5 truncate font-medium tabular-nums">
                                 {naira(fee)}
                               </p>
                             </div>
                             <div className="min-w-0 text-right">
-                              <p className="text-[10px] text-muted-foreground">
-                                Estimated net
-                              </p>
+                              <p className="text-[10px] text-muted-foreground">Estimated net</p>
                               <p className="mt-0.5 truncate font-semibold tabular-nums">
                                 {naira(order.total - fee)}
                               </p>
@@ -534,30 +537,17 @@ function VendorFinance() {
 
                   <div className="hidden overflow-x-auto sm:block">
                     <DataTable
-                      head={[
-                        "Reference",
-                        "Customer",
-                        "Amount",
-                        "Fee",
-                        "Estimated net",
-                        "Status",
-                      ]}
+                      head={["Reference", "Customer", "Amount", "Fee", "Estimated net", "Status"]}
                       rows={orders.map((order) => {
                         const fee =
-                          order.status === "Cancelled"
-                            ? 0
-                            : Math.round(order.total * 0.02);
+                          order.status === "Cancelled" ? 0 : Math.round(order.total * 0.02);
 
                         return [
                           <span className="font-mono text-xs">{order.id}</span>,
                           <span className="font-medium">{order.customer}</span>,
                           naira(order.total),
-                          <span className="text-muted-foreground">
-                            {naira(fee)}
-                          </span>,
-                          <span className="font-semibold">
-                            {naira(order.total - fee)}
-                          </span>,
+                          <span className="text-muted-foreground">{naira(fee)}</span>,
+                          <span className="font-semibold">{naira(order.total - fee)}</span>,
                           <StatusPill status={order.status} />,
                         ];
                       })}
@@ -568,33 +558,81 @@ function VendorFinance() {
             </Panel>
           </div>
 
-          <div
-            className={`${historyTab === "payouts" ? "" : "hidden lg:block"} min-w-0`}
-          >
+          <div className={`${historyTab === "payouts" ? "" : "hidden lg:block"} min-w-0`}>
             <Panel title="Payout history" className="h-full min-w-0">
-              <div className="flex min-h-[220px] flex-col items-center justify-center px-4 py-8 text-center">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-muted">
-                  <Landmark className="size-5 text-muted-foreground" />
+              {liveLoading ? (
+                <div className="flex min-h-[220px] flex-col items-center justify-center px-4 py-8 text-center">
+                  <p className="text-xs text-muted-foreground">Loading payouts…</p>
                 </div>
+              ) : livePayouts.length === 0 && liveBalance !== null ? (
+                <div className="flex min-h-[220px] flex-col items-center justify-center px-4 py-8 text-center">
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-muted">
+                    <Landmark className="size-5 text-muted-foreground" />
+                  </div>
 
-                <p className="mt-3 text-sm font-semibold">
-                  No payouts recorded
-                </p>
+                  <p className="mt-3 text-sm font-semibold">No payouts recorded</p>
 
-                <p className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
-                  Payout history appears when a settlement provider is connected.{" "}
-                  {completed.length
-                    ? `${completed.length} completed ${activity} contribute to the estimate above.`
-                    : "Completed activity will contribute to the estimate above."}
-                </p>
+                  <p className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+                    Payout history appears when a settlement provider is connected.{" "}
+                    {completed.length
+                      ? `${completed.length} completed ${activity} contribute to the estimate above.`
+                      : "Completed activity will contribute to the estimate above."}
+                  </p>
 
-                <div className="mt-4 flex items-center gap-2 rounded-full bg-muted px-3 py-1.5">
-                  <span className="size-1.5 rounded-full bg-muted-foreground" />
-                  <span className="text-[10px] font-medium text-muted-foreground">
-                    Settlement provider not connected
-                  </span>
+                  <div className="mt-4 flex items-center gap-2 rounded-full bg-muted px-3 py-1.5">
+                    <span className="size-1.5 rounded-full bg-muted-foreground" />
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      Settlement provider not connected
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  {livePayouts.map((payout) => (
+                    <div
+                      key={payout.id}
+                      className="rounded-xl border border-border bg-background p-3"
+                    >
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            Payout {payout.id.slice(0, 8)}
+                          </p>
+                          <p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+                            {payout.status} · {new Date(payout.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-bold tabular-nums text-foreground">
+                            {minorToNaira(payout.amount_minor)}
+                          </p>
+                          <div className="mt-1">
+                            <StatusPill
+                              status={
+                                payout.status.charAt(0).toUpperCase() + payout.status.slice(1)
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 text-xs">
+                        <div className="min-w-0">
+                          <p className="text-[10px] text-muted-foreground">Bank</p>
+                          <p className="mt-0.5 truncate font-medium tabular-nums">
+                            {payout.bank_name ?? "Not set"}
+                          </p>
+                        </div>
+                        <div className="min-w-0 text-right">
+                          <p className="text-[10px] text-muted-foreground">Account</p>
+                          <p className="mt-0.5 truncate font-medium tabular-nums">
+                            •••• {payout.account_last4}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Panel>
           </div>
         </div>

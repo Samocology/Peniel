@@ -5,7 +5,6 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
-import type { Product } from "@/lib/data";
 import { app, useCurrentVendor } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/vendor/products/new")({
@@ -77,9 +76,9 @@ function NewProduct() {
   const validPrice =
     price.trim() !== "" &&
     Number.isFinite(numericPrice) &&
-    numericPrice >= 0;
+    numericPrice > 0;
 
-  const publish = (event: FormEvent<HTMLFormElement>) => {
+  const publish = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (publishing) return;
@@ -96,26 +95,77 @@ function NewProduct() {
       return;
     }
 
-    const product: Product = {
-      id: `${vendor.slug}-${Date.now().toString(36)}`,
-      name: productName,
-      desc: description.trim(),
-      price: numericPrice,
-      group: group.trim() || "General",
-      ...(details.trim() ? { meta: details.trim() } : {}),
-    };
-
     setPublishing(true);
 
     try {
-      app.addProduct(product);
-      toast.success(
-        `${product.name} added to your ${itemLabel} catalogue`,
-      );
+      const vendorResponse = await fetch("/api/vendors/mine", {
+        credentials: "same-origin",
+      });
+      const vendorResult = (await vendorResponse.json()) as {
+        ok?: boolean;
+        error?: string;
+        data?: { id: string; slug: string }[];
+      };
+      if (!vendorResponse.ok || !vendorResult.ok || !Array.isArray(vendorResult.data)) {
+        throw new Error(vendorResult.error ?? "Could not load your saved storefronts.");
+      }
+      const ownedVendor = vendorResult.data.find((item) => item.slug === vendor.slug);
+      if (!ownedVendor) {
+        throw new Error("This demo storefront is not linked to your account. Complete saved vendor onboarding first.");
+      }
+
+      const productResponse = await fetch("/api/products", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          vendorId: ownedVendor.id,
+          name: productName,
+          description: description.trim(),
+          price: numericPrice,
+          group: group.trim() || "General",
+          published: true,
+          attributes: details.trim() ? { meta: details.trim() } : {},
+        }),
+      });
+      const productResult = (await productResponse.json()) as {
+        ok?: boolean;
+        error?: string;
+        data?: {
+          id?: string;
+          name?: string;
+          description?: string;
+          group_name?: string;
+          price_minor?: number;
+        }[];
+      };
+      if (!productResponse.ok || !productResult.ok) {
+        throw new Error(productResult.error ?? "Could not save this listing.");
+      }
+      const savedProduct = productResult.data?.[0];
+      if (
+        !savedProduct ||
+        typeof savedProduct.id !== "string" ||
+        typeof savedProduct.name !== "string" ||
+        typeof savedProduct.price_minor !== "number"
+      ) {
+        throw new Error("The product was saved, but its response was incomplete. Refresh your catalogue before retrying.");
+      }
+
+      app.addProduct({
+        id: savedProduct.id,
+        name: savedProduct.name,
+        desc: savedProduct.description ?? "",
+        group: savedProduct.group_name || group.trim() || "General",
+        price: savedProduct.price_minor / 100,
+        ...(details.trim() ? { meta: details.trim() } : {}),
+      });
+      toast.success(`${productName} saved to your ${itemLabel} catalogue`);
       void navigate({ to: "/vendor/products" });
-    } catch {
+    } catch (error) {
+      console.error("Could not save vendor product", error);
       setPublishing(false);
-      toast.error("Unable to publish this item. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Unable to save this item. Please try again.");
     }
   };
 

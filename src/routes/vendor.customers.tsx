@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -11,12 +10,14 @@ import {
   Wallet,
   ShoppingBag,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { useApp, useCurrentVendor } from "@/lib/peniel-store";
+import { customersApi, type VendorCustomerRecord } from "@/lib/api-client";
+import { useVendorId } from "@/lib/vendor-hooks";
 
 export const Route = createFileRoute("/vendor/customers")({
   head: () => ({
@@ -39,53 +40,72 @@ export const Route = createFileRoute("/vendor/customers")({
 function VendorCustomers() {
   const { vendor } = useCurrentVendor();
   const state = useApp();
+  const vendorId = useVendorId(vendor.slug);
   const [query, setQuery] = useState("");
+  const [liveCustomers, setLiveCustomers] = useState<VendorCustomerRecord[]>([]);
+  const [liveLoading, setLiveLoading] = useState(true);
+
+  useEffect(() => {
+    if (!vendorId) {
+      setLiveLoading(false);
+      return;
+    }
+    let active = true;
+    customersApi.vendorCustomers(vendorId).then((result) => {
+      if (!active) return;
+      if (result.ok) setLiveCustomers(result.data);
+      setLiveLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [vendorId]);
 
   const customers = useMemo(() => {
-    const byCustomer = new Map<
-      string,
-      { name: string; count: number; spent: number }
-    >();
+    const byCustomer = new Map<string, { name: string; count: number; spent: number }>();
 
-    for (const order of state.orders) {
-      if (
-        order.vendorSlug !== vendor.slug ||
-        order.status === "Cancelled"
-      ) {
-        continue;
+    const source = liveLoading ? [] : liveCustomers;
+    const demoOrders = state.orders.filter(
+      (order) => order.vendorSlug === vendor.slug && order.status !== "Cancelled",
+    );
+
+    if (liveCustomers.length > 0 && !liveLoading) {
+      for (const record of source) {
+        const customerName =
+          record.orders.customer_snapshot["fullName"] ??
+          record.orders.customer_snapshot["email"] ??
+          "Customer";
+        const entry = byCustomer.get(customerName) ?? {
+          name: customerName,
+          count: 0,
+          spent: 0,
+        };
+        entry.count += 1;
+        byCustomer.set(customerName, entry);
       }
-
-      const customer = byCustomer.get(order.customer) ?? {
-        name: order.customer,
-        count: 0,
-        spent: 0,
-      };
-
-      customer.count += 1;
-      customer.spent += order.total;
-      byCustomer.set(order.customer, customer);
+    } else {
+      for (const order of demoOrders) {
+        const customer = byCustomer.get(order.customer) ?? {
+          name: order.customer,
+          count: 0,
+          spent: 0,
+        };
+        customer.count += 1;
+        customer.spent += order.total;
+        byCustomer.set(order.customer, customer);
+      }
     }
 
-    return [...byCustomer.values()].sort(
-      (a, b) => b.spent - a.spent,
-    );
-  }, [state.orders, vendor.slug]);
+    return [...byCustomer.values()].sort((a, b) => b.spent - a.spent);
+  }, [liveCustomers, liveLoading, state.orders, vendor.slug]);
 
   const filtered = customers.filter((customer) =>
     customer.name.toLowerCase().includes(query.trim().toLowerCase()),
   );
 
-  const totalSpent = customers.reduce(
-    (sum, customer) => sum + customer.spent,
-    0,
-  );
-  const orderCount = customers.reduce(
-    (sum, customer) => sum + customer.count,
-    0,
-  );
-  const repeatCount = customers.filter(
-    (customer) => customer.count > 1,
-  ).length;
+  const totalSpent = customers.reduce((sum, customer) => sum + customer.spent, 0);
+  const orderCount = customers.reduce((sum, customer) => sum + customer.count, 0);
+  const repeatCount = customers.filter((customer) => customer.count > 1).length;
 
   const activity =
     vendor.fulfilment === "order"
@@ -94,9 +114,7 @@ function VendorCustomers() {
         ? "appointments"
         : "reservations";
 
-  const averageValue = orderCount
-    ? naira(Math.round(totalSpent / orderCount))
-    : naira(0);
+  const averageValue = orderCount ? naira(Math.round(totalSpent / orderCount)) : naira(0);
 
   const exportList = () => {
     const rows = [
@@ -110,11 +128,7 @@ function VendorCustomers() {
     ];
 
     const csv = rows
-      .map((row) =>
-        row
-          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
-          .join(","),
-      )
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
       .join("\n");
 
     const blob = new Blob([csv], {
@@ -151,11 +165,7 @@ function VendorCustomers() {
     >
       {/* Overview */}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <StatCard
-          label="Customers"
-          value={String(customers.length)}
-          tone="primary"
-        />
+        <StatCard label="Customers" value={String(customers.length)} tone="primary" />
         <StatCard
           label="Repeat customers"
           value={String(repeatCount)}
@@ -185,13 +195,11 @@ function VendorCustomers() {
               <Users className="size-[18px]" />
             </span>
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold">
-                Build stronger customer relationships.
-              </p>
+              <p className="text-[13px] font-semibold">Build stronger customer relationships.</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Peniel combines this store's non-cancelled orders, bookings
-                and reservations by customer name. You can identify returning
-                customers and understand their recorded spending.
+                Peniel combines this store's non-cancelled orders, bookings and reservations by
+                customer name. You can identify returning customers and understand their recorded
+                spending.
               </p>
             </div>
           </div>
@@ -200,21 +208,15 @@ function VendorCustomers() {
             <div className="rounded-xl bg-muted/50 p-3">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <UserRoundCheck className="size-3.5" />
-                <span className="text-[10px] font-medium">
-                  Returning customers
-                </span>
+                <span className="text-[10px] font-medium">Returning customers</span>
               </div>
-              <p className="mt-2 text-lg font-semibold tabular-nums">
-                {repeatCount}
-              </p>
+              <p className="mt-2 text-lg font-semibold tabular-nums">{repeatCount}</p>
             </div>
 
             <div className="rounded-xl bg-muted/50 p-3">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Wallet className="size-3.5" />
-                <span className="text-[10px] font-medium">
-                  Total recorded spend
-                </span>
+                <span className="text-[10px] font-medium">Total recorded spend</span>
               </div>
               <p className="mt-2 truncate text-lg font-semibold tabular-nums">
                 {naira(totalSpent)}
@@ -225,8 +227,8 @@ function VendorCustomers() {
           <div className="mt-4 flex items-start gap-2 rounded-xl border border-border bg-muted/30 p-3">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
             <p className="text-[11px] leading-5 text-muted-foreground">
-              Customer phone numbers and email addresses stay private. This
-              prototype uses saved browser activity rather than a live CRM.
+              Customer phone numbers and email addresses stay private. Customer names come from
+              verified order records when live data is available.
             </p>
           </div>
         </Panel>
@@ -236,12 +238,10 @@ function VendorCustomers() {
             <MessageSquare className="size-[18px]" />
           </div>
 
-          <p className="mt-3 text-[13px] font-semibold">
-            Keep the conversation going.
-          </p>
+          <p className="mt-3 text-[13px] font-semibold">Keep the conversation going.</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Confirm order details, answer questions and coordinate repeat
-            purchases through Peniel's private messaging.
+            Confirm order details, answer questions and coordinate repeat purchases through Peniel's
+            private messaging.
           </p>
 
           <Link
@@ -276,7 +276,14 @@ function VendorCustomers() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {liveLoading ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-5 py-12 text-center">
+              <span className="grid size-11 place-items-center rounded-xl bg-muted text-muted-foreground">
+                <Users className="size-5" />
+              </span>
+              <p className="mt-3 text-sm font-semibold">Loading customers…</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-5 py-12 text-center">
               <span className="grid size-11 place-items-center rounded-xl bg-muted text-muted-foreground">
                 {customers.length === 0 ? (
@@ -286,9 +293,7 @@ function VendorCustomers() {
                 )}
               </span>
               <p className="mt-3 text-sm font-semibold">
-                {customers.length
-                  ? "No matching customers"
-                  : "No customers yet"}
+                {customers.length ? "No matching customers" : "No customers yet"}
               </p>
               <p className="mt-1 max-w-xs text-xs leading-5 text-muted-foreground">
                 {customers.length
@@ -310,18 +315,14 @@ function VendorCustomers() {
                     </span>
 
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-semibold">
-                        {customer.name}
-                      </p>
+                      <p className="truncate text-xs font-semibold">{customer.name}</p>
                       <p className="mt-1 text-[10px] text-muted-foreground">
                         {customer.count} {customer.count === 1 ? "activity" : "activities"}
                       </p>
                     </div>
 
                     <div className="shrink-0 text-right">
-                      <p className="text-xs font-semibold tabular-nums">
-                        {naira(customer.spent)}
-                      </p>
+                      <p className="text-xs font-semibold tabular-nums">{naira(customer.spent)}</p>
                       <span
                         className={[
                           "mt-1 inline-flex rounded-full px-2 py-0.5 text-[9px] font-semibold",
@@ -340,28 +341,16 @@ function VendorCustomers() {
               {/* Desktop customer table */}
               <div className="hidden md:block">
                 <DataTable
-                  head={[
-                    "Customer",
-                    "Contact",
-                    "Activity",
-                    "Total spent",
-                    "Segment",
-                  ]}
+                  head={["Customer", "Contact", "Activity", "Total spent", "Segment"]}
                   rows={filtered.map((customer) => [
                     <span className="flex min-w-0 items-center gap-3">
                       <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
                         {customer.name.slice(0, 2).toUpperCase()}
                       </span>
-                      <span className="truncate text-xs font-medium">
-                        {customer.name}
-                      </span>
+                      <span className="truncate text-xs font-medium">{customer.name}</span>
                     </span>,
-                    <span className="text-xs text-muted-foreground">
-                      Private
-                    </span>,
-                    <span className="text-xs tabular-nums">
-                      {customer.count}
-                    </span>,
+                    <span className="text-xs text-muted-foreground">Private</span>,
+                    <span className="text-xs tabular-nums">{customer.count}</span>,
                     <span className="text-xs font-semibold tabular-nums">
                       {naira(customer.spent)}
                     </span>,

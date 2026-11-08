@@ -1,4 +1,3 @@
-
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowUpRight,
@@ -16,12 +15,13 @@ import {
   Truck,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { app, useCurrentVendor } from "@/lib/peniel-store";
+import { vendorsApi, type VendorRecord } from "@/lib/api-client";
 import { TemplatePicker } from "@/components/store/template-picker";
 
 export const Route = createFileRoute("/vendor/settings")({
@@ -49,16 +49,9 @@ export const Route = createFileRoute("/vendor/settings")({
 const field =
   "w-full min-w-0 rounded-lg border border-input bg-background px-3.5 py-2.5 text-[13px] text-foreground outline-none transition placeholder:text-muted-foreground/60 hover:border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60";
 
-const label =
-  "mb-1.5 block text-[11px] font-semibold tracking-wide text-foreground";
+const label = "mb-1.5 block text-[11px] font-semibold tracking-wide text-foreground";
 
-const palettes = [
-  "#14532d",
-  "#7c2d12",
-  "#1e3a5f",
-  "#c2410c",
-  "#4c1d95",
-];
+const palettes = ["#14532d", "#7c2d12", "#1e3a5f", "#c2410c", "#4c1d95"];
 
 function SectionHeader({
   icon: Icon,
@@ -75,13 +68,9 @@ function SectionHeader({
         <Icon className="size-4" strokeWidth={1.8} />
       </div>
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold tracking-tight text-foreground">
-          {title}
-        </h3>
+        <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
         {description && (
-          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-            {description}
-          </p>
+          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{description}</p>
         )}
       </div>
     </div>
@@ -106,9 +95,7 @@ function StatusToggle({
   return (
     <label className="flex cursor-pointer items-center justify-between gap-3 py-3">
       <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-medium text-foreground">
-          {title}
-        </span>
+        <span className="block text-[13px] font-medium text-foreground">{title}</span>
         {description && (
           <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
             {description}
@@ -131,18 +118,76 @@ function StatusToggle({
 }
 
 function VendorSettings() {
-  const { vendor, base, account } = useCurrentVendor();
+  const { vendor: storeVendor, base, account } = useCurrentVendor();
   const p = account.profile;
 
-  const [brandColor, setBrandColor] = useState(
-    p.brandColor ?? base.theme.accent,
-  );
+  const [brandColor, setBrandColor] = useState(p.brandColor ?? base.theme.accent);
+  const [liveVendor, setLiveVendor] = useState<VendorRecord | null>(null);
+  const [liveLoading, setLiveLoading] = useState(true);
 
-  const save = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    let active = true;
+    vendorsApi.mine().then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setLiveVendor(result.data.find((v) => v.slug === base.slug) ?? null);
+      }
+      setLiveLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [base.slug]);
+
+  const vendor = liveVendor
+    ? {
+        ...storeVendor,
+        name: liveVendor.name,
+        tagline: liveVendor.description,
+        about: liveVendor.description,
+        location: liveVendor.location,
+        phone: liveVendor.phone,
+        whatsappNumber: liveVendor.whatsapp_number,
+        fulfilment: liveVendor.fulfilment,
+        status: liveVendor.status,
+      }
+    : storeVendor;
+
+  const save = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const f = new FormData(e.currentTarget);
     const g = (k: string) => String(f.get(k) ?? "").trim();
+
+    if (!liveVendor) {
+      toast.error("Your storefront could not be loaded. Please sign in again.");
+      return;
+    }
+
+    const body: {
+      name: string;
+      description: string;
+      location: string;
+      address: string;
+      phone?: string;
+      whatsappNumber?: string;
+    } = {
+      name: g("name"),
+      description: g("about"),
+      location: g("location"),
+      address: g("location"),
+    };
+    const phone = g("phone");
+    const whatsapp = g("whatsappNumber");
+    if (phone) body.phone = phone;
+    if (whatsapp) body.whatsappNumber = whatsapp;
+
+    const result = await vendorsApi.updateProfile(liveVendor.id, body);
+
+    if (!result.ok) {
+      toast.error(result.error || "Could not save your business details.");
+      return;
+    }
 
     app.saveProfile({
       name: g("name"),
@@ -166,13 +211,9 @@ function VendorSettings() {
 
   const copyStoreLink = () => {
     navigator.clipboard
-      .writeText(
-        window.location.origin + "/store/" + base.slug,
-      )
+      .writeText(window.location.origin + "/store/" + base.slug)
       .then(() => toast.success("Store link copied"))
-      .catch(() =>
-        toast.error("Could not copy the link. Please copy it from the address bar."),
-      );
+      .catch(() => toast.error("Could not copy the link. Please copy it from the address bar."));
   };
 
   return (
@@ -202,9 +243,7 @@ function VendorSettings() {
         {/* Page introduction */}
         <div className="mb-6 flex flex-col justify-between gap-3 border-b border-border/70 pb-5 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-sm font-semibold tracking-tight">
-              Business preferences
-            </h2>
+            <h2 className="text-sm font-semibold tracking-tight">Business preferences</h2>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               Changes you make here will be reflected across your storefront.
             </p>
@@ -290,9 +329,7 @@ function VendorSettings() {
                     />
                     <LockKeyhole className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                   </div>
-                  <p className="mt-1.5 text-[10px] text-muted-foreground">
-                    Your account email.
-                  </p>
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">Your account email.</p>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -361,9 +398,7 @@ function VendorSettings() {
               <div className="mt-5 border-t border-border/70 pt-5">
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                   <div>
-                    <p className="text-xs font-semibold">
-                      Brand colour
-                    </p>
+                    <p className="text-xs font-semibold">Brand colour</p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       Choose a colour that represents your business.
                     </p>
@@ -395,9 +430,7 @@ function VendorSettings() {
                       }`}
                       style={{ backgroundColor: color }}
                     >
-                      {brandColor === color && (
-                        <Check className="size-4 text-white" />
-                      )}
+                      {brandColor === color && <Check className="size-4 text-white" />}
                     </button>
                   ))}
                 </div>
@@ -495,19 +528,11 @@ function VendorSettings() {
               </Panel>
             ) : (
               <Panel
-                title={
-                  vendor.fulfilment === "reservation"
-                    ? "Reservations"
-                    : "Service preferences"
-                }
+                title={vendor.fulfilment === "reservation" ? "Reservations" : "Service preferences"}
               >
                 <SectionHeader
                   icon={Truck}
-                  title={
-                    vendor.fulfilment === "reservation"
-                      ? "Guest information"
-                      : "Service area"
-                  }
+                  title={vendor.fulfilment === "reservation" ? "Guest information" : "Service area"}
                   description="Provide customers with the information they need before making a booking."
                 />
 
@@ -538,12 +563,8 @@ function VendorSettings() {
                   <Globe2 className="size-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold">
-                    Your public storefront
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Your shareable business link
-                  </p>
+                  <p className="text-xs font-semibold">Your public storefront</p>
+                  <p className="text-[10px] text-muted-foreground">Your shareable business link</p>
                 </div>
               </div>
 
@@ -564,8 +585,7 @@ function VendorSettings() {
               </div>
 
               <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
-                Your Peniel storefront link is permanent and can be shared
-                with customers.
+                Your Peniel storefront link is permanent and can be shared with customers.
               </p>
 
               <a
@@ -586,9 +606,7 @@ function VendorSettings() {
                   <Wallet className="size-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold">
-                    Peniel Pay
-                  </p>
+                  <p className="text-xs font-semibold">Peniel Pay</p>
                   <p className="text-[10px] text-muted-foreground">
                     Integrated payment infrastructure
                   </p>
@@ -608,17 +626,14 @@ function VendorSettings() {
               </div>
 
               <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
-                Payout estimates and bank account details are managed under
-                your Finance section.
+                Payout estimates and bank account details are managed under your Finance section.
               </p>
             </Panel>
 
             {/* Store status */}
             <Panel title="Store availability">
               <div className="mb-3">
-                <p className="text-xs font-semibold">
-                  Control your storefront
-                </p>
+                <p className="text-xs font-semibold">Control your storefront</p>
                 <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
                   Choose how customers can interact with your business.
                 </p>
@@ -665,13 +680,11 @@ function VendorSettings() {
             <div className="rounded-xl border border-border/80 bg-muted/30 p-4">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-4 text-primary" />
-                <p className="text-xs font-semibold">
-                  Your business is protected
-                </p>
+                <p className="text-xs font-semibold">Your business is protected</p>
               </div>
               <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
-                Your account information and business preferences are managed
-                through your Peniel business workspace.
+                Your account information and business preferences are managed through your Peniel
+                business workspace.
               </p>
               <div className="mt-3 flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
                 <CheckCircle2 className="size-3.5 text-primary" />

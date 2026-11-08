@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import * as Icons from "lucide-react";
 
@@ -62,7 +62,8 @@ import { SiteFooter } from "@/components/site/site-footer";
 
 import { SectionHeading, Stars, VendorCard, Verified } from "@/components/site/bits";
 
-import { categories, vendors } from "@/lib/data";
+import { categories, vendors as seedVendors } from "@/lib/data";
+import { fetchBackendVendors } from "@/lib/backend-catalog";
 
 import { useApp } from "@/lib/peniel-store";
 
@@ -170,7 +171,7 @@ type ViewMode = "grid" | "list";
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function vendorIsOpen(vendor: (typeof vendors)[number], now = new Date()) {
+function vendorIsOpen(vendor: (typeof seedVendors)[number], now = new Date()) {
 
   const hours = vendor.hours;
 
@@ -262,7 +263,7 @@ function vendorIsOpen(vendor: (typeof vendors)[number], now = new Date()) {
 
 }
 
-function vendorIsOpenToday(vendor: (typeof vendors)[number], now = new Date()) {
+function vendorIsOpenToday(vendor: (typeof seedVendors)[number], now = new Date()) {
 
   if (/24\s*\/\s*7/i.test(vendor.hours)) return true;
 
@@ -337,6 +338,22 @@ function orderCount(orders: string) {
 function Marketplace() {
 
   const app = useApp();
+
+  const [marketVendors, setMarketVendors] = useState(seedVendors);
+
+  useEffect(() => {
+    let active = true;
+    void fetchBackendVendors()
+      .then((liveVendors) => {
+        if (active) setMarketVendors(liveVendors);
+      })
+      .catch((error) => {
+        console.error("Could not load live marketplace data", error);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const [sortBy, setSortBy] = useState<(typeof sorts)[number]>("Recommended");
 
@@ -476,7 +493,7 @@ function Marketplace() {
 
   const distanceRadius = distances.find((option) => option.label === distance)?.radius ?? null;
 
-  const visibleVendors = vendors
+  const visibleVendors = marketVendors
 
     .filter((vendor) => locationMatches(vendor.location, selectedLocation))
 
@@ -570,7 +587,7 @@ function Marketplace() {
 
         selectedQuickFilters.includes("New businesses") &&
 
-        vendors.indexOf(vendor) < vendors.length - 3
+        marketVendors.indexOf(vendor) < marketVendors.length - 3
 
       ) return false;
 
@@ -596,7 +613,7 @@ function Marketplace() {
 
       // The seed vendors have no creation timestamps, so use catalog order as the newest-first fallback.
 
-      if (sortBy === "New") return vendors.indexOf(b) - vendors.indexOf(a);
+      if (sortBy === "New") return marketVendors.indexOf(b) - marketVendors.indexOf(a);
 
       if (sortBy === "Nearest" && customerPosition) {
 

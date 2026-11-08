@@ -418,6 +418,7 @@ export type CartLine = {
   meta: string;
   qty: number;
   price: number;
+  productId?: string;
 };
 
 export const cartLines: CartLine[] = [

@@ -15,6 +15,7 @@ import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { useApp, useCurrentVendor, type OrderStatus } from "@/lib/peniel-store";
+import { useVendorId, useVendorAnalytics, useVendorLedger, minorToNaira } from "@/lib/vendor-hooks";
 
 export const Route = createFileRoute("/vendor/analytics")({
   head: () => ({
@@ -47,27 +48,25 @@ const statusStyles: Record<OrderStatus, string> = {
 function VendorAnalytics() {
   const { vendor } = useCurrentVendor();
   const state = useApp();
+  const vendorId = useVendorId(vendor.slug);
+  const liveAnalytics = useVendorAnalytics(vendorId);
+  const liveLedger = useVendorLedger(vendorId);
 
-  const orders = state.orders.filter(
-    (order) => order.vendorSlug === vendor.slug,
-  );
+  const useLive = liveAnalytics.data !== null;
 
-  const completed = orders.filter(
-    (order) => order.status === "Delivered",
-  );
+  const demoOrders = state.orders.filter((o) => o.vendorSlug === vendor.slug);
+  const demoCompleted = demoOrders.filter((o) => o.status === "Delivered");
+  const demoRevenue = demoOrders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
+  const demoAverage = demoCompleted.length ? Math.round(demoCompleted.reduce((s, o) => s + o.total, 0) / demoCompleted.length) : 0;
 
-  const revenue = orders
-    .filter((order) => order.status !== "Cancelled")
-    .reduce((sum, order) => sum + order.total, 0);
+  const orders = demoOrders;
+  const completed = demoCompleted;
 
-  const completedRevenue = completed.reduce(
-    (sum, order) => sum + order.total,
-    0,
-  );
-
-  const average = completed.length
-    ? Math.round(completedRevenue / completed.length)
-    : 0;
+  const revenue = useLive ? liveAnalytics.data!.totalRevenue / 100 : demoRevenue;
+  const completedRevenue = useLive ? liveAnalytics.data!.netRevenue / 100 : demoCompleted.reduce((s, o) => s + o.total, 0);
+  const average = useLive
+    ? (liveAnalytics.data!.completedOrders > 0 ? Math.round((liveAnalytics.data!.netRevenue / 100) / liveAnalytics.data!.completedOrders) : 0)
+    : demoAverage;
 
   const statusCounts: OrderStatus[] = [
     "New",
@@ -109,9 +108,9 @@ function VendorAnalytics() {
       ? Math.round((completed.length / orders.length) * 100)
       : 0;
 
-  const cancelledCount = orders.filter(
-    (order) => order.status === "Cancelled",
-  ).length;
+  const cancelledCount = useLive
+    ? (liveAnalytics.data ? liveAnalytics.data.totalOrders - liveAnalytics.data.completedOrders - liveAnalytics.data.pendingOrders : 0)
+    : orders.filter((o) => o.status === "Cancelled").length;
 
   return (
     <DashShell
@@ -139,21 +138,21 @@ function VendorAnalytics() {
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
-              label="Recorded revenue"
+              label={useLive ? "Net revenue" : "Recorded revenue"}
               value={naira(revenue)}
-              hint="Excludes cancelled orders"
+              hint={useLive ? "After platform commission" : "Excludes cancelled orders"}
               tone="primary"
             />
             <StatCard
-              label="Recorded activity"
-              value={String(orders.length)}
+              label={useLive ? "Total orders" : "Recorded activity"}
+              value={String(useLive ? liveAnalytics.data!.totalOrders : orders.length)}
               hint={activity}
               icon={<BarChart3 className="size-4" />}
             />
             <StatCard
               label="Completed average"
               value={naira(average)}
-              hint="Average delivered order"
+              hint="Average completed order"
               icon={<ArrowUpRight className="size-4" />}
             />
             <StatCard
@@ -163,6 +162,11 @@ function VendorAnalytics() {
               tone="gold"
               icon={<Package className="size-4" />}
             />
+            {liveAnalytics.error && (
+              <div className="col-span-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                Live analytics unavailable: {liveAnalytics.error}. Showing demo data.
+              </div>
+            )}
           </div>
         </section>
 

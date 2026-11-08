@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Search,
@@ -14,10 +13,12 @@ import {
   Star,
   Building2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
-import { naira, vendors } from "@/lib/data";
+import { naira } from "@/lib/data";
+import { adminApi, type AdminVendor } from "@/lib/api-client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/vendors")({
   head: () => ({
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/admin/vendors")({
   component: AdminVendors,
 });
 
-const filters = ["All", "Verified", "New vendor", "Top rated"];
+const filters = ["All", "Active", "Verified", "Suspended", "Pending review"];
 
 function VendorMetric({
   label,
@@ -62,9 +63,7 @@ function VendorMetric({
         </div>
         <div
           className={`grid size-9 shrink-0 place-items-center rounded-xl ${
-            accent
-              ? "bg-primary/10 text-primary"
-              : "bg-muted text-muted-foreground"
+            accent ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
           }`}
         >
           <Icon size={17} strokeWidth={1.8} />
@@ -80,26 +79,70 @@ function VendorMetric({
 function AdminVendors() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
+  const [vendors, setVendors] = useState<AdminVendor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    adminApi.vendors().then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setVendors(result.data);
+      } else {
+        setError(result.error || "Failed to load vendors.");
+      }
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const visibleVendors = useMemo(() => {
-    return vendors.filter((vendor) => {
-      const search = query.trim().toLowerCase();
+    const search = query.trim().toLowerCase();
 
-      const matchesQuery = [
-        vendor.name,
-        vendor.categoryLabel,
-        vendor.location,
-      ].some((value) => value.toLowerCase().includes(search));
+    return vendors.filter((vendor) => {
+      const matchesQuery = [vendor.name, vendor.business_type, vendor.location].some((value) =>
+        value.toLowerCase().includes(search),
+      );
 
       const matchesFilter =
-        filter === "All" ||
-        (filter === "Verified" && vendor.verified) ||
-        (filter === "New vendor" && !vendor.verified) ||
-        (filter === "Top rated" && vendor.rating >= 4.8);
+        filter === "All" || vendor.status.toLowerCase() === filter.toLowerCase();
 
       return matchesQuery && matchesFilter;
     });
-  }, [query, filter]);
+  }, [query, filter, vendors]);
+
+  const handleSetStatus = async (vendorId: string, status: string, note?: string) => {
+    const result = await adminApi.setVendorStatus(vendorId, status, note);
+    if (!result.ok) {
+      toast.error(result.error || "Failed to update vendor status.");
+      return;
+    }
+    setVendors((current) => current.map((v) => (v.id === vendorId ? { ...v, status } : v)));
+    toast.success(`Vendor status updated to ${status}.`);
+  };
+
+  if (loading) {
+    return (
+      <DashShell
+        nav={adminNav}
+        kicker="Platform administration"
+        title="Vendors"
+        subtitle="Manage businesses, monitor performance and review vendor accounts."
+      >
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <Store className="size-5" />
+            </div>
+            <p className="text-sm font-semibold">Loading vendors…</p>
+          </div>
+        </div>
+      </DashShell>
+    );
+  }
 
   return (
     <DashShell
@@ -114,38 +157,34 @@ function AdminVendors() {
           <div className="mb-3 flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold">Vendor overview</h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Marketplace business accounts
-              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Marketplace business accounts</p>
             </div>
-            <span className="text-[11px] text-muted-foreground">
-              Platform-wide
-            </span>
+            <span className="text-[11px] text-muted-foreground">Platform-wide</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
             <VendorMetric
               label="Total active vendors"
-              value="5,842"
+              value={vendors.filter((v) => v.status === "active").length.toLocaleString()}
               description="Businesses on Peniel"
               icon={Store}
               accent
             />
             <VendorMetric
               label="Verified businesses"
-              value="1,204"
+              value={vendors.filter((v) => v.status === "verified").length.toLocaleString()}
               description="Successfully verified accounts"
               icon={BadgeCheck}
             />
             <VendorMetric
               label="Awaiting review"
-              value="12"
+              value={vendors.filter((v) => v.status === "pending_review").length.toLocaleString()}
               description="Applications requiring attention"
               icon={Clock3}
             />
             <VendorMetric
               label="Suspended accounts"
-              value="7"
+              value={vendors.filter((v) => v.status === "suspended").length.toLocaleString()}
               description="Currently restricted businesses"
               icon={ShieldAlert}
             />
@@ -191,10 +230,7 @@ function AdminVendors() {
             {/* Filters */}
             <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-1.5 overflow-x-auto">
-                <SlidersHorizontal
-                  size={15}
-                  className="mr-1 shrink-0 text-muted-foreground"
-                />
+                <SlidersHorizontal size={15} className="mr-1 shrink-0 text-muted-foreground" />
                 {filters.map((item) => (
                   <button
                     key={item}
@@ -213,9 +249,7 @@ function AdminVendors() {
               </div>
 
               <p className="shrink-0 text-[11px] text-muted-foreground">
-                <span className="font-semibold text-foreground">
-                  {visibleVendors.length}
-                </span>{" "}
+                <span className="font-semibold text-foreground">{visibleVendors.length}</span>{" "}
                 businesses found
               </p>
             </div>
@@ -224,70 +258,60 @@ function AdminVendors() {
             {visibleVendors.length > 0 ? (
               <div className="max-w-full overflow-x-auto">
                 <DataTable
-                  head={[
-                    "Business",
-                    "Category",
-                    "Location",
-                    "Rating",
-                    "Volume",
-                    "Status",
-                    "",
-                  ]}
+                  head={["Business", "Category", "Location", "Rating", "Status", ""]}
                   rows={visibleVendors.map((v) => [
                     <div className="flex min-w-[145px] items-center gap-2.5">
                       <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-border bg-muted/70 text-xs font-bold text-foreground">
-                        {v.monogram}
+                        {v.name.slice(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-xs font-semibold text-foreground">
-                          {v.name}
-                        </p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
-                          Business account
-                        </p>
+                        <p className="truncate text-xs font-semibold text-foreground">{v.name}</p>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">Business account</p>
                       </div>
                     </div>,
 
                     <span className="whitespace-nowrap text-xs text-muted-foreground">
-                      {v.categoryLabel}
+                      {v.business_type}
                     </span>,
 
                     <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
                       <MapPin size={12} />
-                      {v.location}
+                      {v.location || "Location not added"}
                     </span>,
 
-                    <span className="flex items-center gap-1.5 text-xs font-semibold">
-                      <Star
-                        size={13}
-                        className="fill-amber-400 text-amber-400"
-                      />
-                      {v.rating.toFixed(1)}
-                    </span>,
-
-                    <span className="whitespace-nowrap text-xs font-medium">
-                      {naira(v.reviews * 24000)}
-                    </span>,
+                    <span className="text-xs font-semibold tabular-nums">—</span>,
 
                     <span
                       className={`inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-                        v.verified
+                        v.status === "active"
                           ? "bg-success/10 text-success"
-                          : "bg-muted text-muted-foreground"
+                          : v.status === "suspended"
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {v.verified && <BadgeCheck size={11} />}
-                      {v.verified ? "Verified" : "New vendor"}
+                      {v.status === "active" && <BadgeCheck size={11} />}
+                      {v.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                     </span>,
 
-                    <Link
-                      to="/store/$slug"
-                      params={{ slug: v.slug }}
-                      className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-primary transition hover:gap-1.5 hover:underline"
-                    >
-                      View store
-                      <ArrowUpRight size={13} />
-                    </Link>,
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSetStatus(v.id, "active", "Approved by admin")}
+                        disabled={v.status === "active"}
+                        className="rounded-lg bg-success/10 px-2 py-1 text-xs font-semibold text-success transition hover:bg-success/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        Activate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetStatus(v.id, "suspended", "Suspended by admin")}
+                        disabled={v.status === "suspended"}
+                        className="rounded-lg border border-border bg-background px-2 py-1 text-xs font-semibold text-muted-foreground transition hover:bg-muted disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        Suspend
+                      </button>
+                    </div>,
                   ])}
                 />
               </div>
@@ -296,12 +320,10 @@ function AdminVendors() {
                 <div className="grid size-11 place-items-center rounded-2xl bg-muted text-muted-foreground">
                   <Building2 size={20} />
                 </div>
-                <p className="mt-3 text-sm font-semibold">
-                  No businesses found
-                </p>
+                <p className="mt-3 text-sm font-semibold">No businesses found</p>
                 <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-                  No vendors match your current search or selected filter.
-                  Try adjusting your search.
+                  No vendors match your current search or selected filter. Try adjusting your
+                  search.
                 </p>
                 <button
                   type="button"

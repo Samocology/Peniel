@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -9,9 +8,10 @@ import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Stars, VendorCard, Verified } from "@/components/site/bits";
 import { getMarketplaceLocationLabel } from "@/lib/location";
-import { searchProducts, searchVendors } from "@/lib/discovery";
-import { naira } from "@/lib/data";
+import { searchProducts } from "@/lib/discovery";
+import { naira, type BusinessType, type Vendor } from "@/lib/data";
 import { app, useApp } from "@/lib/peniel-store";
+import { vendorsApi, type VendorRecord } from "@/lib/api-client";
 import { LocationPicker } from "@/components/site/location-picker";
 
 export const Route = createFileRoute("/search")({
@@ -44,21 +44,47 @@ function SearchPage() {
 
   const [query, setQuery] = useState(q);
   const [selectedLocation, setSelectedLocation] = useState<string>(
-    getMarketplaceLocationLabel(
-      routeLocation ?? appState.customer.city
-    )
+    getMarketplaceLocationLabel(routeLocation ?? appState.customer.city),
   );
-
-  const businesses = searchVendors(query, selectedLocation);
-  const products = searchProducts(query, selectedLocation);
+  const [businesses, setBusinesses] = useState<VendorRecord[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let active = true;
     setQuery(q);
 
     if (routeLocation) {
       setSelectedLocation(getMarketplaceLocationLabel(routeLocation));
     }
-  }, [q, routeLocation]);
+
+    const runSearch = async () => {
+      const trimmed = query.trim();
+      if (!trimmed) {
+        setBusinesses([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const result = await vendorsApi.public({
+          q: trimmed,
+          location: selectedLocation,
+        });
+        if (active && result.ok) {
+          setBusinesses(result.data);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void runSearch();
+
+    return () => {
+      active = false;
+    };
+  }, [query, q, selectedLocation, routeLocation]);
+
+  const products = searchProducts(query, selectedLocation);
 
   const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -115,23 +141,16 @@ function SearchPage() {
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold">
-              {query.trim()
-                ? `Results for "${query.trim()}"`
-                : "Discover businesses"}
+              {query.trim() ? `Results for "${query.trim()}"` : "Discover businesses"}
             </h1>
 
             <p className="text-sm text-muted-foreground">
-              {businesses.length}{" "}
-              {businesses.length === 1 ? "business" : "businesses"} ·{" "}
+              {businesses.length} {businesses.length === 1 ? "business" : "businesses"} ·{" "}
               {products.length} products & services
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 sm:hidden"
-          >
+          <Button variant="outline" size="sm" className="gap-2 sm:hidden">
             <SlidersHorizontal className="size-4" />
             Filters
           </Button>
@@ -181,25 +200,61 @@ function SearchPage() {
 
         <h2 className="mt-10 mb-4 text-lg font-bold">Businesses</h2>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {businesses.map((vendor) => (
-            <VendorCard
-              key={vendor.slug}
-              vendor={vendor}
-              compact
-            />
-          ))}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <p className="text-sm text-muted-foreground">Searching businesses…</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {businesses.map((vendor) => {
+              const category = vendor.categories;
+              const v: Vendor = {
+                slug: vendor.slug,
+                name: vendor.name,
+                tagline: "",
+                about: vendor.description,
+                type: vendor.business_type as BusinessType,
+                categorySlug: category?.slug ?? "",
+                categoryLabel: category?.name ?? vendor.business_type,
+                layout: "grid",
+                cover: "",
+                monogram: vendor.name.slice(0, 2).toUpperCase(),
+                verified: false,
+                featured: false,
+                rating: 0,
+                reviews: 0,
+                orders: "0",
+                location: vendor.location,
+                hours: "",
+                delivery: "",
+                phone: vendor.phone ?? "",
+                email: "",
+                fulfilment: vendor.fulfilment as "order" | "booking" | "reservation",
+                theme: {
+                  bg: "#ffffff",
+                  ink: "#0f172a",
+                  accent: "#2563eb",
+                  accentInk: "#ffffff",
+                  soft: "#f8fafc",
+                  line: "#e2e8f0",
+                  radius: "12px",
+                  heading: "#0f172a",
+                },
+                groups: [],
+                products: [],
+              };
+              return <VendorCard key={vendor.slug} vendor={v} compact />;
+            })}
 
-          {businesses.length === 0 && (
-            <p className="col-span-full rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-              No businesses match your search in this location.
-            </p>
-          )}
-        </div>
+            {businesses.length === 0 && !loading && (
+              <p className="col-span-full rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                No businesses match your search in this location.
+              </p>
+            )}
+          </div>
+        )}
 
-        <h2 className="mt-12 mb-4 text-lg font-bold">
-          Products & services
-        </h2>
+        <h2 className="mt-12 mb-4 text-lg font-bold">Products & services</h2>
 
         <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
           {products.map((product) => (
@@ -215,30 +270,19 @@ function SearchPage() {
               <span className="brand-gradient size-12 shrink-0 rounded-xl" />
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">
-                  {product.name}
-                </p>
+                <p className="truncate text-sm font-semibold">{product.name}</p>
 
-                <p className="truncate text-xs text-muted-foreground">
-                  {product.desc}
-                </p>
+                <p className="truncate text-xs text-muted-foreground">{product.desc}</p>
 
                 <p className="mt-1 flex items-center gap-1.5 truncate text-xs">
-                  <span className="text-muted-foreground">
-                    {product.vendor.name}
-                  </span>
+                  <span className="text-muted-foreground">{product.vendor.name}</span>
                   {product.vendor.verified && <Verified />}
                 </p>
               </div>
 
               <div className="shrink-0 text-right">
-                <p className="text-sm font-bold">
-                  {naira(product.price)}
-                </p>
-                <Stars
-                  value={product.vendor.rating}
-                  className="text-xs"
-                />
+                <p className="text-sm font-bold">{naira(product.price)}</p>
+                <Stars value={product.vendor.rating} className="text-xs" />
               </div>
             </Link>
           ))}
@@ -251,17 +295,13 @@ function SearchPage() {
         </div>
 
         <div className="mt-10 rounded-2xl border border-dashed border-border p-10 text-center">
-          <p className="font-semibold">
-            Can't find what you're looking for?
-          </p>
+          <p className="font-semibold">Can't find what you're looking for?</p>
 
           <p className="mt-1 text-sm text-muted-foreground">
             Tell us what you need and we'll match you with a verified business.
           </p>
 
-          <Button className="mt-4">
-            Request a recommendation
-          </Button>
+          <Button className="mt-4">Request a recommendation</Button>
         </div>
       </div>
 

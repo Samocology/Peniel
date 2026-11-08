@@ -81,13 +81,28 @@ export type SupportTicket = {
   status: "Open" | "In progress" | "Resolved";
 };
 
+export type PolicyKey =
+  | "Allow pharmacies"
+  | "Allow alcohol (bars)"
+  | "Require ID for payouts"
+  | "New vendors reviewed manually";
+
+export type AdminTeamMember = [string, string];
+
+export type AdminSettings = {
+  team: AdminTeamMember[];
+  policy: Record<PolicyKey, boolean>;
+};
+
 type State = {
   vendorSlug: string;
+  customVendors?: Vendor[];
   customer: { name: string; city: string };
   addresses?: CustomerAddress[];
   supportTickets?: SupportTicket[];
   user?: { name: string; email: string; role: "customer" | "vendor" } | undefined;
   accounts: Record<string, Account>;
+  adminSettings: AdminSettings;
   cart: CartItem[];
   promo?: string | undefined;
   favorites: string[];
@@ -102,7 +117,7 @@ const seedOrders: VendorOrder[] = [
   {
     id: "#ORD-7F4X2",
     vendorSlug: "abigails-kitchen",
-    customer: "Tosin A.",
+       customer: "Tosin A.",
     items: "2 items",
     mode: "Delivery · VI",
     total: 26760,
@@ -175,6 +190,21 @@ const newAccount = (): Account => ({
   products: [],
 });
 
+export const defaultAdminSettings = (): AdminSettings => ({
+  team: [
+    ["Ada N.", "Owner"],
+    ["Femi B.", "Payments"],
+    ["Ifeoma K.", "Verification"],
+    ["Sola A.", "Support"],
+  ],
+  policy: {
+    "Allow pharmacies": false,
+    "Allow alcohol (bars)": true,
+    "Require ID for payouts": true,
+    "New vendors reviewed manually": true,
+  },
+});
+
 function makeInitial(): State {
   return {
     vendorSlug: "abigails-kitchen",
@@ -185,6 +215,7 @@ function makeInitial(): State {
     ],
     supportTickets: [],
     accounts: {},
+    adminSettings: defaultAdminSettings(),
     cart: seedCart.map((l, i) => ({ ...l, id: "seed-" + i })),
     favorites: [],
     orders: seedOrders,
@@ -216,6 +247,7 @@ function makeInitial(): State {
 const initial = makeInitial();
 let state: State = initial;
 let loaded = false;
+let authRequestSequence = 0;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
@@ -227,11 +259,18 @@ function read() {
       return;
     }
     const restored = JSON.parse(raw) as Partial<State>;
+    const fallbackSettings = defaultAdminSettings();
     state = {
       ...makeInitial(),
       ...restored,
+      user: undefined,
+      customVendors: Array.isArray(restored.customVendors) ? restored.customVendors : [],
       addresses: restored.addresses ?? [],
       completedCheckouts: restored.completedCheckouts ?? {},
+      adminSettings: {
+        team: restored.adminSettings?.team ?? fallbackSettings.team,
+        policy: { ...fallbackSettings.policy, ...(restored.adminSettings?.policy ?? {}) },
+      },
       orders: (restored.orders ?? seedOrders).map((order) => ({
         ...order,
         vendorSlug: order.vendorSlug ?? "abigails-kitchen",
@@ -246,10 +285,12 @@ function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
   read();
+  void restoreAuthSession();
   window.addEventListener("storage", (e) => {
     if (e.key === KEY) {
       read();
       emit();
+      void restoreAuthSession();
     }
   });
 }
@@ -257,12 +298,50 @@ function load() {
 function set(fn: (s: State) => State) {
   load();
   state = fn(state);
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(state));
-  } catch {
-    /* ignore */
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify({ ...state, user: undefined }));
+    } catch (error) {
+      console.error("Could not persist local Peniel prototype state", error);
+    }
   }
   emit();
+}
+
+async function restoreAuthSession() {
+  const requestSequence = ++authRequestSequence;
+  try {
+    const response = await fetch("/api/auth/session", { credentials: "same-origin" });
+    const result = (await response.json()) as {
+      ok?: boolean;
+      error?: string;
+      data?: {
+        authenticated?: boolean;
+        user?: { email?: string; name?: string } | null;
+      };
+    };
+
+    if (!response.ok || !result.ok) {
+      throw new Error(result.error ?? "Could not restore the signed-in session.");
+    }
+
+    if (requestSequence !== authRequestSequence) return;
+    const user = result.data?.authenticated ? result.data.user : null;
+    set((current) => ({
+      ...current,
+      user: user?.email
+        ? {
+            name: user.name || user.email,
+            email: user.email,
+            role: current.user?.email === user.email ? current.user.role : "customer",
+          }
+        : undefined,
+    }));
+  } catch (error) {
+    if (requestSequence !== authRequestSequence) return;
+    console.error("Could not restore the Peniel authentication session", error);
+    set((current) => ({ ...current, user: undefined }));
+  }
 }
 
 const acct = (s: State, slug = s.vendorSlug) => s.accounts[slug] ?? newAccount();
@@ -306,6 +385,15 @@ export const app = {
   },
   account: (slug?: string) => acct(app.get(), slug),
   switchVendor: (slug: string) => set((s) => ({ ...s, vendorSlug: slug })),
+  addCustomVendor: (vendor: Vendor) =>
+    set((s) => ({
+      ...s,
+      vendorSlug: vendor.slug,
+      customVendors: [
+        ...(s.customVendors ?? []).filter((item) => item.slug !== vendor.slug),
+        vendor,
+      ],
+    })),
 
   chooseStorefront(templateId: string): boolean {
     const s = app.get();
@@ -319,6 +407,15 @@ export const app = {
   upgrade: (plan: Plan) => patchAcct(app.get().vendorSlug, () => ({ plan })),
   saveProfile: (profile: Profile) =>
     patchAcct(app.get().vendorSlug, (a) => ({ profile: { ...a.profile, ...profile } })),
+  getAdminSettings: () => app.get().adminSettings,
+  saveAdminSettings: (settings: Partial<AdminSettings>) =>
+    set((s) => ({
+      ...s,
+      adminSettings: {
+        team: settings.team ?? s.adminSettings.team,
+        policy: { ...s.adminSettings.policy, ...(settings.policy ?? {}) },
+      },
+    })),
   applyVerification: () => {
     if (!isPaid(app.account().plan)) return false;
     patchAcct(app.get().vendorSlug, () => ({ verification: "applied" }));
@@ -476,9 +573,23 @@ export const app = {
         ? s.favorites.filter((x) => x !== slug)
         : [...s.favorites, slug],
     })),
-  signIn: (name: string, email: string, role: "customer" | "vendor") =>
-    set((s) => ({ ...s, user: { name, email, role }, customer: { ...s.customer, name } })),
-  signOut: () => set((s) => ({ ...s, user: undefined })),
+  signIn: (name: string, email: string, role: "customer" | "vendor") => {
+    authRequestSequence += 1;
+    set((s) => ({ ...s, user: { name, email, role }, customer: { ...s.customer, name } }));
+  },
+  async signOut() {
+    const response = await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    });
+    if (!response.ok) throw new Error("Could not close the server session.");
+    const result = (await response.json()) as {
+      data?: { providerSessionRevoked?: boolean };
+    };
+    authRequestSequence += 1;
+    set((s) => ({ ...s, user: undefined }));
+    return result.data?.providerSessionRevoked ?? false;
+  },
   saveCustomer: (c: State["customer"]) =>
     set((s) => ({
       ...s,
@@ -564,7 +675,10 @@ export function useApp() {
 /** The signed-in vendor account (demo: switchable), merged with their saved edits. */
 export function useCurrentVendor() {
   const s = useApp();
-  const base = getVendor(s.vendorSlug) ?? vendors[0]!;
+  const base =
+    s.customVendors?.find((vendor) => vendor.slug === s.vendorSlug) ??
+    getVendor(s.vendorSlug) ??
+    vendors[0]!;
   const a = s.accounts[base.slug] ?? newAccount();
   return { vendor: mergeVendor(base, a), account: a, base };
 }

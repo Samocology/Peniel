@@ -1,5 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Banknote, Building2, CreditCard, Lock, MapPin, ShieldCheck, Smartphone, Truck } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { CreditCard, Lock, ShieldCheck, Truck } from "lucide-react";
+import { useRef, useState, type FormEvent } from "react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { naira } from "@/lib/data";
@@ -9,207 +10,279 @@ export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
       { title: "Checkout - Peniel" },
-      { name: "description", content: "Complete a local Peniel demo checkout and save vendor orders in this browser." },
+      { name: "description", content: "Secure checkout for Peniel marketplace orders." },
       { property: "og:title", content: "Checkout - Peniel" },
-      { property: "og:description", content: "Local demo checkout; no real payment is processed." },
+      { property: "og:description", content: "Secure checkout for Peniel marketplace orders." },
     ],
   }),
   component: CheckoutPage,
 });
 
-const field = "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary";
+const field =
+  "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary";
 const label = "mb-1.5 block text-xs font-semibold tracking-wide uppercase text-muted-foreground";
 
 function CheckoutPage() {
   const s = useApp();
-  const navigate = useNavigate({ from: "/checkout" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+  const idempotencyKey = useRef(
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   const cartLines = s.cart;
   const totals = totalsFor(cartLines, s.promo);
-  const startPayment = () => {
-    const checkoutId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    navigate({ to: "/payment", search: { state: "processing", amount: totals.total, checkoutId } });
+  const startPayment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCheckoutError("");
+    if (cartLines.some((line) => !line.productId || !/^[0-9a-f-]{36}$/i.test(line.productId))) {
+      setCheckoutError(
+        "These cart items are demo catalog entries and are not available for real checkout yet.",
+      );
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          idempotencyKey: idempotencyKey.current,
+          items: cartLines.map((line) => ({ productId: line.productId, quantity: line.qty })),
+          delivery: {
+            fullName: formData.get("fullName"),
+            phone: formData.get("phone"),
+            address: formData.get("address"),
+            city: formData.get("city"),
+            state: formData.get("state"),
+            landmark: formData.get("landmark"),
+            note: formData.get("note"),
+          },
+        }),
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        data?: { paymentUrl?: string };
+      };
+      if (!response.ok || !result.ok || !result.data?.paymentUrl) {
+        setCheckoutError(
+          result.error ?? "Could not start checkout. Your cart has not been charged.",
+        );
+        return;
+      }
+
+      const paymentUrl = new URL(result.data.paymentUrl);
+      if (paymentUrl.protocol !== "https:" || paymentUrl.hostname !== "checkout.flutterwave.com") {
+        throw new Error("The payment provider returned an unexpected checkout URL.");
+      }
+      window.location.assign(paymentUrl.toString());
+    } catch (error) {
+      console.error("Could not start checkout", error);
+      setCheckoutError("Checkout is temporarily unavailable. Your cart has not been charged.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          {["Cart", "Checkout", "Payment", "Confirmation"].map((s, i) => (
-            <span key={s} className="flex items-center gap-2">
-              <span
-                className={
-                  "grid size-5 place-items-center rounded-full text-[10px] font-bold " +
-                  (i <= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")
-                }
-              >
-                {i + 1}
-              </span>
-              <span className={i <= 1 ? "font-semibold" : "text-muted-foreground"}>{s}</span>
-              {i < 3 && <span className="h-px w-6 bg-border" />}
-            </span>
-          ))}
-        </div>
-
-        <h1 className="mt-6 font-display text-3xl font-bold">Checkout</h1>
-
-        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="space-y-6">
-            <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-              <h2 className="font-display text-lg font-bold">Customer information</h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <span className={label}>Full name</span>
-                  <input className={field} defaultValue="Tosin Adeyemi" />
-                </div>
-                <div>
-                  <span className={label}>Phone number</span>
-                  <input className={field} defaultValue="+234 803 000 0000" />
-                </div>
-                <div className="sm:col-span-2">
-                  <span className={label}>Email</span>
-                  <input className={field} defaultValue="tosin@example.com" />
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-              <h2 className="font-display text-lg font-bold">Delivery</h2>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {[
-                  [Truck, "Deliver to me", "45-70 mins · ₦2,500"],
-                  [MapPin, "Pick up myself", "Ready in 25 mins · Free"],
-                ].map(([Icon, t, s], i) => {
-                  const I = Icon as typeof Truck;
-                  return (
-                    <label
-                      key={t as string}
-                      className={
-                        "flex cursor-pointer items-start gap-3 rounded-xl border p-4 " +
-                        (i === 0 ? "border-primary bg-primary-soft" : "border-border")
-                      }
-                    >
-                      <input type="radio" name="fulfilment" defaultChecked={i === 0} className="mt-1 accent-primary" />
-                      <span className="min-w-0">
-                        <span className="flex items-center gap-2 text-sm font-semibold">
-                          <I className="size-4 text-primary" /> {t as string}
-                        </span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">{s as string}</span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <span className={label}>Delivery address</span>
-                  <input className={field} defaultValue="12 Adeola Odeku Street, Victoria Island" />
-                </div>
-                <div>
-                  <span className={label}>City</span>
-                  <input className={field} defaultValue="Lagos" />
-                </div>
-                <div>
-                  <span className={label}>Landmark (optional)</span>
-                  <input className={field} placeholder="Opposite Eko Hotel gate" />
-                </div>
-                <div className="sm:col-span-2">
-                  <span className={label}>Delivery note</span>
-                  <textarea rows={2} className={field} placeholder="Call when you arrive at the gate" />
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="font-display text-lg font-bold">Payment</h2>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-success/12 px-2.5 py-1 text-xs font-semibold text-success">
-                  <ShieldCheck className="size-3.5" /> Peniel Pay
+      <form onSubmit={startPayment}>
+        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            {["Cart", "Checkout", "Payment", "Confirmation"].map((s, i) => (
+              <span key={s} className="flex items-center gap-2">
+                <span
+                  className={
+                    "grid size-5 place-items-center rounded-full text-[10px] font-bold " +
+                    (i <= 1
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground")
+                  }
+                >
+                  {i + 1}
                 </span>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Demo checkout only. No real payment is processed; completing this flow saves orders to this browser.
-              </p>
-              <div className="mt-4 space-y-3">
-                {[
-                  [CreditCard, "Card", "Demo card option"],
-                  [Building2, "Bank transfer", "Demo only - no account number is issued"],
-                  [Smartphone, "USSD", "Demo only - no phone authorization"],
-                  [Banknote, "Peniel wallet", "Demo balance - not usable"],
-                ].map(([Icon, t, s], i) => {
-                  const I = Icon as typeof CreditCard;
-                  return (
-                    <label
-                      key={t as string}
-                      className={
-                        "flex cursor-pointer items-center gap-3 rounded-xl border p-4 " +
-                        (i === 0 ? "border-primary bg-primary-soft" : "border-border")
-                      }
-                    >
-                      <input type="radio" name="pay" defaultChecked={i === 0} className="accent-primary" />
-                      <I className="size-4 shrink-0 text-primary" />
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold">{t as string}</span>
-                        <span className="block text-xs text-muted-foreground">{s as string}</span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </section>
+                <span className={i <= 1 ? "font-semibold" : "text-muted-foreground"}>{s}</span>
+                {i < 3 && <span className="h-px w-6 bg-border" />}
+              </span>
+            ))}
           </div>
 
-          <aside className="space-y-4 self-start lg:sticky lg:top-24">
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <p className="font-display text-lg font-bold">Order summary</p>
-              <ul className="mt-4 space-y-3 text-sm">
-                {cartLines.map((l) => (
-                  <li key={l.id} className="flex justify-between gap-3">
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">
-                        {l.qty}× {l.item}
-                      </span>
-                      <span className="block truncate text-xs text-muted-foreground">{l.vendor}</span>
-                    </span>
-                    <span className="shrink-0">{naira(l.price * l.qty)}</span>
-                  </li>
-                ))}
-              </ul>
-              <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
-                {[
-                  ["Subtotal", totals.subtotal],
-                  ...(totals.discount ? [["Promo discount", -totals.discount]] : []),
-                  ["Delivery", totals.delivery],
-                  ["Platform fee", totals.platformFee],
-                ].map(([l, v]) => (
-                  <div key={l as string} className="flex justify-between">
-                    <dt className="text-muted-foreground">{l as string}</dt>
-                    <dd>{naira(v as number)}</dd>
+          <h1 className="mt-6 font-display text-3xl font-bold">Checkout</h1>
+
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="space-y-6">
+              <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+                <h2 className="font-display text-lg font-bold">Customer information</h2>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <span className={label}>Full name</span>
+                    <input
+                      className={field}
+                      name="fullName"
+                      minLength={2}
+                      maxLength={120}
+                      required
+                      defaultValue={s.user?.name ?? ""}
+                    />
                   </div>
-                ))}
-              </dl>
-              <div className="mt-4 flex justify-between border-t border-border pt-4">
-                <span className="font-semibold">Total to pay</span>
-                <span className="font-display text-xl font-bold text-primary">{naira(totals.total)}</span>
-              </div>
-              <button
-                type="button"
-                onClick={startPayment}
-                disabled={!cartLines.length}
-                className="mt-5 block w-full rounded-xl bg-primary py-3.5 text-center text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
-              >
-                Pay {naira(totals.total)}
-              </button>
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <Lock className="size-3.5" /> Local demo checkout
-              </p>
-              <p className="mt-3 text-center text-[11px] text-muted-foreground">
-                Continuing records demo orders locally in this browser.
-              </p>
+                  <div>
+                    <span className={label}>Phone number</span>
+                    <input
+                      className={field}
+                      name="phone"
+                      type="tel"
+                      minLength={7}
+                      maxLength={32}
+                      required
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className={label}>Email</span>
+                    <input className={field} type="email" value={s.user?.email ?? ""} readOnly />
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+                <h2 className="font-display text-lg font-bold">Delivery</h2>
+                <div className="flex items-start gap-3 rounded-xl border border-primary bg-primary-soft p-4">
+                  <Truck className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <span className="text-sm font-semibold">
+                    Delivery
+                    <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                      Delivery charges are calculated from the live checkout settings.
+                    </span>
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <span className={label}>Delivery address</span>
+                    <input
+                      className={field}
+                      name="address"
+                      minLength={5}
+                      maxLength={500}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <span className={label}>City</span>
+                    <input className={field} name="city" maxLength={120} required />
+                  </div>
+                  <div>
+                    <span className={label}>State</span>
+                    <input className={field} name="state" maxLength={120} required />
+                  </div>
+                  <div>
+                    <span className={label}>Landmark (optional)</span>
+                    <input
+                      className={field}
+                      name="landmark"
+                      maxLength={200}
+                      placeholder="Opposite Eko Hotel gate"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className={label}>Delivery note</span>
+                    <textarea
+                      rows={2}
+                      className={field}
+                      name="note"
+                      maxLength={1000}
+                      placeholder="Call when you arrive at the gate"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="font-display text-lg font-bold">Payment</h2>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-success/12 px-2.5 py-1 text-xs font-semibold text-success">
+                    <ShieldCheck className="size-3.5" /> Peniel Pay
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Payments are securely processed by Flutterwave. The server calculates the final
+                  amount from the live catalog.
+                </p>
+                <div className="mt-4 flex items-center gap-3 rounded-xl border border-primary bg-primary-soft p-4">
+                  <CreditCard className="size-4 shrink-0 text-primary" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">Flutterwave secure checkout</span>
+                    <span className="block text-xs text-muted-foreground">
+                      Available payment methods are shown by Flutterwave.
+                    </span>
+                  </span>
+                </div>
+              </section>
             </div>
-          </aside>
-        </div>
-      </main>
+
+            <aside className="space-y-4 self-start lg:sticky lg:top-24">
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <p className="font-display text-lg font-bold">Order summary</p>
+                <ul className="mt-4 space-y-3 text-sm">
+                  {cartLines.map((l) => (
+                    <li key={l.id} className="flex justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">
+                          {l.qty}× {l.item}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {l.vendor}
+                        </span>
+                      </span>
+                      <span className="shrink-0">{naira(l.price * l.qty)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <dl className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+                  {[
+                    ["Estimated subtotal", totals.subtotal],
+                    ...(totals.discount ? [["Promo discount", -totals.discount]] : []),
+                    ["Delivery", totals.delivery],
+                    ["Platform fee", totals.platformFee],
+                  ].map(([l, v]) => (
+                    <div key={l as string} className="flex justify-between">
+                      <dt className="text-muted-foreground">{l as string}</dt>
+                      <dd>{naira(v as number)}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="mt-4 flex justify-between border-t border-border pt-4">
+                  <span className="font-semibold">Estimated total</span>
+                  <span className="font-display text-xl font-bold text-primary">
+                    {naira(totals.total)}
+                  </span>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !cartLines.length}
+                  className="mt-5 block w-full rounded-xl bg-primary py-3.5 text-center text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {isSubmitting ? "Starting secure checkout…" : "Continue to secure payment"}
+                </button>
+                {checkoutError && (
+                  <p role="alert" className="mt-3 text-center text-sm text-destructive">
+                    {checkoutError}
+                  </p>
+                )}
+                <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                  <Lock className="size-3.5" /> Secure checkout by Flutterwave
+                </p>
+                <p className="mt-3 text-center text-[11px] text-muted-foreground">
+                  Demo catalog products cannot be purchased until they are added to the live
+                  marketplace.
+                </p>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </form>
       <SiteFooter />
     </div>
   );

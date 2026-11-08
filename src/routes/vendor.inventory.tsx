@@ -16,7 +16,7 @@ import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { naira } from "@/lib/data";
-import { app, useCurrentVendor } from "@/lib/peniel-store";
+import { useCurrentVendor } from "@/lib/peniel-store";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -25,6 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { productsApi, type ProductRecord } from "@/lib/api-client";
+import { useMyVendors, useVendorProducts } from "@/lib/vendor-hooks";
 
 export const Route = createFileRoute("/vendor/inventory")({
   head: () => ({
@@ -45,60 +47,76 @@ export const Route = createFileRoute("/vendor/inventory")({
 });
 
 function VendorInventory() {
-  const { base, account } = useCurrentVendor();
+  const { base } = useCurrentVendor();
+  const myVendors = useMyVendors();
+  const ownedVendor = myVendors.data?.find((item) => item.slug === base.slug);
+  const {
+    data: liveProducts,
+    reload: reloadProducts,
+    loading: liveLoading,
+    error: liveError,
+  } = useVendorProducts(ownedVendor?.id ?? null);
 
-  const products = useMemo(
-    () => [...base.products, ...(account.products ?? [])],
-    [base.products, account.products],
-  );
-
-  const hidden = new Set(account.hidden);
-  const stock = account.stock ?? {};
-
-  const liveCount = products.filter((product) => !hidden.has(product.id)).length;
-  const hiddenCount = products.length - liveCount;
+  const products: ProductRecord[] = liveLoading ? [] : (liveProducts ?? []);
+  const useBackend = products.length > 0 || !liveLoading;
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"All" | "Live" | "Hidden">("All");
-  const [stockProduct, setStockProduct] = useState<
-    (typeof products)[number] | null
-  >(null);
+  const [stockProduct, setStockProduct] = useState<ProductRecord | null>(null);
   const [stockValue, setStockValue] = useState("");
 
+  const hidden = new Set(products.filter((p) => !p.published).map((p) => p.id));
+  const liveCount = products.filter((product) => product.published).length;
+  const hiddenCount = products.length - liveCount;
+
   const lowStock = products.filter((product) => {
-    const quantity = stock[product.id];
-    return quantity !== undefined && quantity <= 5;
+    const quantity = product.stock_quantity;
+    return quantity !== null && quantity !== undefined && quantity <= 5;
   }).length;
 
-  const outOfStock = products.filter(
-    (product) => stock[product.id] === 0,
-  ).length;
+  const outOfStock = products.filter((product) => product.stock_quantity === 0).length;
 
   const filtered = products.filter((product) => {
-    const visible = !hidden.has(product.id);
-    const matchesQuery = product.name
-      .toLowerCase()
-      .includes(query.trim().toLowerCase());
+    const visible = product.published;
+    const matchesQuery = product.name.toLowerCase().includes(query.trim().toLowerCase());
 
-    return (
-      matchesQuery &&
-      (filter === "All" || (filter === "Live" ? visible : !visible))
-    );
+    return matchesQuery && (filter === "All" || (filter === "Live" ? visible : !visible));
   });
 
-  const setQuantity = (productId: string, quantity: number) => {
-    if (app.setStock(productId, quantity)) {
-      toast.success("Stock updated");
-    } else {
-      toast.error("Enter a whole number of zero or more");
+  const setQuantity = async (productId: string, quantity: number) => {
+    if (!ownedVendor) {
+      toast.error("Your storefront could not be found.");
+      return;
     }
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      toast.error("Enter a whole number of zero or more");
+      return;
+    }
+    const result = await productsApi.update(productId, {
+      stockQuantity: quantity,
+    });
+    if (!result.ok) {
+      toast.error(result.error || "Could not update stock.");
+      return;
+    }
+    await reloadProducts();
+    toast.success("Stock updated");
   };
 
-  const toggleVisibility = (product: (typeof products)[number]) => {
-    const wasHidden = hidden.has(product.id);
-
-    app.toggleHidden(product.id);
-
+  const toggleVisibility = async (product: ProductRecord) => {
+    if (!ownedVendor) {
+      toast.error("Your storefront could not be found.");
+      return;
+    }
+    const wasHidden = !product.published;
+    const result = await productsApi.update(product.id, {
+      published: wasHidden,
+    });
+    if (!result.ok) {
+      toast.error(result.error || "Could not update visibility.");
+      return;
+    }
+    await reloadProducts();
     toast.success(
       wasHidden
         ? `${product.name} is live on your storefront`
@@ -106,10 +124,12 @@ function VendorInventory() {
     );
   };
 
-  const openStockDialog = (product: (typeof products)[number]) => {
+  const openStockDialog = (product: ProductRecord) => {
     setStockProduct(product);
     setStockValue(
-      stock[product.id] !== undefined ? String(stock[product.id]) : "",
+      product.stock_quantity !== null && product.stock_quantity !== undefined
+        ? String(product.stock_quantity)
+        : "",
     );
   };
 
@@ -130,12 +150,18 @@ function VendorInventory() {
         </Link>
       }
     >
+      {myVendors.error && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+          Could not load your storefront: {myVendors.error}
+        </div>
+      )}
+      {liveError && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+          Could not load your inventory: {liveError}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <StatCard
-          label="Total listings"
-          value={String(products.length)}
-          tone="primary"
-        />
+        <StatCard label="Total listings" value={String(products.length)} tone="primary" />
         <StatCard
           label="Live listings"
           value={String(liveCount)}
@@ -147,11 +173,7 @@ function VendorInventory() {
           hint="Not currently visible"
           tone="gold"
         />
-        <StatCard
-          label="Low stock"
-          value={String(lowStock)}
-          hint="Five or fewer units"
-        />
+        <StatCard label="Low stock" value={String(lowStock)} hint="Five or fewer units" />
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_280px]">
@@ -166,7 +188,11 @@ function VendorInventory() {
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
                 <Warehouse className="size-3.5" />
-                {products.length - products.filter((p) => stock[p.id] === undefined).length}{" "}
+                {
+                  products.filter(
+                    (p) => p.stock_quantity !== null && p.stock_quantity !== undefined,
+                  ).length
+                }{" "}
                 tracked
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive">
@@ -178,28 +204,25 @@ function VendorInventory() {
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-muted/30 p-3.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Low stock items
-                </span>
+                <span className="text-xs font-medium text-muted-foreground">Low stock items</span>
                 <Boxes className="size-4 text-muted-foreground" />
               </div>
-              <p className="mt-2 text-xl font-semibold tabular-nums">
-                {lowStock}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Items with five units or fewer
-              </p>
+              <p className="mt-2 text-xl font-semibold tabular-nums">{lowStock}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Items with five units or fewer</p>
             </div>
 
             <div className="rounded-xl border border-border bg-muted/30 p-3.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Not tracked
-                </span>
+                <span className="text-xs font-medium text-muted-foreground">Not tracked</span>
                 <PackagePlus className="size-4 text-muted-foreground" />
               </div>
               <p className="mt-2 text-xl font-semibold tabular-nums">
-                {products.filter((product) => stock[product.id] === undefined).length}
+                {
+                  products.filter(
+                    (product) =>
+                      product.stock_quantity === null || product.stock_quantity === undefined,
+                  ).length
+                }
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Listings without a stock quantity
@@ -214,8 +237,8 @@ function VendorInventory() {
           </div>
           <h3 className="mt-3 text-sm font-semibold">Stock management</h3>
           <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-            Set quantities for your products and update them as stock changes.
-            A quantity of zero marks an item as out of stock.
+            Set quantities for your products and update them as stock changes. A quantity of zero
+            marks an item as out of stock.
           </p>
           <Link
             to="/vendor/products"
@@ -290,9 +313,7 @@ function VendorInventory() {
               {filtered.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
                   <Search className="mx-auto size-5 text-muted-foreground" />
-                  <p className="mt-2 text-sm font-medium">
-                    No matching listings
-                  </p>
+                  <p className="mt-2 text-sm font-medium">No matching listings</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Try another search or change the visibility filter.
                   </p>
@@ -301,24 +322,19 @@ function VendorInventory() {
                 <>
                   <div className="space-y-2 md:hidden">
                     {filtered.map((product) => {
-                      const isHidden = hidden.has(product.id);
-                      const quantity = stock[product.id];
+                      const isHidden = !product.published;
+                      const quantity = product.stock_quantity;
 
                       return (
-                        <div
-                          key={product.id}
-                          className="rounded-xl border border-border p-3.5"
-                        >
+                        <div key={product.id} className="rounded-xl border border-border p-3.5">
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold">
-                                {product.name}
-                              </p>
+                              <p className="truncate text-sm font-semibold">{product.name}</p>
                               <p className="mt-1 text-xs text-muted-foreground">
-                                {product.group}
+                                {product.group_name}
                               </p>
                               <p className="mt-2 text-sm font-semibold">
-                                {naira(product.price)}
+                                {naira(product.price_minor / 100)}
                               </p>
                             </div>
 
@@ -349,10 +365,8 @@ function VendorInventory() {
 
                           <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
                             <div>
-                              <p className="text-[11px] text-muted-foreground">
-                                Units on hand
-                              </p>
-                              {quantity === undefined ? (
+                              <p className="text-[11px] text-muted-foreground">Units on hand</p>
+                              {quantity === null || quantity === undefined ? (
                                 <span className="text-xs font-medium text-muted-foreground">
                                   Not tracked
                                 </span>
@@ -378,15 +392,13 @@ function VendorInventory() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              {quantity !== undefined && (
+                              {quantity !== null && quantity !== undefined && (
                                 <div className="flex items-center rounded-lg border border-border p-0.5">
                                   <button
                                     type="button"
                                     aria-label={`Decrease ${product.name} stock`}
                                     disabled={quantity === 0}
-                                    onClick={() =>
-                                      setQuantity(product.id, quantity - 1)
-                                    }
+                                    onClick={() => setQuantity(product.id, quantity - 1)}
                                     className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted disabled:opacity-40"
                                   >
                                     <Minus className="size-3" />
@@ -394,9 +406,7 @@ function VendorInventory() {
                                   <button
                                     type="button"
                                     aria-label={`Increase ${product.name} stock`}
-                                    onClick={() =>
-                                      setQuantity(product.id, quantity + 1)
-                                    }
+                                    onClick={() => setQuantity(product.id, quantity + 1)}
                                     className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted"
                                   >
                                     <Plus className="size-3" />
@@ -409,7 +419,9 @@ function VendorInventory() {
                                 onClick={() => openStockDialog(product)}
                                 className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/5"
                               >
-                                {quantity === undefined ? "Track stock" : "Edit"}
+                                {quantity === null || quantity === undefined
+                                  ? "Track stock"
+                                  : "Edit"}
                               </button>
                             </div>
                           </div>
@@ -420,24 +432,16 @@ function VendorInventory() {
 
                   <div className="hidden md:block">
                     <DataTable
-                      head={[
-                        "Listing",
-                        "Category",
-                        "Price",
-                        "On hand",
-                        "Visibility",
-                      ]}
+                      head={["Listing", "Category", "Price", "On hand", "Visibility"]}
                       rows={filtered.map((product) => {
-                        const isHidden = hidden.has(product.id);
-                        const quantity = stock[product.id];
+                        const isHidden = !product.published;
+                        const quantity = product.stock_quantity;
 
                         return [
                           <span className="font-medium">{product.name}</span>,
-                          <span className="text-muted-foreground">
-                            {product.group}
-                          </span>,
-                          naira(product.price),
-                          quantity === undefined ? (
+                          <span className="text-muted-foreground">{product.group_name}</span>,
+                          naira(product.price_minor / 100),
+                          quantity === null || quantity === undefined ? (
                             <button
                               type="button"
                               onClick={() => openStockDialog(product)}
@@ -452,9 +456,7 @@ function VendorInventory() {
                                   type="button"
                                   aria-label={`Decrease ${product.name} stock`}
                                   disabled={quantity === 0}
-                                  onClick={() =>
-                                    setQuantity(product.id, quantity - 1)
-                                  }
+                                  onClick={() => setQuantity(product.id, quantity - 1)}
                                   className="grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted disabled:opacity-40"
                                 >
                                   <Minus className="size-3" />
@@ -465,9 +467,7 @@ function VendorInventory() {
                                 <button
                                   type="button"
                                   aria-label={`Increase ${product.name} stock`}
-                                  onClick={() =>
-                                    setQuantity(product.id, quantity + 1)
-                                  }
+                                  onClick={() => setQuantity(product.id, quantity + 1)}
                                   className="grid size-6 place-items-center rounded text-muted-foreground hover:bg-muted"
                                 >
                                   <Plus className="size-3" />
@@ -518,24 +518,20 @@ function VendorInventory() {
               )}
 
               <p className="mt-4 border-t border-border pt-3 text-[11px] leading-5 text-muted-foreground">
-                Stock counts are saved in this browser. Set a quantity to start
-                tracking an item; zero marks it out of stock.
+                Stock levels are saved to your Peniel catalogue. Set a quantity to start tracking an
+                item; zero marks it out of stock.
               </p>
             </>
           )}
         </Panel>
       </div>
 
-      <Dialog
-        open={stockProduct !== null}
-        onOpenChange={(open) => !open && setStockProduct(null)}
-      >
+      <Dialog open={stockProduct !== null} onOpenChange={(open) => !open && setStockProduct(null)}>
         <DialogContent className="w-[calc(100%-2rem)] rounded-2xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-base">Update stock quantity</DialogTitle>
             <DialogDescription>
-              Set the current quantity for {stockProduct?.name}. You can adjust
-              it at any time.
+              Set the current quantity for {stockProduct?.name}. You can adjust it at any time.
             </DialogDescription>
           </DialogHeader>
 
@@ -556,7 +552,7 @@ function VendorInventory() {
                 return;
               }
 
-              setQuantity(stockProduct.id, quantity);
+              void setQuantity(stockProduct.id, quantity);
               setStockProduct(null);
             }}
           >

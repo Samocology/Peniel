@@ -1,6 +1,8 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { useEffect, useState } from "react";
 import { getVendor } from "@/lib/data";
+import { fetchBackendVendor } from "@/lib/backend-catalog";
 import { defaultTemplateFor, getTemplate } from "@/lib/templates";
 import { mergeVendor, useApp } from "@/lib/peniel-store";
 import { StoreFooter, StoreTopBar } from "@/components/store/store-kit";
@@ -11,12 +13,10 @@ import { ComposedStore } from "@/components/store/layouts-c";
 export const Route = createFileRoute("/store/$slug")({
   validateSearch: z.object({ t: z.string().optional() }),
   loader: ({ params }) => {
-    const vendor = getVendor(params.slug);
-    if (!vendor) throw notFound();
-    return { vendor };
+    return { vendor: getVendor(params.slug) };
   },
   head: ({ loaderData }) => {
-    if (!loaderData) {
+    if (!loaderData?.vendor) {
       return { meta: [{ title: "Store unavailable - Peniel" }, { name: "robots", content: "noindex" }] };
     }
     const v = loaderData.vendor;
@@ -36,11 +36,46 @@ export const Route = createFileRoute("/store/$slug")({
 
 function StorePage() {
   const { vendor: base } = Route.useLoaderData();
+  const { slug } = Route.useParams();
   const { t: previewId } = Route.useSearch();
+  const [remoteVendor, setRemoteVendor] = useState(base);
+  const [remoteLookupDone, setRemoteLookupDone] = useState(false);
   const s = useApp();
-  const acc = s.accounts[base.slug];
-  const tpl = getTemplate(previewId) ?? getTemplate(acc?.choice) ?? defaultTemplateFor(base);
-  const vendor = { ...mergeVendor(base, acc), theme: tpl.theme };
+  useEffect(() => {
+    let active = true;
+    setRemoteVendor(base);
+    setRemoteLookupDone(false);
+    void fetchBackendVendor(slug)
+      .then((result) => {
+        if (active && result) setRemoteVendor(result);
+      })
+      .catch((error) => {
+        console.error("Could not load live storefront", error);
+      })
+      .finally(() => {
+        if (active) setRemoteLookupDone(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [slug]);
+
+  const storeBase = remoteVendor;
+  if (!storeBase) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="mx-auto max-w-2xl px-4 py-24 text-center">
+          <h1 className="text-2xl font-bold">{remoteLookupDone ? "Store not found" : "Loading storefront…"}</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {remoteLookupDone ? "This storefront is unavailable or has not been published." : "Please wait while we load the store."}
+          </p>
+        </main>
+      </div>
+    );
+  }
+  const acc = s.accounts[storeBase.slug];
+  const tpl = getTemplate(previewId) ?? getTemplate(acc?.choice) ?? defaultTemplateFor(storeBase);
+  const vendor = { ...mergeVendor(storeBase, acc), theme: tpl.theme };
   const published = acc?.profile.published !== false;
   const paused = acc?.profile.paused === true;
   const acceptingActivity =

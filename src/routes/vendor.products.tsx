@@ -20,6 +20,8 @@ import { vendorNav } from "@/components/dash/vendor-nav";
 import { ItemArt } from "@/components/store/store-kit";
 import { naira } from "@/lib/data";
 import { app, useCurrentVendor } from "@/lib/peniel-store";
+import { productsApi } from "@/lib/api-client";
+import { useMyVendors, useVendorProducts } from "@/lib/vendor-hooks";
 
 export const Route = createFileRoute("/vendor/products")({
   head: () => ({
@@ -46,10 +48,24 @@ type VisibilityFilter = "All" | "Live" | "Hidden";
 function VendorProducts() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { base, account } = useCurrentVendor();
+  const myVendors = useMyVendors();
+  const ownedVendor = myVendors.data?.find((item) => item.slug === base.slug);
+  const liveProducts = useVendorProducts(ownedVendor?.id ?? null);
+  const useBackend = myVendors.loading || myVendors.error !== null || ownedVendor !== undefined;
+  const backendProducts = (liveProducts.data ?? []).map((product) => ({
+    id: product.id,
+    name: product.name,
+    desc: product.description,
+    price: product.price_minor / 100,
+    group: product.group_name,
+    ...(typeof product.attributes["meta"] === "string"
+      ? { meta: product.attributes["meta"] }
+      : {}),
+  }));
 
   const vendor = {
     ...base,
-    products: [...base.products, ...(account.products ?? [])],
+    products: useBackend ? backendProducts : [...base.products, ...(account.products ?? [])],
   };
 
   const catalogLabel =
@@ -84,7 +100,9 @@ function VendorProducts() {
   const [visibility, setVisibility] = useState<VisibilityFilter>("All");
   const [view, setView] = useState<ViewMode>("grid");
 
-  const hiddenIds = account.hidden ?? [];
+  const hiddenIds = useBackend
+    ? (liveProducts.data ?? []).filter((product) => !product.published).map((product) => product.id)
+    : account.hidden ?? [];
 
   const liveCount = vendor.products.filter(
     (product) => !hiddenIds.includes(product.id),
@@ -131,8 +149,32 @@ function VendorProducts() {
     setVisibility("All");
   };
 
-  const toggleVisibility = (productId: string, productName: string) => {
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const toggleVisibility = async (productId: string, productName: string) => {
     const isHidden = hiddenIds.includes(productId);
+
+    if (useBackend) {
+      if (!ownedVendor) {
+        toast.error(myVendors.error ?? "Your saved storefront could not be found.");
+        return;
+      }
+
+      setUpdatingId(productId);
+      const result = await productsApi.update(productId, { published: isHidden });
+      setUpdatingId(null);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      await liveProducts.reload();
+      toast.success(
+        isHidden
+          ? `${productName} is now live on your storefront`
+          : `${productName} has been hidden from your storefront`,
+      );
+      return;
+    }
 
     app.toggleHidden(productId);
 
@@ -163,6 +205,16 @@ function VendorProducts() {
       }
     >
       {/* Summary */}
+      {myVendors.error && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+          Could not load your saved storefront: {myVendors.error}
+        </div>
+      )}
+      {liveProducts.error && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+          Could not load your saved products: {liveProducts.error}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <SummaryCard
           label={`Total ${itemLabel}`}
@@ -407,10 +459,11 @@ function VendorProducts() {
 
                         <button
                           type="button"
+                          disabled={updatingId === product.id}
                           onClick={() =>
                             toggleVisibility(product.id, product.name)
                           }
-                          className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-wait disabled:opacity-50"
                         >
                           {isHidden ? (
                             <>
@@ -497,10 +550,11 @@ function VendorProducts() {
                           <td className="px-3 py-3 text-right">
                             <button
                               type="button"
+                              disabled={updatingId === product.id}
                               onClick={() =>
                                 toggleVisibility(product.id, product.name)
                               }
-                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-wait disabled:opacity-50"
                             >
                               {isHidden ? (
                                 <>

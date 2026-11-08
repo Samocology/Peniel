@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Heart, MapPin, Pencil, Plus, Star, Trash2, Wallet } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { StatusPill } from "@/components/site/bits";
-import { naira, orders, reviews, vendors } from "@/lib/data";
+import { naira, vendors } from "@/lib/data";
 import { app, useApp } from "@/lib/peniel-store";
+import { authApi, ordersApi, type OrderRecord } from "@/lib/api-client";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -35,14 +36,61 @@ function AccountPage() {
   const state = useApp();
   const [editOpen, setEditOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
+  const [session, setSession] = useState<{
+    authenticated: boolean;
+    user: { id: string; email: string; name: string } | null;
+  } | null>(null);
+  const [myOrders, setMyOrders] = useState<OrderRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([authApi.session(), ordersApi.myOrders()]).then(([sessionResult, ordersResult]) => {
+      if (!active) return;
+      if (sessionResult.ok) {
+        setSession(sessionResult.data);
+      }
+      if (ordersResult.ok) {
+        setMyOrders(ordersResult.data);
+      }
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const favourites = vendors.filter((vendor) => state.favorites.includes(vendor.slug));
-  const displayName = state.user?.name ?? state.customer.name;
+  const user = session?.user;
+  const displayName = user?.name ?? state.user?.name ?? state.customer.name;
+  const userEmail = user?.email ?? state.user?.email;
   const initials = displayName
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-primary font-display text-lg font-bold text-primary-foreground shadow-sm">
+              {initials || "—"}
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-2xl font-bold sm:text-3xl">
+                Loading profile…
+              </h1>
+            </div>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -58,7 +106,7 @@ function AccountPage() {
                 {displayName}
               </h1>
               <p className="truncate text-sm text-muted-foreground">
-                {state.user?.email ?? "Your Peniel profile"} · {state.customer.city}
+                {userEmail ?? "Your Peniel profile"} · {state.customer.city}
               </p>
             </div>
           </div>
@@ -73,14 +121,7 @@ function AccountPage() {
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           {[
             [Wallet, "Wallet balance", naira(18400)],
-            [
-              Star,
-              "Reviews written",
-              String(
-                reviews.filter((review) => review.name.startsWith(displayName.split(" ")[0] ?? ""))
-                  .length,
-              ),
-            ],
+            [Star, "Reviews written", String(0)],
             [Heart, "Saved businesses", String(favourites.length)],
           ].map(([Icon, l, v]) => {
             const I = Icon as typeof Wallet;
@@ -105,25 +146,33 @@ function AccountPage() {
                 </Link>
               </div>
               <div className="mt-4 space-y-3">
-                {orders.slice(0, 3).map((o) => (
+                {myOrders.slice(0, 3).map((o) => (
                   <Link
                     key={o.id}
-                    to={o.kind === "booking" ? "/bookings/$id" : "/orders/$id"}
+                    to="/orders/$id"
                     params={{ id: o.id }}
                     className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-border bg-card p-4 transition hover:border-primary/40"
                   >
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold">{o.vendor}</span>
+                      <span className="block truncate font-semibold">
+                        {o.vendor_orders[0]?.vendors?.name ?? "Order"}
+                      </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {o.items} · {o.placed}
+                        {o.vendor_orders.length} items ·{" "}
+                        {new Date(o.created_at).toLocaleDateString()}
                       </span>
                     </span>
                     <span className="shrink-0 text-right">
                       <StatusPill status={o.status} />
-                      <span className="mt-1.5 block font-display font-bold">{naira(o.total)}</span>
+                      <span className="mt-1.5 block font-display font-bold">
+                        {naira(o.total_minor / 100)}
+                      </span>
                     </span>
                   </Link>
                 ))}
+                {myOrders.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No orders yet.</p>
+                )}
               </div>
             </section>
 
@@ -164,26 +213,6 @@ function AccountPage() {
                       </span>
                     </span>
                   </Link>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <h2 className="font-display text-xl font-bold">My reviews</h2>
-              <div className="mt-4 space-y-3">
-                {reviews.slice(0, 2).map((r) => (
-                  <div key={r.text} className="rounded-2xl border border-border bg-card p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-semibold">{r.vendor}</p>
-                      <span className="shrink-0 text-xs text-muted-foreground">{r.when}</span>
-                    </div>
-                    <div className="mt-1.5 flex gap-0.5">
-                      {Array.from({ length: r.stars }).map((_, i) => (
-                        <Star key={i} className="size-3 fill-gold text-gold" />
-                      ))}
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{r.text}</p>
-                  </div>
                 ))}
               </div>
             </section>

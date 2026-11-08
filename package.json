@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "test:backend": "node --experimental-strip-types --test src/backend/auth.test.ts src/backend/http.test.ts src/backend/commerce.test.ts src/backend/vendor-admin.test.ts",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "lint": "eslint .",

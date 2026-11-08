@@ -5,6 +5,7 @@ import { Logo } from "@/components/site/logo";
 import { BottomBar } from "@/components/site/bottom-nav";
 import { app, unreadFor, useApp, useCurrentVendor } from "@/lib/peniel-store";
 import { vendorNavFor } from "./vendor-nav";
+import { toast } from "sonner";
 
 export type NavItem = {
   label: string;
@@ -59,10 +60,7 @@ export function DashShell({
     (n) => n.primary && (!isVendor || n.to !== "/vendor/profile"),
   );
   const primary = isVendor
-    ? [
-        ...primaryItems.slice(0, 4),
-        ...displayNav.filter((n) => n.to === "/vendor/profile"),
-      ]
+    ? [...primaryItems.slice(0, 4), ...displayNav.filter((n) => n.to === "/vendor/profile")]
     : primaryItems.slice(0, 5);
   const secondary = displayNav.filter((n) => !primary.includes(n));
   const menuNav = isVendor
@@ -80,10 +78,20 @@ export function DashShell({
         { label: "8 payouts awaiting release", to: "/admin/payouts" },
       ];
 
-  const signOut = () => {
-    app.signOut();
-    setMenu(false);
-    void navigate({ to: "/auth", search: { mode: "login" } });
+  const signOut = async () => {
+    try {
+      const providerSessionRevoked = await app.signOut();
+      if (!providerSessionRevoked) {
+        toast.warning(
+          "You’re signed out in this browser, but the provider did not confirm token revocation.",
+        );
+      }
+      setMenu(false);
+      void navigate({ to: "/auth", search: { mode: "login" } });
+    } catch (error) {
+      console.error("Could not sign out", error);
+      toast.error("Could not sign out. Please try again.");
+    }
   };
 
   return (

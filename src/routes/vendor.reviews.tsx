@@ -1,17 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Award,
-  MessageSquare,
-  ShieldCheck,
-  Star,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowRight, Award, MessageSquare, ShieldCheck, Star, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { reviews } from "@/lib/data";
+import { reviewsApi, type ReviewRecord } from "@/lib/api-client";
+import { useVendorId, useMyVendors } from "@/lib/vendor-hooks";
 import { useCurrentVendor } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/vendor/reviews")({
@@ -34,22 +30,47 @@ export const Route = createFileRoute("/vendor/reviews")({
 
 function VendorReviews() {
   const { vendor } = useCurrentVendor();
+  const vendorId = useVendorId(vendor.slug);
+  const [liveReviews, setLiveReviews] = useState<ReviewRecord[]>([]);
+  const [liveLoading, setLiveLoading] = useState(true);
 
-  const recentReviews = reviews.filter(
-    (review) => review.vendor === vendor.name,
-  );
+  useEffect(() => {
+    if (!vendorId) {
+      setLiveLoading(false);
+      return;
+    }
+    let active = true;
+    reviewsApi.vendor(vendorId).then((result) => {
+      if (!active) return;
+      if (result.ok) setLiveReviews(result.data);
+      setLiveLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [vendorId]);
 
-  const averageRating = vendor.rating.toFixed(1);
+  const useLive = !liveLoading && liveReviews.length > 0;
+  const recentReviews = useLive
+    ? liveReviews.map((r) => ({
+        name: r.profiles?.full_name ?? "Customer",
+        when: r.created_at,
+        stars: r.rating,
+        text: r.body,
+        vendor: vendor.name,
+      }))
+    : reviews.filter((review) => review.vendor === vendor.name);
+
+  const averageRating = useLive
+    ? (liveReviews.reduce((s, r) => s + r.rating, 0) / liveReviews.length).toFixed(1)
+    : vendor.rating.toFixed(1);
 
   const ratingDistribution = [5, 4, 3, 2, 1].map((stars) => ({
     stars,
     count: recentReviews.filter((review) => review.stars === stars).length,
   }));
 
-  const totalVisibleReviews = ratingDistribution.reduce(
-    (sum, item) => sum + item.count,
-    0,
-  );
+  const totalVisibleReviews = ratingDistribution.reduce((sum, item) => sum + item.count, 0);
 
   return (
     <DashShell
@@ -75,7 +96,7 @@ function VendorReviews() {
           <div className="min-w-0">
             <StatCard
               label="Customer reviews"
-              value={String(vendor.reviews)}
+              value={String(useLive ? liveReviews.length : vendor.reviews)}
               hint="Total reviews received"
               icon={<MessageSquare className="size-4" />}
             />
@@ -106,7 +127,7 @@ function VendorReviews() {
                     <Star
                       key={index}
                       className={`size-4 ${
-                        index < Math.round(vendor.rating)
+                        index < Math.round(Number(averageRating))
                           ? "fill-current"
                           : "text-muted-foreground/30"
                       }`}
@@ -115,7 +136,7 @@ function VendorReviews() {
                 </div>
 
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Based on {vendor.reviews} reviews
+                  Based on {useLive ? liveReviews.length : vendor.reviews} reviews
                 </p>
               </div>
 
@@ -129,9 +150,7 @@ function VendorReviews() {
 
                 {ratingDistribution.map((item) => {
                   const percentage =
-                    totalVisibleReviews > 0
-                      ? (item.count / totalVisibleReviews) * 100
-                      : 0;
+                    totalVisibleReviews > 0 ? (item.count / totalVisibleReviews) * 100 : 0;
 
                   return (
                     <div
@@ -158,9 +177,8 @@ function VendorReviews() {
                 })}
 
                 <p className="pt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  Distribution is calculated from the review entries currently
-                  available for this storefront. The overall rating and review
-                  count come from your storefront profile.
+                  Distribution is calculated from the review entries currently available for this
+                  storefront. The overall rating and review count come from your storefront profile.
                 </p>
               </div>
             </div>
@@ -224,7 +242,11 @@ function VendorReviews() {
             </span>
           </div>
 
-          {recentReviews.length > 0 ? (
+          {liveLoading ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <p className="text-xs text-muted-foreground">Loading reviews…</p>
+            </div>
+          ) : recentReviews.length > 0 ? (
             <div className="divide-y divide-border">
               {recentReviews.map((review) => (
                 <article
@@ -245,12 +267,8 @@ function VendorReviews() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold">
-                            {review.name}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground">
-                            {review.when}
-                          </p>
+                          <p className="truncate text-sm font-semibold">{review.name}</p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">{review.when}</p>
                         </div>
 
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gold/10 px-2.5 py-1 text-xs font-semibold text-gold-foreground">
@@ -264,22 +282,16 @@ function VendorReviews() {
                           <Star
                             key={index}
                             className={`size-3.5 ${
-                              index < review.stars
-                                ? "fill-current"
-                                : "text-muted-foreground/25"
+                              index < review.stars ? "fill-current" : "text-muted-foreground/25"
                             }`}
                           />
                         ))}
                       </div>
 
-                      <p className="mt-2 text-sm leading-6 text-foreground/80">
-                        {review.text}
-                      </p>
+                      <p className="mt-2 text-sm leading-6 text-foreground/80">{review.text}</p>
 
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-                        <span className="text-[11px] text-muted-foreground">
-                          Customer feedback
-                        </span>
+                        <span className="text-[11px] text-muted-foreground">Customer feedback</span>
 
                         <Link
                           to="/vendor/messages"
@@ -306,9 +318,8 @@ function VendorReviews() {
               </p>
 
               <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
-                No review text is available for this sample storefront yet.
-                Your overall rating and review count still come from your
-                storefront profile.
+                No review text is available for this sample storefront yet. Your overall rating and
+                review count still come from your storefront profile.
               </p>
             </div>
           )}

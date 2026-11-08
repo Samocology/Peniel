@@ -24,6 +24,7 @@ import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard, StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { useApp, useCurrentVendor } from "@/lib/peniel-store";
+import { useVendorId, useVendorAnalytics, useVendorOrders, minorToNaira } from "@/lib/vendor-hooks";
 
 export const Route = createFileRoute("/vendor/")({
   head: () => ({
@@ -106,20 +107,24 @@ function EmptyState({
 function VendorOverview() {
   const { vendor, account } = useCurrentVendor();
   const state = useApp();
+  const vendorId = useVendorId(vendor.slug);
+  const liveAnalytics = useVendorAnalytics(vendorId);
+  const liveOrders = useVendorOrders(vendorId);
+  const useLive = liveAnalytics.data !== null;
 
-  const orders = state.orders.filter(
-    (order) => order.vendorSlug === vendor.slug,
-  );
+  const demoOrders = state.orders.filter((o) => o.vendorSlug === vendor.slug);
 
-  const openOrders = orders.filter((order) =>
-    ["New", "Confirmed", "Preparing", "Out for delivery"].includes(
-      order.status,
-    ),
-  );
+  const openOrders = useLive
+    ? (liveOrders.data ?? []).filter((o) =>
+        ["paid", "confirmed", "preparing", "ready_for_pickup", "shipped", "out_for_delivery"].includes(o.status)
+      )
+    : demoOrders.filter((o) =>
+        ["New", "Confirmed", "Preparing", "Out for delivery"].includes(o.status)
+      );
 
-  const revenue = orders
-    .filter((order) => order.status !== "Cancelled")
-    .reduce((total, order) => total + order.total, 0);
+  const revenue = useLive
+    ? liveAnalytics.data!.totalRevenue / 100
+    : demoOrders.filter((o) => o.status !== "Cancelled").reduce((t, o) => t + o.total, 0);
 
   const catalogLabel =
     vendor.type === "restaurant" || vendor.type === "bakery"
@@ -156,9 +161,11 @@ function VendorOverview() {
       ? "/vendor/orders"
       : "/vendor/bookings";
 
-  const recentOrders = orders.slice(0, 5);
-
   const greetingName = vendor.name.trim();
+
+  const liveRecentRows = (liveOrders.data ?? []).slice(0, 5);
+  const demoRecentRows = demoOrders.slice(0, 5);
+  const hasActivity = useLive ? liveRecentRows.length > 0 : demoOrders.length > 0;
 
   return (
     <DashShell
@@ -230,18 +237,12 @@ function VendorOverview() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <Link
-                to="/vendor/settings"
-                className={quickLinkClass}
-              >
+              <Link to="/vendor/settings" className={quickLinkClass}>
                 <Settings2 className="size-3.5 text-muted-foreground" />
                 Store settings
               </Link>
 
-              <Link
-                to="/vendor/verification"
-                className={quickLinkClass}
-              >
+              <Link to="/vendor/verification" className={quickLinkClass}>
                 <BadgeCheck className="size-3.5 text-primary" />
                 Verification
               </Link>
@@ -263,19 +264,17 @@ function VendorOverview() {
 
             <span className="hidden items-center gap-1.5 text-[10px] text-muted-foreground sm:inline-flex">
               <Clock3 className="size-3" />
-              Based on saved account data
+              {useLive ? "Live backend data" : "Based on saved account data"}
             </span>
           </div>
 
           <div className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-4">
             <StatCard
-              label="Tracked revenue"
+              label={useLive ? "Net revenue" : "Tracked revenue"}
               value={naira(revenue)}
-              hint="Based on non-cancelled saved orders"
+              hint={useLive ? "After platform commission" : "Based on non-cancelled saved orders"}
               tone="primary"
-              icon={
-                <Wallet className="size-4 text-primary" />
-              }
+              icon={<Wallet className="size-4 text-primary" />}
             />
 
             <StatCard
@@ -296,20 +295,22 @@ function VendorOverview() {
               value={String(vendor.products.length)}
               hint={`Listings for ${vendor.name}`}
               tone="gold"
-              icon={
-                <Package className="size-4 text-gold" />
-              }
+              icon={<Package className="size-4 text-gold" />}
             />
 
             <StatCard
               label="Store rating"
               value={vendor.rating.toFixed(1)}
               hint={`${vendor.reviews.toLocaleString()} customer reviews`}
-              icon={
-                <Star className="size-4 text-muted-foreground" />
-              }
+              icon={<Star className="size-4 text-muted-foreground" />}
             />
           </div>
+
+          {liveAnalytics.error && (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+              Live analytics unavailable: {liveAnalytics.error}. Showing demo data.
+            </div>
+          )}
         </section>
 
         {/* Main dashboard */}
@@ -328,25 +329,13 @@ function VendorOverview() {
                 </Link>
               }
             >
-              {orders.length === 0 ? (
+              {!hasActivity ? (
                 <EmptyState
-                  icon={
-                    vendor.fulfilment === "order"
-                      ? ShoppingBag
-                      : CalendarDays
-                  }
+                  icon={vendor.fulfilment === "order" ? ShoppingBag : CalendarDays}
                   title={`No ${activityLabel} yet`}
                   description={`When customers place ${activityLabel}, their activity will appear here.`}
-                  action={
-                    vendor.fulfilment === "order"
-                      ? "View your storefront"
-                      : "Manage bookings"
-                  }
-                  to={
-                    vendor.fulfilment === "order"
-                      ? `/store/${vendor.slug}`
-                      : "/vendor/bookings"
-                  }
+                  action={vendor.fulfilment === "order" ? "View your storefront" : "Manage bookings"}
+                  to={vendor.fulfilment === "order" ? `/store/${vendor.slug}` : "/vendor/bookings"}
                 />
               ) : (
                 <>
@@ -362,7 +351,7 @@ function VendorOverview() {
 
                       <div>
                         <p className="text-xs font-semibold">
-                          {orders.length} recorded {activityLabel}
+                          {useLive ? (liveOrders.data ?? []).length : demoOrders.length} recorded {activityLabel}
                         </p>
                         <p className="mt-0.5 text-[10px] text-muted-foreground">
                           {openOrders.length} currently need attention
@@ -370,52 +359,46 @@ function VendorOverview() {
                       </div>
                     </div>
 
-                    <Link
-                      to={activityRoute}
-                      className="text-[10px] font-semibold text-primary"
-                    >
+                    <Link to={activityRoute} className="text-[10px] font-semibold text-primary">
                       Manage {activityLabel}
                     </Link>
                   </div>
 
                   <DataTable
-                    head={[
-                      "Reference",
-                      "Customer",
-                      "Items",
-                      "Total",
-                      "Status",
-                    ]}
-                    rows={recentOrders.map((order) => [
-                      <span
-                        key="reference"
-                        className="font-mono text-[11px] font-medium"
-                      >
-                        {order.id}
-                      </span>,
-                      <span
-                        key="customer"
-                        className="font-medium"
-                      >
-                        {order.customer}
-                      </span>,
-                      <span
-                        key="items"
-                        className="text-muted-foreground"
-                      >
-                        {order.items}
-                      </span>,
-                      <span
-                        key="total"
-                        className="font-semibold"
-                      >
-                        {naira(order.total)}
-                      </span>,
-                      <StatusPill
-                        key="status"
-                        status={order.status}
-                      />,
-                    ])}
+                    head={["Reference", "Customer", "Items", "Total", "Status"]}
+                    rows={
+                      useLive
+                        ? liveRecentRows.map((o) => [
+                            <span key="ref" className="font-mono text-[11px] font-medium">
+                              {o.orders?.reference ?? o.id}
+                            </span>,
+                            <span key="cust" className="font-medium">
+                              {o.orders?.customer_snapshot?.["fullName"] ?? "Customer"}
+                            </span>,
+                            <span key="items" className="text-muted-foreground">
+                              {o.order_items?.reduce((s, i) => s + i.quantity, 0) ?? 0} items
+                            </span>,
+                            <span key="total" className="font-semibold">
+                              {minorToNaira(o.subtotal_minor + o.delivery_minor)}
+                            </span>,
+                            <StatusPill key="status" status={o.status} />,
+                          ])
+                        : demoRecentRows.map((order) => [
+                            <span key="ref" className="font-mono text-[11px] font-medium">
+                              {order.id}
+                            </span>,
+                            <span key="cust" className="font-medium">
+                              {order.customer}
+                            </span>,
+                            <span key="items" className="text-muted-foreground">
+                              {order.items}
+                            </span>,
+                            <span key="total" className="font-semibold">
+                              {naira(order.total)}
+                            </span>,
+                            <StatusPill key="status" status={order.status} />,
+                          ])
+                    }
                   />
                 </>
               )}

@@ -19,6 +19,8 @@ import { StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { app, useApp, type OrderStatus } from "@/lib/peniel-store";
 import { useCurrentVendor } from "@/lib/peniel-store";
+import { useVendorId, useVendorOrders, backendStatusLabel, minorToNaira } from "@/lib/vendor-hooks";
+import { ordersApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/vendor/orders")({
   head: () => ({
@@ -54,35 +56,81 @@ const next: Partial<Record<OrderStatus, OrderStatus>> = {
   "Out for delivery": "Delivered",
 };
 
+// Map backend status to legacy UI filter labels
+const BACKEND_TO_FILTER: Record<string, (typeof filters)[number]> = {
+  paid: "New", confirmed: "Confirmed", preparing: "Preparing",
+  out_for_delivery: "Out for delivery", delivered: "Delivered",
+  completed: "Delivered", cancelled: "Cancelled",
+};
+
 function VendorOrders() {
   const s = useApp();
   const { vendor } = useCurrentVendor();
   const [f, setF] = useState<(typeof filters)[number]>("All");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const orders = useMemo(
+  const vendorId = useVendorId(vendor.slug);
+  const liveOrders = useVendorOrders(vendorId);
+
+  // Use live backend orders when available, fall back to demo store orders
+  const useLive = liveOrders.data !== null;
+
+  const demoOrders = useMemo(
     () => s.orders.filter((o) => o.vendorSlug === vendor.slug),
     [s.orders, vendor.slug],
   );
 
-  const count = (status: OrderStatus) =>
-    orders.filter((o) => o.status === status).length;
+  // Counts for the filter tabs — works for both live and demo
+  const count = (status: OrderStatus) => {
+    if (useLive) {
+      return (liveOrders.data ?? []).filter(
+        (o) => BACKEND_TO_FILTER[o.status] === status,
+      ).length;
+    }
+    return demoOrders.filter((o) => o.status === status).length;
+  };
 
-  const rows = orders.filter((o) => f === "All" || o.status === f);
+  const liveRows = useMemo(() => {
+    if (!useLive) return [];
+    return (liveOrders.data ?? []).filter(
+      (o) => f === "All" || BACKEND_TO_FILTER[o.status] === f,
+    );
+  }, [liveOrders.data, f, useLive]);
+
+  const demoRows = demoOrders.filter((o) => f === "All" || o.status === f);
+  const rows = useLive ? liveRows : demoRows;
+  const orders = useLive ? (liveOrders.data ?? []) : demoOrders;
 
   const openCount =
-    count("New") +
-    count("Confirmed") +
-    count("Preparing") +
-    count("Out for delivery");
+    count("New") + count("Confirmed") + count("Preparing") + count("Out for delivery");
 
-  const totalRevenue = orders
-    .filter((o) => o.status !== "Cancelled")
-    .reduce((total, order) => total + order.total, 0);
+  const totalRevenue = useLive
+    ? (liveOrders.data ?? []).filter((o) => o.status !== "cancelled").reduce((t, o) => t + o.subtotal_minor, 0) / 100
+    : demoOrders.filter((o) => o.status !== "Cancelled").reduce((t, o) => t + o.total, 0);
 
+  // Demo set (local state)
   const set = (id: string, status: OrderStatus, message: string) => {
     app.setOrderStatus(id, status);
     toast.success(message);
   };
+
+  // Live set (backend API)
+  const setLive = async (orderId: string, backendStatus: string, message: string) => {
+    setUpdatingId(orderId);
+    const result = await ordersApi.updateStatus(orderId, backendStatus);
+    setUpdatingId(null);
+    if (result.ok) {
+      toast.success(message);
+      // Refresh live orders
+      liveOrders.data && void ordersApi.vendorOrders(vendorId!).then((r) => {
+        if (r.ok) liveOrders.data?.splice(0, liveOrders.data.length, ...r.data);
+      });
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  const totalOrderCount = useLive ? (liveOrders.data ?? []).length : demoOrders.length;
 
   const pageTitle =
     vendor.fulfilment === "reservation"
@@ -103,7 +151,7 @@ function VendorOrders() {
       nav={vendorNav}
       kicker="Business console"
       title={pageTitle}
-      subtitle={`${openCount} open ${activityLabel} requiring attention`}
+      subtitle={liveOrders.loading ? "Loading orders…" : `${openCount} open ${activityLabel} requiring attention`}
       storeLink={{ label: "View storefront", slug: vendor.slug }}
       actions={
         vendor.fulfilment === "order" ? (
@@ -165,6 +213,11 @@ function VendorOrders() {
               icon={Check}
               tone="primary"
             />
+          {liveOrders.error && (
+            <div className="col-span-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+              Live orders unavailable: {liveOrders.error}. Showing demo data.
+            </div>
+          )}
           </div>
 
           {/* Revenue summary */}
@@ -175,7 +228,7 @@ function VendorOrders() {
               </div>
               <div>
                 <p className="text-xs font-medium text-muted-foreground">
-                  Tracked order value
+                  {useLive ? "Recorded order value" : "Tracked order value"}
                 </p>
                 <p className="mt-0.5 text-lg font-bold tracking-tight text-foreground">
                   {naira(totalRevenue)}
@@ -183,7 +236,7 @@ function VendorOrders() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Based on saved orders, excluding cancelled orders
+              {useLive ? `${totalOrderCount} orders from live data` : "Based on saved orders, excluding cancelled orders"}
             </p>
           </div>
 
@@ -246,13 +299,13 @@ function VendorOrders() {
                 </div>
               </div>
 
-              {rows.length === 0 ? (
+              {(useLive ? liveRows.length : demoRows.length) === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-5 py-12 text-center">
                   <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
                     <ShoppingBag className="size-5" />
                   </div>
                   <p className="text-sm font-semibold text-foreground">
-                    No {f === "All" ? "" : f.toLowerCase() + " "}orders yet
+                    {liveOrders.loading ? "Loading orders…" : `No ${f === "All" ? "" : f.toLowerCase() + " "}orders yet`}
                   </p>
                   <p className="mt-1 max-w-xs text-xs leading-5 text-muted-foreground">
                     Orders that match this filter will appear here when
@@ -267,9 +320,103 @@ function VendorOrders() {
                     </button>
                   )}
                 </div>
+              ) : useLive ? (
+                <ul className="space-y-3">
+                  {liveRows.map((order) => {
+                    const uiStatus = BACKEND_TO_FILTER[order.status] ?? "New";
+                    const ref = order.orders?.reference ?? order.id;
+                    const customer = order.orders?.customer_snapshot?.["fullName"] ?? order.orders?.customer_snapshot?.["email"] ?? "Customer";
+                    const itemCount = order.order_items?.reduce((s, i) => s + i.quantity, 0) ?? 0;
+                    const isUpdating = updatingId === order.id;
+                    return (
+                    <li
+                      key={order.id}
+                      className={`min-w-0 rounded-2xl border border-border border-l-4 bg-background p-3.5 shadow-sm transition-colors sm:p-4 ${
+                        uiStatus === "New" ? "border-l-gold" :
+                        uiStatus === "Out for delivery" ? "border-l-info" :
+                        uiStatus === "Cancelled" ? "border-l-destructive/50" :
+                        uiStatus === "Delivered" ? "border-l-success/60" : "border-l-primary/40"
+                      }`}
+                    >
+                      <div className="flex min-w-0 flex-col gap-3.5">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                              uiStatus === "New" ? "bg-gold/15 text-gold-foreground" : "bg-muted text-muted-foreground"
+                            }`}>
+                              <ShoppingBag className="size-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-bold">{customer}</p>
+                              <p className="mt-0.5 truncate font-mono text-[10px] tracking-wide text-muted-foreground">{ref}</p>
+                            </div>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-sm font-bold tabular-nums">{minorToNaira(order.subtotal_minor + order.delivery_minor)}</p>
+                            <div className="mt-1.5"><StatusPill status={uiStatus} /></div>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 pl-0.5 text-[11px] text-muted-foreground">
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-muted/70 px-2.5 py-1.5">
+                            <Package className="size-3.5" />
+                            {itemCount} {itemCount === 1 ? "item" : "items"}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-muted/70 px-2.5 py-1.5">
+                            <Truck className="size-3.5" />
+                            {backendStatusLabel(order.status)}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
+                          {uiStatus === "New" && (
+                            <>
+                              <button type="button" disabled={isUpdating}
+                                onClick={() => void setLive(order.id, "confirmed", "Order accepted")}
+                                className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none">
+                                <Check className="size-3.5" />{isUpdating ? "Updating…" : "Accept order"}
+                              </button>
+                              <button type="button" disabled={isUpdating}
+                                onClick={() => void setLive(order.id, "cancelled", "Order declined")}
+                                className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold text-muted-foreground transition hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive disabled:opacity-50 sm:flex-none">
+                                <X className="size-3.5" />{isUpdating ? "Updating…" : "Decline"}
+                              </button>
+                            </>
+                          )}
+                          {uiStatus === "Confirmed" && (
+                            <button type="button" disabled={isUpdating}
+                              onClick={() => void setLive(order.id, "preparing", "Marked preparing")}
+                              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 sm:w-auto">
+                              <Check className="size-3.5" />{isUpdating ? "Updating…" : "Start preparing"}
+                            </button>
+                          )}
+                          {uiStatus === "Preparing" && (
+                            <button type="button" disabled={isUpdating}
+                              onClick={() => void setLive(order.id, "out_for_delivery", "Marked out for delivery")}
+                              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 sm:w-auto">
+                              <Truck className="size-3.5" />{isUpdating ? "Updating…" : "Mark out for delivery"}
+                            </button>
+                          )}
+                          {uiStatus === "Out for delivery" && (
+                            <button type="button" disabled={isUpdating}
+                              onClick={() => void setLive(order.id, "delivered", "Marked delivered")}
+                              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 sm:w-auto">
+                              <Check className="size-3.5" />{isUpdating ? "Updating…" : "Mark delivered"}
+                            </button>
+                          )}
+                          {(uiStatus === "Delivered" || uiStatus === "Cancelled") && (
+                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                              {uiStatus === "Delivered" ? <Check className="size-3.5" /> : <X className="size-3.5" />}
+                              {uiStatus === "Delivered" ? "Order completed" : "Order cancelled"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </li>
+                    );
+                  })}
+                </ul>
               ) : (
                 <ul className="space-y-3">
-                  {rows.map((order) => (
+                  {demoRows.map((order) => (
                     <li
                       key={order.id}
                       className={`min-w-0 rounded-2xl border border-border border-l-4 bg-background p-3.5 shadow-sm transition-colors sm:p-4 ${
