@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authApi } from "@/lib/api-client";
 
-export const Route = createFileRoute("/auth/reset-password")({
+export const Route = createFileRoute("/reset-password")({
   validateSearch: z.object({
     resetToken: z.string().optional(),
     returnTo: z.string().optional(),
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/auth/reset-password")({
 
 function ResetPasswordPage() {
   const { resetToken, returnTo } = Route.useSearch();
-  const navigate = useNavigate({ from: "/auth/reset-password" });
+  const navigate = useNavigate({ from: "/reset-password" });
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authApi } from "@/lib/api-client";
 
-export const Route = createFileRoute("/auth/verify-otp")({
+export const Route = createFileRoute("/verify-otp")({
   validateSearch: z.object({
     email: z.string().email().optional(),
     returnTo: z.string().optional(),
@@ -30,7 +30,7 @@ function VerifyOtpPage() {
   const isSignup = type === "signup";
   const otpLength = isSignup ? 8 : 6;
 
-  const navigate = useNavigate({ from: "/auth/verify-otp" });
+  const navigate = useNavigate({ from: "/verify-otp" });
 
   const [email, setEmail] = useState(emailFromSearch);
   const [code, setCode] = useState("");
@@ -77,7 +77,7 @@ function VerifyOtpPage() {
       toast.success("Code verified.");
 
       void navigate({
-        to: "/auth/reset-password",
+        to: "/reset-password",
         search: { resetToken: result.data.resetToken, returnTo },
       });
     } catch {

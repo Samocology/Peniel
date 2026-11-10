@@ -16,13 +16,16 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ForBusinessesRouteImport } from './routes/for-businesses'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as VerifyOtpRouteImport } from './routes/verify-otp'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
@@ -36,9 +39,6 @@ import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminTransactionsRouteImport } from './routes/admin.transactions'
 import { Route as AdminVendorsRouteImport } from './routes/admin.vendors'
 import { Route as AdminVerificationRouteImport } from './routes/admin.verification'
-import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
-import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
-import { Route as AuthVerifyOtpRouteImport } from './routes/auth.verify-otp'
 import { Route as BookingsIdRouteImport } from './routes/bookings.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
@@ -100,6 +100,11 @@ const ForBusinessesRoute = ForBusinessesRouteImport.update({
   path: '/for-businesses',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MarketplaceRoute = MarketplaceRouteImport.update({
   id: '/marketplace',
   path: '/marketplace',
@@ -130,9 +135,19 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyOtpRoute = VerifyOtpRouteImport.update({
+  id: '/verify-otp',
+  path: '/verify-otp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -199,21 +214,6 @@ const AdminVerificationRoute = AdminVerificationRouteImport.update({
   id: '/admin/verification',
   path: '/admin/verification',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthVerifyOtpRoute = AuthVerifyOtpRouteImport.update({
-  id: '/verify-otp',
-  path: '/verify-otp',
-  getParentRoute: () => AuthRoute,
 } as any)
 const BookingsIdRoute = BookingsIdRouteImport.update({
   id: '/bookings/$id',
@@ -345,17 +345,20 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/marketplace': typeof MarketplaceRoute
   '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
+  '/verify-otp': typeof VerifyOtpRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -368,9 +371,6 @@ export interface FileRoutesByFullPath {
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/verification': typeof AdminVerificationRoute
-  '/auth/forgot-password': typeof AuthForgotPasswordRoute
-  '/auth/reset-password': typeof AuthResetPasswordRoute
-  '/auth/verify-otp': typeof AuthVerifyOtpRoute
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -402,17 +402,20 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/marketplace': typeof MarketplaceRoute
   '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
+  '/verify-otp': typeof VerifyOtpRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -425,9 +428,6 @@ export interface FileRoutesByTo {
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/verification': typeof AdminVerificationRoute
-  '/auth/forgot-password': typeof AuthForgotPasswordRoute
-  '/auth/reset-password': typeof AuthResetPasswordRoute
-  '/auth/verify-otp': typeof AuthVerifyOtpRoute
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -460,17 +460,20 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/marketplace': typeof MarketplaceRoute
   '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRouteWithChildren
   '/payment': typeof PaymentRoute
   '/pricing': typeof PricingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
+  '/verify-otp': typeof VerifyOtpRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -483,9 +486,6 @@ export interface FileRoutesById {
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/vendors': typeof AdminVendorsRoute
   '/admin/verification': typeof AdminVerificationRoute
-  '/auth/forgot-password': typeof AuthForgotPasswordRoute
-  '/auth/reset-password': typeof AuthResetPasswordRoute
-  '/auth/verify-otp': typeof AuthVerifyOtpRoute
   '/bookings/$id': typeof BookingsIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/orders/$id': typeof OrdersIdRoute
@@ -523,13 +523,16 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/for-businesses'
+    | '/forgot-password'
     | '/marketplace'
     | '/messages'
     | '/onboarding'
     | '/orders'
     | '/payment'
     | '/pricing'
+    | '/reset-password'
     | '/search'
+    | '/verify-otp'
     | '/admin/analytics'
     | '/admin/categories'
     | '/admin/customers'
@@ -542,9 +545,6 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/vendors'
     | '/admin/verification'
-    | '/auth/forgot-password'
-    | '/auth/reset-password'
-    | '/auth/verify-otp'
     | '/bookings/$id'
     | '/category/$slug'
     | '/orders/$id'
@@ -580,13 +580,16 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/for-businesses'
+    | '/forgot-password'
     | '/marketplace'
     | '/messages'
     | '/onboarding'
     | '/orders'
     | '/payment'
     | '/pricing'
+    | '/reset-password'
     | '/search'
+    | '/verify-otp'
     | '/admin/analytics'
     | '/admin/categories'
     | '/admin/customers'
@@ -599,9 +602,6 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/vendors'
     | '/admin/verification'
-    | '/auth/forgot-password'
-    | '/auth/reset-password'
-    | '/auth/verify-otp'
     | '/bookings/$id'
     | '/category/$slug'
     | '/orders/$id'
@@ -637,13 +637,16 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/for-businesses'
+    | '/forgot-password'
     | '/marketplace'
     | '/messages'
     | '/onboarding'
     | '/orders'
     | '/payment'
     | '/pricing'
+    | '/reset-password'
     | '/search'
+    | '/verify-otp'
     | '/admin/analytics'
     | '/admin/categories'
     | '/admin/customers'
@@ -656,9 +659,6 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/vendors'
     | '/admin/verification'
-    | '/auth/forgot-password'
-    | '/auth/reset-password'
-    | '/auth/verify-otp'
     | '/bookings/$id'
     | '/category/$slug'
     | '/orders/$id'
@@ -691,17 +691,20 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
-  AuthRoute: typeof AuthRouteWithChildren
+  AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   ForBusinessesRoute: typeof ForBusinessesRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   MarketplaceRoute: typeof MarketplaceRoute
   MessagesRoute: typeof MessagesRoute
   OnboardingRoute: typeof OnboardingRoute
   OrdersRoute: typeof OrdersRouteWithChildren
   PaymentRoute: typeof PaymentRoute
   PricingRoute: typeof PricingRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
+  VerifyOtpRoute: typeof VerifyOtpRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
@@ -791,6 +794,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForBusinessesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/marketplace': {
       id: '/marketplace'
       path: '/marketplace'
@@ -833,11 +843,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-otp': {
+      id: '/verify-otp'
+      path: '/verify-otp'
+      fullPath: '/verify-otp'
+      preLoaderRoute: typeof VerifyOtpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -930,27 +954,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/verification'
       preLoaderRoute: typeof AdminVerificationRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/auth/forgot-password': {
-      id: '/auth/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/auth/forgot-password'
-      preLoaderRoute: typeof AuthForgotPasswordRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/reset-password': {
-      id: '/auth/reset-password'
-      path: '/reset-password'
-      fullPath: '/auth/reset-password'
-      preLoaderRoute: typeof AuthResetPasswordRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/verify-otp': {
-      id: '/auth/verify-otp'
-      path: '/verify-otp'
-      fullPath: '/auth/verify-otp'
-      preLoaderRoute: typeof AuthVerifyOtpRouteImport
-      parentRoute: typeof AuthRoute
     }
     '/bookings/$id': {
       id: '/bookings/$id'
@@ -1130,20 +1133,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthRouteChildren {
-  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
-  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
-  AuthVerifyOtpRoute: typeof AuthVerifyOtpRoute
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
-  AuthResetPasswordRoute: AuthResetPasswordRoute,
-  AuthVerifyOtpRoute: AuthVerifyOtpRoute,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
-
 interface OrdersRouteChildren {
   OrdersIdRoute: typeof OrdersIdRoute
 }
@@ -1171,17 +1160,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
-  AuthRoute: AuthRouteWithChildren,
+  AuthRoute: AuthRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   ForBusinessesRoute: ForBusinessesRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   MarketplaceRoute: MarketplaceRoute,
   MessagesRoute: MessagesRoute,
   OnboardingRoute: OnboardingRoute,
   OrdersRoute: OrdersRouteWithChildren,
   PaymentRoute: PaymentRoute,
   PricingRoute: PricingRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
+  VerifyOtpRoute: VerifyOtpRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminCustomersRoute: AdminCustomersRoute,

@@ -100,7 +100,7 @@ function AuthPage() {
 
       if (data.needsOtp) {
         void navigate({
-          to: "/auth/verify-otp",
+          to: "/verify-otp",
           search: { email, returnTo, role, type: "signup" },
         });
         return;
@@ -631,7 +631,7 @@ function AuthPage() {
             {!isSignup && (
               <p className="mt-3 text-center">
                 <Link
-                  to="/auth/forgot-password"
+                  to="/forgot-password"
                   search={{ returnTo }}
                   className="text-xs font-semibold text-[#294431] underline underline-offset-4 hover:text-[#294431]/80"
                 >

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authApi } from "@/lib/api-client";
 
-export const Route = createFileRoute("/auth/forgot-password")({
+export const Route = createFileRoute("/forgot-password")({
   validateSearch: z.object({
     returnTo: z.string().optional(),
   }),
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/auth/forgot-password")({
 
 function ForgotPasswordPage() {
   const { returnTo } = Route.useSearch();
-  const navigate = useNavigate({ from: "/auth/forgot-password" });
+  const navigate = useNavigate({ from: "/forgot-password" });
 
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -129,7 +129,7 @@ function ForgotPasswordPage() {
               A 6-digit reset code has been sent to <strong>{email}</strong>. {codeSent ? "" : ""}
             </p>
             <Button
-              onClick={() => navigate({ to: "/auth/verify-otp", search: { email, returnTo } })}
+              onClick={() => navigate({ to: "/verify-otp", search: { email, returnTo } })}
               size="lg"
               className="w-full rounded-xl bg-[#294331] text-[13px] font-semibold text-white shadow-none transition-all hover:bg-[#38563F] sm:h-[50px]"
             >
