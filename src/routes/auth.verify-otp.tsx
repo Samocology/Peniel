@@ -51,8 +51,8 @@ function VerifyOtpPage() {
       if (isSignup) {
         toast.success("Email verified. Please sign in to continue.");
         void navigate({
-          to: "/auth/login",
-          search: { email: result.data.email ?? email, returnTo, role },
+          to: "/auth",
+          search: { mode: "login", returnTo, role },
         });
         return;
       }

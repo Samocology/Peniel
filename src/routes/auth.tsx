@@ -593,9 +593,29 @@ function AuthPage() {
                 window.location.href = "/api/auth/oauth/google";
               }}
               disabled={isSubmitting}
-              className="group h-12 w-full rounded-xl border border-[#E2E7DF] bg-white text-[13px] font-semibold text-[#39443B] shadow-none transition-all hover:bg-[#F7F8F5] sm:h-[50px]"
+              className="group h-[52px] w-full rounded-xl border border-[#DDE5DC] bg-white text-[13px] font-semibold text-[#29382D] shadow-[0_2px_8px_rgba(27,52,34,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#9EB7A1] hover:bg-[#FCFDFC] hover:shadow-[0_8px_20px_rgba(27,52,34,0.10)] active:translate-y-0 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#77967C] focus-visible:ring-offset-2 sm:h-[54px]"
             >
-              <span className="mr-2">Google</span>
+              <span className="grid size-8 place-items-center rounded-lg border border-[#EEF1EC] bg-white shadow-sm transition-transform duration-200 group-hover:scale-105">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48" className="size-5">
+                  <path
+                    fill="#4285F4"
+                    d="M43.6 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11c-.5 2.7-2 5-4.3 6.5v5.4h7c4.1-3.8 6.4-9.4 6.4-15.9Z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M24 44c5.9 0 10.9-2 14.5-5.5l-7-5.4c-2 1.3-4.5 2.1-7.5 2.1-5.7 0-10.6-3.8-12.4-9H4.4v5.6A21.9 21.9 0 0 0 24 44Z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M11.6 26.2a13.2 13.2 0 0 1 0-8.4v-5.6H4.4a21.9 21.9 0 0 0 0 19.6l7.2-5.6Z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M24 8.8c3.2 0 6 1.1 8.2 3.2l6.2-6.2C34.9 2.2 29.9 0 24 0 15.6 0 8.3 4.8 4.4 12.2l7.2 5.6c1.8-5.2 6.7-9 12.4-9Z"
+                  />
+                </svg>
+              </span>
+              <span>Continue with Google</span>
             </Button>
 
             {!isSignup && (

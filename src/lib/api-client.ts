@@ -232,10 +232,12 @@ export const authApi = {
       "/api/auth/session",
     ),
   signup: (body: { name: string; email: string; password: string; intentRole: string }) =>
-    post<{ authenticated: boolean; user: { id: string; email: string; name: string } | null }>(
-      "/api/auth/signup",
-      body,
-    ),
+    post<{
+      authenticated: boolean;
+      needsOtp?: boolean;
+      otpSent?: boolean;
+      user: { id: string; email: string; name: string } | null;
+    }>("/api/auth/signup", body),
   login: (body: { email: string; password: string }) =>
     post<{ authenticated: boolean; user: { id: string; email: string; name: string } | null }>(
       "/api/auth/login",

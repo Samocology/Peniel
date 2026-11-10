@@ -175,7 +175,11 @@ function supabaseErrorMessage(payload: Record<string, unknown>, fallback: string
   return fallback;
 }
 
-async function handleSignup(request: Request, config: { url: string; key: string }) {
+async function handleSignup(
+  request: Request,
+  config: { url: string; key: string },
+  env: BackendEnv,
+) {
   const input = await readJsonObject(request, MAX_AUTH_BODY_BYTES);
   if (!input) return json({ ok: false, error: "A valid JSON request is required." }, 400);
 
@@ -766,7 +770,7 @@ export async function handleAuthRequest(request: Request, env: BackendEnv): Prom
 
   try {
     if (path === "/api/auth/signup" && request.method === "POST")
-      return await handleSignup(request, config);
+      return await handleSignup(request, config, env);
     if (path === "/api/auth/login" && request.method === "POST")
       return await handleLogin(request, config);
     if (path === "/api/auth/password/reset" && request.method === "POST")
