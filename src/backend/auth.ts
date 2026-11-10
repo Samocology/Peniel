@@ -690,12 +690,17 @@ async function handleGoogleOAuth(
   authorizeUrl.searchParams.set("redirect_to", redirectTo);
   authorizeUrl.searchParams.set("state", state);
 
-  const response = Response.redirect(authorizeUrl.toString(), 302);
-  response.headers.append(
+  const headers = new Headers();
+  headers.set("Location", authorizeUrl.toString());
+  headers.append(
     "Set-Cookie",
-    `peniel_oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
+    `peniel_oauth_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
   );
-  return response;
+
+  return new Response(null, {
+    status: 302,
+    headers,
+  });
 }
 
 async function handleOAuthCallback(
