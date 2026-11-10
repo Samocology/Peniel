@@ -74,21 +74,31 @@ function AuthPage() {
     }
 
     try {
-      const result = await (isSignup
-        ? authApi.signup({
-            email,
-            password,
-            name: String(formData.get("name") ?? "").trim(),
-            intentRole: role,
-          })
-        : authApi.login({ email, password }));
+      let result: { ok: boolean; data?: unknown; error?: string };
+
+      if (isSignup) {
+        result = await authApi.signup({
+          email,
+          password,
+          name: String(formData.get("name") ?? "").trim(),
+          intentRole: role,
+        });
+      } else {
+        result = await authApi.login({ email, password });
+      }
 
       if (!result.ok) {
         setPasswordError(result.error ?? "Could not authenticate. Please try again.");
         return;
       }
 
-      if (result.data.needsOtp) {
+      const data = result.data as {
+        authenticated?: boolean;
+        needsOtp?: boolean;
+        user: { id: string; email: string; name: string } | null;
+      };
+
+      if (data.needsOtp) {
         void navigate({
           to: "/auth/verify-otp",
           search: { email, returnTo, role, type: "signup" },
@@ -96,13 +106,13 @@ function AuthPage() {
         return;
       }
 
-      if (!result.data.authenticated) {
+      if (!data.authenticated) {
         toast.success("Account created. Check your email to verify it, then sign in.");
         return;
       }
 
       const accountName =
-        result.data.user?.name ||
+        data.user?.name ||
         (isSignup ? String(formData.get("name") ?? "").trim() : "") ||
         (email.split("@")[0] ?? "Peniel user")
           .split(/[._-]/)

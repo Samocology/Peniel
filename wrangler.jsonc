@@ -1,14 +1,15 @@
-{
+﻿{
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "flourish-platform",
+  "name": "peniel",
   "main": "src/server.ts",
   "compatibility_date": "2026-10-30",
   "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
   "observability": {
     "enabled": true
   },
   "vars": {
-    "APP_BASE_URL": "http://localhost:3000",
+    "APP_BASE_URL": "https://peniel.godstimesml.workers.dev/",
     "WHATSAPP_MODE": "disabled"
   }
 }

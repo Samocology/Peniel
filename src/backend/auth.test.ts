@@ -143,6 +143,8 @@ test("signup role input is stored only as non-privileged intent metadata", async
     ok: true,
     data: {
       authenticated: false,
+      needsOtp: true,
+      otpSent: false,
       user: { id: "user-3", email: "person@example.com", name: "" },
     },
   });
