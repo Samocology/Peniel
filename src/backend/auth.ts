@@ -7,6 +7,8 @@ export type BackendEnv = {
   APP_BASE_URL?: string;
   FLUTTERWAVE_SECRET_KEY?: string;
   FLUTTERWAVE_WEBHOOK_SECRET_HASH?: string;
+  BREVO_API_KEY?: string;
+  BREVO_SENDER_EMAIL?: string;
 };
 
 type SupabaseUser = {
@@ -25,6 +27,41 @@ type SupabaseSession = {
 const ACCESS_COOKIE = "peniel_access";
 const REFRESH_COOKIE = "peniel_refresh";
 const MAX_AUTH_BODY_BYTES = 16_384;
+const OTP_CODE_LENGTH = 6;
+const OTP_EXPIRY_MINUTES = 10;
+
+function generateOtpCode(): string {
+  let code = "";
+  for (let i = 0; i < OTP_CODE_LENGTH; i++) code += String(Math.floor(Math.random() * 10));
+  return code;
+}
+
+async function sendBrevoEmail(
+  env: BackendEnv,
+  toEmail: string,
+  subject: string,
+  htmlContent: string,
+): Promise<boolean> {
+  if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) return false;
+  try {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": env.BREVO_API_KEY,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: "Peniel", email: env.BREVO_SENDER_EMAIL },
+        to: [{ email: toEmail }],
+        subject,
+        htmlContent,
+      }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 
 function authConfig(env: BackendEnv) {
   const url = env.SUPABASE_URL?.replace(/\/+$/, "");
@@ -187,18 +224,69 @@ async function handleSignup(request: Request, config: { url: string; key: string
     typeof (signupUserValue as Record<string, unknown>)["id"] === "string"
       ? (signupUserValue as SupabaseUser)
       : undefined;
-  const result = json(
+
+  // Always send an email OTP to verify the new account before signing in.
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  let otpSent = false;
+  if (serviceRoleKey) {
+    const code = generateOtpCode();
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+
+    const insertResponse = await fetch(`${config.url}/rest/v1/password_reset_otps`, {
+      method: "POST",
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "content-type": "application/json",
+        Prefer: "resolution=merge-duplicates",
+      },
+      body: JSON.stringify({ email, code_hash: code, expires_at: expiresAt }),
+    });
+    if (insertResponse.ok) {
+      await insertResponse.body?.cancel();
+      otpSent = await sendBrevoEmail(
+        env,
+        email,
+        "Your Peniel account verification code",
+        `<div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f7f8f5;padding:40px 20px">
+          <table width="100%" max-width="600" style="margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e7df">
+            <tr>
+              <td style="background:#294331;padding:32px 24px;text-align:center">
+                <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:700;letter-spacing:-0.5px">Peniel</h1>
+                <p style="color:#b6c9ad;margin:8px 0 0;font-size:14px">Commerce, connected</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 24px">
+                <h2 style="color:#203027;margin:0 0 12px;font-size:20px;font-weight:600">Verify your email</h2>
+                <p style="color:#777f76;margin:0 0 20px;font-size:15px;line-height:1.6">Hi ${name || "there"}, thanks for creating your Peniel account. Use this code to verify your email address:</p>
+                <div style="background:#edf3ea;border:1px dashed #b6c9ad;border-radius:12px;text-align:center;padding:16px;letter-spacing:8px;font-size:24px;font-weight:700;color:#294331;font-family:monospace">${code}</div>
+                <p style="color:#777f76;margin:16px 0 0;font-size:13px;line-height:1.6">This code expires in ${OTP_EXPIRY_MINUTES} minutes. If you didn't create this account, you can safely ignore this email.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#f7f8f5;padding:20px 24px;text-align:center;border-top:1px solid #e2e7df">
+                <p style="color:#9aa399;margin:0;font-size:12px">© ${new Date().getFullYear()} Peniel. All rights reserved.</p>
+              </td>
+            </tr>
+          </table>
+        </div>`,
+      );
+    }
+  }
+
+  return json(
     {
       ok: true,
       data: {
-        authenticated: session !== null,
+        authenticated: false,
+        needsOtp: true,
         user: userResponse(session?.user ?? signupUser),
+        otpSent,
       },
     },
     201,
   );
-
-  return session ? withSessionCookies(result, session, request) : result;
 }
 
 async function handleLogin(request: Request, config: { url: string; key: string }) {
@@ -365,6 +453,303 @@ async function handlePasswordReset(request: Request, config: { url: string; key:
   return json({ ok: true, data: { accepted: true } });
 }
 
+async function handleForgotPassword(
+  request: Request,
+  config: { url: string; key: string },
+  env: BackendEnv,
+): Promise<Response> {
+  const input = await readJsonObject(request, MAX_AUTH_BODY_BYTES);
+  const email = typeof input?.["email"] === "string" ? input["email"].trim().toLowerCase() : "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return json({ ok: false, error: "Enter a valid email address." }, 400);
+  }
+
+  const code = generateOtpCode();
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    return json({ ok: false, error: "Password reset is not configured on this deployment." }, 503);
+  }
+
+  const insertResponse = await fetch(`${config.url}/rest/v1/password_reset_otps`, {
+    method: "POST",
+    headers: {
+      apikey: config.key,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "content-type": "application/json",
+      Prefer: "resolution=merge-duplicates",
+    },
+    body: JSON.stringify({ email, code_hash: code, expires_at: expiresAt }),
+  });
+  if (!insertResponse.ok) {
+    await insertResponse.body?.cancel();
+    return json({ ok: false, error: "Could not create reset code. Try again later." }, 502);
+  }
+  await insertResponse.body?.cancel();
+
+  const sent = await sendBrevoEmail(
+    env,
+    email,
+    "Your Peniel password reset code",
+    `<p>Your password reset code is <strong>${code}</strong>.</p>
+     <p>It expires in ${OTP_EXPIRY_MINUTES} minutes. If you did not request this, you can ignore this email.</p>`,
+  );
+
+  return json({
+    ok: true,
+    data: { accepted: true, codeSent: sent },
+  });
+}
+
+async function handleVerifyOtp(
+  request: Request,
+  config: { url: string; key: string },
+  env: BackendEnv,
+): Promise<Response> {
+  const input = await readJsonObject(request, MAX_AUTH_BODY_BYTES);
+  const email = typeof input?.["email"] === "string" ? input["email"].trim().toLowerCase() : "";
+  const code = typeof input?.["code"] === "string" ? input["code"] : "";
+  const type = typeof input?.["type"] === "string" ? input["type"] : "reset";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(code)) {
+    return json({ ok: false, error: "Enter a valid email and 6-digit code." }, 400);
+  }
+
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    return json({ ok: false, error: "Password reset is not configured on this deployment." }, 503);
+  }
+
+  const now = new Date().toISOString();
+  const selectResponse = await fetch(
+    `${config.url}/rest/v1/password_reset_otps?email=eq.${encodeURIComponent(email)}&used=eq.false&expires_at=gt.${encodeURIComponent(now)}&order=created_at.desc&limit=1`,
+    {
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    },
+  );
+  if (!selectResponse.ok) {
+    await selectResponse.body?.cancel();
+    return json({ ok: false, error: "Could not verify the code. Try again later." }, 502);
+  }
+  const otps = (await selectResponse.json()) as Array<{ id: string; code_hash: string }>;
+  await selectResponse.body?.cancel();
+
+  const otp = otps.find((o) => o.code_hash === code);
+  if (!otp) {
+    return json({ ok: false, error: "Invalid or expired code." }, 400);
+  }
+
+  const markResponse = await fetch(`${config.url}/rest/v1/password_reset_otps?id=eq.${otp.id}`, {
+    method: "PATCH",
+    headers: {
+      apikey: config.key,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "content-type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({ used: true, reset_token: crypto.randomUUID() }),
+  });
+  if (!markResponse.ok) {
+    await markResponse.body?.cancel();
+    return json({ ok: false, error: "Could not mark code as used. Try again later." }, 502);
+  }
+  await markResponse.body?.cancel();
+
+  // Fetch the row to return the reset token and email.
+  const tokenResponse = await fetch(
+    `${config.url}/rest/v1/password_reset_otps?id=eq.${otp.id}&select=reset_token`,
+    {
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    },
+  );
+  if (!tokenResponse.ok) {
+    await tokenResponse.body?.cancel();
+    return json({ ok: false, error: "Could not issue reset token. Try again later." }, 502);
+  }
+  const tokenRows = (await tokenResponse.json()) as Array<{ reset_token: string }>;
+  await tokenResponse.body?.cancel();
+
+  const resetToken = tokenRows[0]?.reset_token ?? "";
+  return json({
+    ok: true,
+    data: { resetToken, email, type },
+  });
+}
+
+async function handleResetPassword(
+  request: Request,
+  config: { url: string; key: string },
+  env: BackendEnv,
+): Promise<Response> {
+  const input = await readJsonObject(request, MAX_AUTH_BODY_BYTES);
+  const resetToken = typeof input?.["resetToken"] === "string" ? input["resetToken"] : "";
+  const password = typeof input?.["password"] === "string" ? input["password"] : "";
+  if (!resetToken || password.length < 8) {
+    return json({ ok: false, error: "A valid reset token and password are required." }, 400);
+  }
+
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    return json({ ok: false, error: "Password reset is not configured on this deployment." }, 503);
+  }
+
+  // Look up the reset session by token.
+  const sessionResponse = await fetch(
+    `${config.url}/rest/v1/password_reset_otps?reset_token=eq.${encodeURIComponent(resetToken)}&used=eq.true&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`,
+    {
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    },
+  );
+  if (!sessionResponse.ok) {
+    await sessionResponse.body?.cancel();
+    return json({ ok: false, error: "Invalid or expired reset token." }, 400);
+  }
+  const sessions = (await sessionResponse.json()) as Array<{ email: string }>;
+  await sessionResponse.body?.cancel();
+
+  const session = sessions[0];
+  if (!session) {
+    return json({ ok: false, error: "Invalid or expired reset token." }, 400);
+  }
+
+  // Look up the Supabase user by email via the admin API.
+  const usersResponse = await fetch(
+    `${config.url}/auth/v1/admin/users?email=eq.${encodeURIComponent(session.email)}`,
+    {
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    },
+  );
+  if (!usersResponse.ok) {
+    await usersResponse.body?.cancel();
+    return json({ ok: false, error: "Could not look up account. Try again later." }, 502);
+  }
+  const users = (await usersResponse.json()) as Array<{ id: string }>;
+  await usersResponse.body?.cancel();
+
+  const user = users[0];
+  if (!user) {
+    return json({ ok: false, error: "No account found for this reset token." }, 400);
+  }
+
+  // Update the user's password via the Supabase admin API.
+  const updateResponse = await fetch(`${config.url}/auth/v1/admin/users/${user.id}`, {
+    method: "PUT",
+    headers: {
+      apikey: config.key,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ password }),
+  });
+  if (!updateResponse.ok) {
+    await updateResponse.body?.cancel();
+    return json({ ok: false, error: "Could not update the password. Try again later." }, 502);
+  }
+  await updateResponse.body?.cancel();
+
+  // Invalidate the reset token.
+  await fetch(
+    `${config.url}/rest/v1/password_reset_otps?reset_token=eq.${encodeURIComponent(resetToken)}`,
+    {
+      method: "DELETE",
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    },
+  );
+
+  return json({ ok: true, data: { passwordUpdated: true } });
+}
+
+async function handleGoogleOAuth(
+  request: Request,
+  config: { url: string; key: string },
+): Promise<Response> {
+  const state = crypto.randomUUID();
+  const redirectTo = `${new URL(request.url).origin}/api/auth/oauth/callback`;
+
+  const authorizeUrl = new URL(`${config.url}/auth/v1/authorize`);
+  authorizeUrl.searchParams.set("provider", "google");
+  authorizeUrl.searchParams.set("redirect_to", redirectTo);
+  authorizeUrl.searchParams.set("state", state);
+
+  const response = Response.redirect(authorizeUrl.toString(), 302);
+  response.headers.append(
+    "Set-Cookie",
+    `peniel_oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
+  );
+  return response;
+}
+
+async function handleOAuthCallback(
+  request: Request,
+  config: { url: string; key: string },
+  env: BackendEnv,
+): Promise<Response> {
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  const error = url.searchParams.get("error");
+  const state = url.searchParams.get("state");
+
+  if (error) {
+    const base = env.APP_BASE_URL ?? new URL(request.url).origin;
+    return Response.redirect(`${base}/auth?error=oauth_failed`, 302);
+  }
+
+  if (!code) {
+    return json({ ok: false, error: "No authorization code received." }, 400);
+  }
+
+  const cookies = parseCookies(request);
+  const storedState = cookies.get("peniel_oauth_state");
+  if (!storedState || storedState !== state) {
+    return json({ ok: false, error: "Invalid OAuth state." }, 400);
+  }
+
+  const redirectTo = `${new URL(request.url).origin}/api/auth/oauth/callback`;
+  const tokenResponse = await supabaseRequest(config, "token?grant_type=pkce", {
+    method: "POST",
+    body: JSON.stringify({ code, redirect_to: redirectTo }),
+  });
+  if (!tokenResponse.ok) {
+    await tokenResponse.body?.cancel();
+    return json({ ok: false, error: "Could not exchange authorization code." }, 400);
+  }
+  const payload = await parseSupabaseBody(tokenResponse);
+  await tokenResponse.body?.cancel();
+
+  if (!isSupabaseSession(payload) || !payload.user?.id) {
+    return json({ ok: false, error: "Authentication response was incomplete." }, 502);
+  }
+  const session = payload;
+
+  const base = env.APP_BASE_URL ?? new URL(request.url).origin;
+  const response = Response.redirect(base, 302);
+  response.headers.append("Set-Cookie", `peniel_oauth_state=; Path=/; HttpOnly; Max-Age=0`);
+  response.headers.append(
+    "Set-Cookie",
+    cookie(ACCESS_COOKIE, session.access_token, request, Math.max(60, session.expires_in ?? 3600)),
+  );
+  response.headers.append(
+    "Set-Cookie",
+    cookie(REFRESH_COOKIE, session.refresh_token, request, 60 * 60 * 24 * 30),
+  );
+  return response;
+}
+
 export async function handleAuthRequest(request: Request, env: BackendEnv): Promise<Response> {
   const path = new URL(request.url).pathname;
   if (!isSameOriginMutation(request)) {
@@ -386,8 +771,18 @@ export async function handleAuthRequest(request: Request, env: BackendEnv): Prom
       return await handleLogin(request, config);
     if (path === "/api/auth/password/reset" && request.method === "POST")
       return await handlePasswordReset(request, config);
+    if (path === "/api/auth/forgot-password" && request.method === "POST")
+      return await handleForgotPassword(request, config, env);
+    if (path === "/api/auth/verify-otp" && request.method === "POST")
+      return await handleVerifyOtp(request, config, env);
+    if (path === "/api/auth/reset-password" && request.method === "POST")
+      return await handleResetPassword(request, config, env);
     if (path === "/api/auth/session" && request.method === "GET")
       return await handleSession(request, config);
+    if (path === "/api/auth/oauth/google" && request.method === "GET")
+      return await handleGoogleOAuth(request, config);
+    if (path === "/api/auth/oauth/callback" && request.method === "GET")
+      return await handleOAuthCallback(request, config, env);
     return json({ ok: false, error: "Method not allowed." }, 405, { allow: "GET, POST" });
   } catch (error) {
     console.error("Supabase authentication request failed", error);

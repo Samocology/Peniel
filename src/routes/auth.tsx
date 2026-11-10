@@ -88,6 +88,14 @@ function AuthPage() {
         return;
       }
 
+      if (result.data.needsOtp) {
+        void navigate({
+          to: "/auth/verify-otp",
+          search: { email, returnTo, role, type: "signup" },
+        });
+        return;
+      }
+
       if (!result.data.authenticated) {
         toast.success("Account created. Check your email to verify it, then sign in.");
         return;
@@ -563,9 +571,44 @@ function AuthPage() {
                 : isSignup
                   ? "Create your account"
                   : "Sign in to Peniel"}
-
-              <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
             </Button>
+
+            {/* Divider */}
+
+            <div className="relative mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-[#F7F8F5] px-2 text-[#777F76]">Or continue with</span>
+              </div>
+            </div>
+
+            {/* Google sign-in */}
+
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => {
+                window.location.href = "/api/auth/oauth/google";
+              }}
+              disabled={isSubmitting}
+              className="group h-12 w-full rounded-xl border border-[#E2E7DF] bg-white text-[13px] font-semibold text-[#39443B] shadow-none transition-all hover:bg-[#F7F8F5] sm:h-[50px]"
+            >
+              <span className="mr-2">Google</span>
+            </Button>
+
+            {!isSignup && (
+              <p className="mt-3 text-center">
+                <Link
+                  to="/auth/forgot-password"
+                  search={{ returnTo }}
+                  className="text-xs font-semibold text-[#294431] underline underline-offset-4 hover:text-[#294431]/80"
+                >
+                  Forgot your password?
+                </Link>
+              </p>
+            )}
           </form>
 
           {/* Footer */}

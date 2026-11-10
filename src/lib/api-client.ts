@@ -244,6 +244,12 @@ export const authApi = {
   logout: () => post<{ signedOut: boolean }>("/api/auth/logout", {}),
   resetPassword: (email: string) =>
     post<{ accepted: boolean }>("/api/auth/password/reset", { email }),
+  forgotPassword: (body: { email: string }) =>
+    post<{ accepted: boolean; codeSent: boolean }>("/api/auth/forgot-password", body),
+  verifyOtp: (body: { email: string; code: string; type?: "signup" | "reset" }) =>
+    post<{ resetToken: string; email: string; type: string }>("/api/auth/verify-otp", body),
+  resetPasswordWithToken: (body: { resetToken: string; password: string }) =>
+    post<{ passwordUpdated: boolean }>("/api/auth/reset-password", body),
 };
 
 // ── Vendors ───────────────────────────────────────────────────────────────────
@@ -513,17 +519,14 @@ export const adminApi = {
     get<AdminOrder[]>(`/api/admin/orders${status ? `?status=${status}` : ""}`),
   transactions: () => get<AdminTransaction[]>("/api/admin/transactions"),
   verification: (status?: string) =>
-    get<AdminVerification[]>(
-      `/api/admin/verification${status ? `?status=${status}` : ""}`,
-    ),
+    get<AdminVerification[]>(`/api/admin/verification${status ? `?status=${status}` : ""}`),
   reviewVerification: (appId: string, decision: "approved" | "rejected", note?: string) =>
     patch<AdminVerification[]>(`/api/admin/verification/${appId}`, { decision, note }),
   reviews: () => get<AdminReview[]>("/api/admin/reviews"),
   moderateReview: (reviewId: string, status: "published" | "hidden" | "pending") =>
     patch<AdminReview[]>(`/api/admin/reviews/${reviewId}`, { status }),
   categories: () => get<AdminCategory[]>("/api/admin/categories"),
-  analytics: () =>
-    get<AdminAnalytics>("/api/admin/analytics"),
+  analytics: () => get<AdminAnalytics>("/api/admin/analytics"),
   settings: () => get<AdminSetting[]>("/api/admin/settings"),
   updateSetting: (key: string, value: unknown) =>
     patch<AdminSetting[]>(`/api/admin/settings/${key}`, { value }),
