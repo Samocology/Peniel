@@ -178,7 +178,6 @@ function supabaseErrorMessage(payload: Record<string, unknown>, fallback: string
 async function handleSignup(
   request: Request,
   config: { url: string; key: string },
-  env: BackendEnv,
 ) {
   const input = await readJsonObject(request, MAX_AUTH_BODY_BYTES);
   if (!input) return json({ ok: false, error: "A valid JSON request is required." }, 400);
@@ -229,56 +228,6 @@ async function handleSignup(
       ? (signupUserValue as SupabaseUser)
       : undefined;
 
-  // Always send an email OTP to verify the new account before signing in.
-  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-  let otpSent = false;
-  if (serviceRoleKey) {
-    const code = generateOtpCode();
-    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
-
-    const insertResponse = await fetch(`${config.url}/rest/v1/password_reset_otps`, {
-      method: "POST",
-      headers: {
-        apikey: config.key,
-        Authorization: `Bearer ${serviceRoleKey}`,
-        "content-type": "application/json",
-        Prefer: "resolution=merge-duplicates",
-      },
-      body: JSON.stringify({ email, code_hash: code, expires_at: expiresAt }),
-    });
-    if (insertResponse.ok) {
-      await insertResponse.body?.cancel();
-      otpSent = await sendBrevoEmail(
-        env,
-        email,
-        "Your Peniel account verification code",
-        `<div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f7f8f5;padding:40px 20px">
-          <table width="100%" max-width="600" style="margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e7df">
-            <tr>
-              <td style="background:#294331;padding:32px 24px;text-align:center">
-                <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:700;letter-spacing:-0.5px">Peniel</h1>
-                <p style="color:#b6c9ad;margin:8px 0 0;font-size:14px">Commerce, connected</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:32px 24px">
-                <h2 style="color:#203027;margin:0 0 12px;font-size:20px;font-weight:600">Verify your email</h2>
-                <p style="color:#777f76;margin:0 0 20px;font-size:15px;line-height:1.6">Hi ${name || "there"}, thanks for creating your Peniel account. Use this code to verify your email address:</p>
-                <div style="background:#edf3ea;border:1px dashed #b6c9ad;border-radius:12px;text-align:center;padding:16px;letter-spacing:8px;font-size:24px;font-weight:700;color:#294331;font-family:monospace">${code}</div>
-                <p style="color:#777f76;margin:16px 0 0;font-size:13px;line-height:1.6">This code expires in ${OTP_EXPIRY_MINUTES} minutes. If you didn't create this account, you can safely ignore this email.</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="background:#f7f8f5;padding:20px 24px;text-align:center;border-top:1px solid #e2e7df">
-                <p style="color:#9aa399;margin:0;font-size:12px">© ${new Date().getFullYear()} Peniel. All rights reserved.</p>
-              </td>
-            </tr>
-          </table>
-        </div>`,
-      );
-    }
-  }
-
   return json(
     {
       ok: true,
@@ -286,7 +235,6 @@ async function handleSignup(
         authenticated: false,
         needsOtp: true,
         user: userResponse(session?.user ?? signupUser),
-        otpSent,
       },
     },
     201,
@@ -506,6 +454,31 @@ async function handleForgotPassword(
   });
 }
 
+async function handleResendSignupOtp(
+  request: Request,
+  config: { url: string; key: string },
+): Promise<Response> {
+  const input = await readJsonObject(request, MAX_AUTH_BODY_BYTES);
+  const email = typeof input?.["email"] === "string" ? input["email"].trim().toLowerCase() : "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return json({ ok: false, error: "Enter a valid email address." }, 400);
+  }
+
+  const response = await supabaseRequest(config, "resend", {
+    method: "POST",
+    body: JSON.stringify({ email, type: "signup" }),
+  });
+  const payload = await parseSupabaseBody(response);
+  if (!response.ok) {
+    return json(
+      { ok: false, error: supabaseErrorMessage(payload, "Could not resend verification code.") },
+      response.status,
+    );
+  }
+
+  return json({ ok: true, data: { accepted: true } });
+}
+
 async function handleVerifyOtp(
   request: Request,
   config: { url: string; key: string },
@@ -515,8 +488,32 @@ async function handleVerifyOtp(
   const email = typeof input?.["email"] === "string" ? input["email"].trim().toLowerCase() : "";
   const code = typeof input?.["code"] === "string" ? input["code"] : "";
   const type = typeof input?.["type"] === "string" ? input["type"] : "reset";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(code)) {
-    return json({ ok: false, error: "Enter a valid email and 6-digit code." }, 400);
+  const expectedCodeLength = type === "signup" ? 8 : 6;
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+    !["signup", "reset"].includes(type) ||
+    !new RegExp(`^\\d{${expectedCodeLength}}$`).test(code)
+  ) {
+    return json(
+      { ok: false, error: `Enter a valid email and ${expectedCodeLength}-digit code.` },
+      400,
+    );
+  }
+
+  if (type === "signup") {
+    const response = await supabaseRequest(config, "verify", {
+      method: "POST",
+      body: JSON.stringify({ email, token: code, type: "signup" }),
+    });
+    const payload = await parseSupabaseBody(response);
+    if (!response.ok) {
+      return json(
+        { ok: false, error: supabaseErrorMessage(payload, "Invalid or expired code.") },
+        response.status,
+      );
+    }
+
+    return json({ ok: true, data: { email, type: "signup" } });
   }
 
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
@@ -775,13 +772,15 @@ export async function handleAuthRequest(request: Request, env: BackendEnv): Prom
 
   try {
     if (path === "/api/auth/signup" && request.method === "POST")
-      return await handleSignup(request, config, env);
+      return await handleSignup(request, config);
     if (path === "/api/auth/login" && request.method === "POST")
       return await handleLogin(request, config);
     if (path === "/api/auth/password/reset" && request.method === "POST")
       return await handlePasswordReset(request, config);
     if (path === "/api/auth/forgot-password" && request.method === "POST")
       return await handleForgotPassword(request, config, env);
+    if (path === "/api/auth/resend-signup-otp" && request.method === "POST")
+      return await handleResendSignupOtp(request, config);
     if (path === "/api/auth/verify-otp" && request.method === "POST")
       return await handleVerifyOtp(request, config, env);
     if (path === "/api/auth/reset-password" && request.method === "POST")

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { LockKeyhole, ArrowLeft, Mail, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ function VerifyOtpPage() {
   const emailFromSearch = search.email ?? "";
   const { returnTo, role, type } = search;
   const isSignup = type === "signup";
+  const codeLength = isSignup ? 8 : 6;
   const navigate = useNavigate({ from: "/auth/verify-otp" });
 
   const [email, setEmail] = useState(emailFromSearch);
@@ -57,6 +58,10 @@ function VerifyOtpPage() {
         return;
       }
 
+      if (!result.data.resetToken) {
+        setError("Could not continue password recovery. Please request a new code.");
+        return;
+      }
       toast.success("Code verified.");
       void navigate({
         to: "/auth/reset-password",
@@ -72,12 +77,15 @@ function VerifyOtpPage() {
   const handleResend = async () => {
     setError("");
     try {
-      const result = await authApi.forgotPassword({ email: email.trim().toLowerCase() });
+      const normalizedEmail = email.trim().toLowerCase();
+      const result = isSignup
+        ? await authApi.resendSignupOtp({ email: normalizedEmail })
+        : await authApi.forgotPassword({ email: normalizedEmail });
       if (!result.ok) {
         setError(result.error ?? "Could not resend code. Please try again.");
         return;
       }
-      toast.success("Reset code resent.");
+      toast.success(isSignup ? "Verification code resent." : "Reset code resent.");
     } catch {
       setError("The authentication service is unavailable. Please try again.");
     }
@@ -104,9 +112,9 @@ function VerifyOtpPage() {
           <p className="text-sm leading-6 text-[#777F76]">
             {isSignup ? (
               <>
-                An account has been created for <strong>{email || "your email"}</strong>. A 6-digit
-                verification code has been sent to your inbox. Enter it below to activate your
-                account.
+                An account has been created for <strong>{email || "your email"}</strong>. An
+                8-digit verification code has been sent to your inbox. Enter it below to activate
+                your account.
               </>
             ) : (
               <>
@@ -137,14 +145,20 @@ function VerifyOtpPage() {
             />
           </div>
 
-          <div className="grid grid-cols-6 gap-2">
-            {[...Array(6)].map((_, i) => (
+          <div
+            role="group"
+            aria-label={`${codeLength}-digit verification code`}
+            className="grid gap-2"
+            style={{ gridTemplateColumns: `repeat(${codeLength}, minmax(0, 1fr))` }}
+          >
+            {Array.from({ length: codeLength }, (_, i) => (
               <Input
                 key={i}
                 id={`otp-${i}`}
                 name={`otp-${i}`}
                 type="text"
                 maxLength={1}
+                aria-label={`Digit ${i + 1} of ${codeLength}`}
                 autoComplete="one-time-code"
                 inputMode="numeric"
                 required
@@ -154,6 +168,19 @@ function VerifyOtpPage() {
                   setCode((c) => c.slice(0, i) + v + c.slice(i + 1));
                   const next = document.getElementById(`otp-${i + 1}`) as HTMLInputElement | null;
                   if (v && next) next.focus();
+                }}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData
+                    .getData("text")
+                    .replace(/\D/g, "")
+                    .slice(0, codeLength);
+                  if (pasted) {
+                    e.preventDefault();
+                    setCode(pasted);
+                    document
+                      .getElementById(`otp-${Math.min(pasted.length, codeLength) - 1}`)
+                      ?.focus();
+                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Backspace" && !e.currentTarget.value && i > 0) {
@@ -195,7 +222,7 @@ function VerifyOtpPage() {
             <Button
               type="submit"
               size="lg"
-              disabled={isSubmitting || code.length < 6}
+              disabled={isSubmitting || code.length !== codeLength}
               className="group h-12 w-full rounded-xl bg-[#294331] text-[13px] font-semibold text-white shadow-none transition-all hover:bg-[#38563F] sm:h-[50px]"
             >
               {isSubmitting ? "Verifying…" : isSignup ? "Verify & activate" : "Verify code"}

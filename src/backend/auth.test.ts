@@ -144,11 +144,67 @@ test("signup role input is stored only as non-privileged intent metadata", async
     data: {
       authenticated: false,
       needsOtp: true,
-      otpSent: false,
       user: { id: "user-3", email: "person@example.com", name: "" },
     },
   });
   assert.equal(response.headers.has("set-cookie"), false);
+});
+
+test("signup OTP verification sends the eight-digit code to Supabase", async () => {
+  const response = await withFetchMock(
+    async (input, init) => {
+      assert.equal(String(input), `${env.SUPABASE_URL}/auth/v1/verify`);
+      assert.deepEqual(JSON.parse(String(init?.body)), {
+        email: "person@example.com",
+        token: "01234567",
+        type: "signup",
+      });
+      return Response.json({
+        access_token: "verification-access-token",
+        refresh_token: "verification-refresh-token",
+        user: { id: "user-5", email: "person@example.com" },
+      });
+    },
+    () =>
+      handleAuthRequest(
+        request("/api/auth/verify-otp", "POST", {
+          email: "person@example.com",
+          code: "01234567",
+          type: "signup",
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: { email: "person@example.com", type: "signup" },
+  });
+});
+
+test("signup OTP resend asks Supabase to resend the signup confirmation", async () => {
+  const response = await withFetchMock(
+    async (input, init) => {
+      assert.equal(String(input), `${env.SUPABASE_URL}/auth/v1/resend`);
+      assert.deepEqual(JSON.parse(String(init?.body)), {
+        email: "person@example.com",
+        type: "signup",
+      });
+      return Response.json({});
+    },
+    () =>
+      handleAuthRequest(
+        request("/api/auth/resend-signup-otp", "POST", { email: "person@example.com" }),
+        env,
+      ),
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    data: { accepted: true },
+  });
 });
 
 test("session endpoint validates the cookie with Supabase rather than trusting its contents", async () => {

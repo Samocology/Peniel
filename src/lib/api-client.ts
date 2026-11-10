@@ -235,7 +235,6 @@ export const authApi = {
     post<{
       authenticated: boolean;
       needsOtp?: boolean;
-      otpSent?: boolean;
       user: { id: string; email: string; name: string } | null;
     }>("/api/auth/signup", body),
   login: (body: { email: string; password: string }) =>
@@ -248,8 +247,10 @@ export const authApi = {
     post<{ accepted: boolean }>("/api/auth/password/reset", { email }),
   forgotPassword: (body: { email: string }) =>
     post<{ accepted: boolean; codeSent: boolean }>("/api/auth/forgot-password", body),
+  resendSignupOtp: (body: { email: string }) =>
+    post<{ accepted: boolean }>("/api/auth/resend-signup-otp", body),
   verifyOtp: (body: { email: string; code: string; type?: "signup" | "reset" }) =>
-    post<{ resetToken: string; email: string; type: string }>("/api/auth/verify-otp", body),
+    post<{ resetToken?: string; email: string; type: string }>("/api/auth/verify-otp", body),
   resetPasswordWithToken: (body: { resetToken: string; password: string }) =>
     post<{ passwordUpdated: boolean }>("/api/auth/reset-password", body),
 };
