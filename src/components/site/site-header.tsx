@@ -1,8 +1,19 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Heart, Menu, Receipt, Search, ShoppingCart, MapPin, LayoutGrid } from "lucide-react";
+import {
+  Heart,
+  Menu,
+  Receipt,
+  Search,
+  ShoppingCart,
+  MapPin,
+  LayoutGrid,
+  MessageCircle,
+  User,
+  LogOut,
+} from "lucide-react";
 import { useApp, app as storeApi } from "@/lib/peniel-store";
 import { MARKETPLACE_LOCATIONS, normalizeLocationLabel } from "@/lib/location";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "./logo";
@@ -35,6 +46,38 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
       city,
     });
   };
+
+  const cartCount = appState.cart.reduce((total, line) => total + line.qty, 0);
+  const userEmail = user?.email;
+  const unreadChats = (appState.threads ?? []).filter(
+    (thread) => thread.customer === userEmail && thread.readC < thread.messages.length,
+  ).length;
+  const [accountOpen, setAccountOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await storeApi.signOut();
+    } catch {
+      // ignore logout errors; clear local state regardless
+    }
+    setAccountOpen(false);
+    void navigate({ to: "/" });
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        accountOpen &&
+        !(event.target as HTMLElement | null)?.closest(
+          "[aria-label='Account menu'], [aria-label^='Account menu']",
+        )
+      ) {
+        setAccountOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [accountOpen]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-md">
@@ -75,20 +118,78 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
 
         <div className="hidden items-center gap-2 sm:flex">
           {user ? (
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/">My home</Link>
-            </Button>
+            <>
+              {user.role === "vendor" && (
+                <Button asChild size="sm">
+                  <Link to="/vendor">Business dashboard</Link>
+                </Button>
+              )}
+
+              <Button asChild size="sm" className="relative" aria-label={`Cart (${cartCount})`}>
+                <Link to="/cart">
+                  <ShoppingCart className="size-4" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 grid size-3 place-items-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+              </Button>
+
+              <Button asChild size="sm" className="relative" aria-label={`Chats (${unreadChats})`}>
+                <Link to="/messages">
+                  <MessageCircle className="size-4" />
+                  {unreadChats > 0 && (
+                    <span className="absolute -top-1 -right-1 grid size-3 place-items-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                      {unreadChats}
+                    </span>
+                  )}
+                </Link>
+              </Button>
+
+              <div className="relative group">
+                <Button
+                  size="sm"
+                  onClick={() => setAccountOpen((open) => !open)}
+                  aria-label="Account menu"
+                  className="flex items-center gap-2"
+                >
+                  <User className="size-4" />
+                  <span className="hidden sm:inline ml-1.5 text-xs font-medium">
+                    {user?.name?.split(" ")[0] ?? "Account"}
+                  </span>
+                </Button>
+                {accountOpen && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-border bg-card shadow-xl p-1 z-50 animate-in fade-in zoom-in duration-100">
+                    <Link
+                      to="/account"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted"
+                    >
+                      <User className="size-4" /> Account
+                    </Link>
+                    <Link
+                      to="/orders"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted"
+                    >
+                      <Receipt className="size-4" /> Orders
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/5"
+                    >
+                      <LogOut className="size-4" /> Log out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <Button asChild variant="ghost" size="sm">
               <Link to="/auth">Sign in</Link>
             </Button>
           )}
-
-          <Button asChild size="sm">
-            <Link to={user?.role === "vendor" ? "/vendor" : "/vendor/onboarding"}>
-              {user?.role === "vendor" ? "Business dashboard" : "Start selling"}
-            </Link>
-          </Button>
         </div>
 
         <button
@@ -184,6 +285,15 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
             </Link>
 
             <Link
+              to="/messages"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
+            >
+              <MessageCircle className="size-4" />
+              Chats
+            </Link>
+
+            <Link
               to="/orders"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
@@ -192,7 +302,30 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
               My orders
             </Link>
 
-            {!user && (
+            {user ? (
+              <>
+                <Link
+                  to="/account"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
+                >
+                  <User className="size-4" />
+                  Account
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/5"
+                >
+                  <LogOut className="size-4" />
+                  Log out
+                </button>
+                {user.role === "vendor" && (
+                  <Button asChild className="mt-2">
+                    <Link to="/vendor">Business dashboard</Link>
+                  </Button>
+                )}
+              </>
+            ) : (
               <Link
                 to="/auth"
                 onClick={() => setOpen(false)}
@@ -201,12 +334,6 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
                 Sign in / Sign up
               </Link>
             )}
-
-            <Button asChild className="mt-2">
-              <Link to={user?.role === "vendor" ? "/vendor" : "/vendor/onboarding"}>
-                {user?.role === "vendor" ? "Business dashboard" : "Start selling"}
-              </Link>
-            </Button>
           </div>
         </div>
       )}

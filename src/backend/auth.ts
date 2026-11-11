@@ -26,9 +26,22 @@ type SupabaseSession = {
 
 const ACCESS_COOKIE = "peniel_access";
 const REFRESH_COOKIE = "peniel_refresh";
+const OAUTH_VERIFIER_COOKIE = "peniel_oauth_verifier";
 const MAX_AUTH_BODY_BYTES = 16_384;
 const OTP_CODE_LENGTH = 6;
 const OTP_EXPIRY_MINUTES = 10;
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
+  const verifier = base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  return { verifier, challenge: base64UrlEncode(new Uint8Array(digest)) };
+}
 
 function generateOtpCode(): string {
   let code = "";
@@ -681,19 +694,20 @@ async function handleGoogleOAuth(
   request: Request,
   config: { url: string; key: string },
 ): Promise<Response> {
-  const state = crypto.randomUUID();
+  const { verifier, challenge } = await createPkcePair();
   const redirectTo = `${new URL(request.url).origin}/api/auth/oauth/callback`;
 
   const authorizeUrl = new URL(`${config.url}/auth/v1/authorize`);
   authorizeUrl.searchParams.set("provider", "google");
   authorizeUrl.searchParams.set("redirect_to", redirectTo);
-  authorizeUrl.searchParams.set("state", state);
+  authorizeUrl.searchParams.set("code_challenge", challenge);
+  authorizeUrl.searchParams.set("code_challenge_method", "s256");
 
   const headers = new Headers();
   headers.set("Location", authorizeUrl.toString());
   headers.append(
     "Set-Cookie",
-    `peniel_oauth_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
+    cookie(OAUTH_VERIFIER_COOKIE, verifier, request, 600),
   );
 
   return new Response(null, {
@@ -710,43 +724,52 @@ async function handleOAuthCallback(
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
-  const state = url.searchParams.get("state");
+  const verifier = parseCookies(request).get(OAUTH_VERIFIER_COOKIE);
+  const clearVerifierCookie = cookie(OAUTH_VERIFIER_COOKIE, "", request, 0);
 
   if (error) {
     const base = env.APP_BASE_URL ?? new URL(request.url).origin;
-    return Response.redirect(`${base}/auth?error=oauth_failed`, 302);
+    const response = new Response(null, {
+      status: 302,
+      headers: { Location: `${base}/auth?error=oauth_failed` },
+    });
+    response.headers.append("Set-Cookie", clearVerifierCookie);
+    return response;
   }
 
   if (!code) {
-    return json({ ok: false, error: "No authorization code received." }, 400);
+    const response = json({ ok: false, error: "No authorization code received." }, 400);
+    response.headers.append("Set-Cookie", clearVerifierCookie);
+    return response;
+  }
+  if (!verifier) {
+    const response = json({ ok: false, error: "OAuth verification expired. Please try again." }, 400);
+    response.headers.append("Set-Cookie", clearVerifierCookie);
+    return response;
   }
 
-  const cookies = parseCookies(request);
-  const storedState = cookies.get("peniel_oauth_state");
-  if (!storedState || storedState !== state) {
-    return json({ ok: false, error: "Invalid OAuth state." }, 400);
-  }
-
-  const redirectTo = `${new URL(request.url).origin}/api/auth/oauth/callback`;
   const tokenResponse = await supabaseRequest(config, "token?grant_type=pkce", {
     method: "POST",
-    body: JSON.stringify({ code, redirect_to: redirectTo }),
+    body: JSON.stringify({ auth_code: code, code_verifier: verifier }),
   });
   if (!tokenResponse.ok) {
     await tokenResponse.body?.cancel();
-    return json({ ok: false, error: "Could not exchange authorization code." }, 400);
+    const response = json({ ok: false, error: "Could not exchange authorization code." }, 400);
+    response.headers.append("Set-Cookie", clearVerifierCookie);
+    return response;
   }
   const payload = await parseSupabaseBody(tokenResponse);
-  await tokenResponse.body?.cancel();
 
   if (!isSupabaseSession(payload) || !payload.user?.id) {
-    return json({ ok: false, error: "Authentication response was incomplete." }, 502);
+    const response = json({ ok: false, error: "Authentication response was incomplete." }, 502);
+    response.headers.append("Set-Cookie", clearVerifierCookie);
+    return response;
   }
   const session = payload;
 
   const base = env.APP_BASE_URL ?? new URL(request.url).origin;
-  const response = Response.redirect(base, 302);
-  response.headers.append("Set-Cookie", `peniel_oauth_state=; Path=/; HttpOnly; Max-Age=0`);
+  const response = new Response(null, { status: 302, headers: { Location: base } });
+  response.headers.append("Set-Cookie", clearVerifierCookie);
   response.headers.append(
     "Set-Cookie",
     cookie(ACCESS_COOKIE, session.access_token, request, Math.max(60, session.expires_in ?? 3600)),

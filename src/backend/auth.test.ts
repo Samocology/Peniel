@@ -293,3 +293,76 @@ test("logout revokes the Supabase session and clears both cookies", async () => 
     data: { signedOut: true, providerSessionRevoked: true },
   });
 });
+
+test("Google OAuth starts PKCE and exchanges its callback code server-side", async () => {
+  const startResponse = await handleAuthRequest(
+    request("/api/auth/oauth/google", "GET"),
+    env,
+  );
+  assert.equal(startResponse.status, 302);
+
+  const authorizeUrl = new URL(startResponse.headers.get("location") ?? "");
+  assert.equal(authorizeUrl.origin, env.SUPABASE_URL);
+  assert.equal(authorizeUrl.pathname, "/auth/v1/authorize");
+  assert.equal(authorizeUrl.searchParams.get("provider"), "google");
+  assert.equal(authorizeUrl.searchParams.get("code_challenge_method"), "s256");
+  assert.match(authorizeUrl.searchParams.get("code_challenge") ?? "", /^[A-Za-z0-9_-]{43}$/);
+
+  const verifier = startResponse.headers
+    .get("set-cookie")
+    ?.match(/peniel_oauth_verifier=([^;]+)/)?.[1];
+  assert.ok(verifier);
+
+  const callbackResponse = await withFetchMock(
+    async (input, init) => {
+      assert.equal(String(input), `${env.SUPABASE_URL}/auth/v1/token?grant_type=pkce`);
+      assert.deepEqual(JSON.parse(String(init?.body)), {
+        auth_code: "authorization-code",
+        code_verifier: verifier,
+      });
+      return Response.json({
+        access_token: "oauth-access-token",
+        refresh_token: "oauth-refresh-token",
+        expires_in: 3600,
+        user: { id: "oauth-user", email: "person@example.com" },
+      });
+    },
+    () =>
+      handleAuthRequest(
+        new Request("https://peniel.test/api/auth/oauth/callback?code=authorization-code", {
+          headers: { cookie: `peniel_oauth_verifier=${verifier}` },
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(callbackResponse.status, 302);
+  assert.equal(callbackResponse.headers.get("location"), "https://peniel.test");
+  const cookies = callbackResponse.headers.get("set-cookie") ?? "";
+  assert.match(cookies, /peniel_access=oauth-access-token/);
+  assert.match(cookies, /peniel_refresh=oauth-refresh-token/);
+  assert.match(cookies, /peniel_oauth_verifier=;.*Max-Age=0/);
+});
+
+test("OAuth callback rejects a missing PKCE verifier without contacting Supabase", async () => {
+  let upstreamCalled = false;
+  const response = await withFetchMock(
+    async () => {
+      upstreamCalled = true;
+      return Response.json({});
+    },
+    () =>
+      handleAuthRequest(
+        new Request("https://peniel.test/api/auth/oauth/callback?code=authorization-code"),
+        env,
+      ),
+  );
+
+  assert.equal(response.status, 400);
+  assert.equal(upstreamCalled, false);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: "OAuth verification expired. Please try again.",
+  });
+  assert.match(response.headers.get("set-cookie") ?? "", /peniel_oauth_verifier=;.*Max-Age=0/);
+});
