@@ -123,8 +123,8 @@ function AccountPage() {
             key="wallet"
             className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 transition-all hover:shadow-sm hover:border-primary/30"
           >
-            <div className="absolute top-4 right-4 size-8 rounded-full bg-emerald-500/10 backdrop-blur-sm">
-              <Wallet className="size-4 text-emerald-600" />
+            <div className="absolute top-3 right-3 size-6 rounded-full bg-emerald-500/10 backdrop-blur-sm">
+              <Wallet className="size-3.5 text-emerald-600" />
             </div>
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-1 flex items-center gap-1.5">
               <span className="size-1 rounded-full bg-emerald-500" /> Wallet balance
@@ -139,8 +139,8 @@ function AccountPage() {
             key="reviews"
             className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 transition-all hover:shadow-sm hover:border-amber-200/60"
           >
-            <div className="absolute top-4 right-4 size-8 rounded-full bg-amber-500/10 backdrop-blur-sm">
-              <Star className="size-4 text-amber-500" />
+            <div className="absolute top-3 right-3 size-6 rounded-full bg-amber-500/10 backdrop-blur-sm">
+              <Star className="size-3.5 text-amber-500" />
             </div>
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-1 flex items-center gap-1.5">
               <span className="size-1 rounded-full bg-amber-500" /> Reviews written
@@ -155,8 +155,8 @@ function AccountPage() {
             key="saved"
             className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-2xl border border-border bg-gradient-to-b from-card to-muted/30 p-4 sm:p-5 transition-all hover:shadow-sm hover:border-primary/20"
           >
-            <div className="absolute top-4 right-4 size-8 rounded-full bg-primary/10 backdrop-blur-sm">
-              <Heart className="size-4 text-primary" />
+            <div className="absolute top-3 right-3 size-6 rounded-full bg-primary/10 backdrop-blur-sm">
+              <Heart className="size-3.5 text-primary" />
             </div>
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-1 flex items-center gap-1.5">
               <span className="size-1 rounded-full bg-primary" /> Saved businesses

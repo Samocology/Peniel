@@ -14,6 +14,12 @@ const nav = [
   { to: "/about", label: "About" },
 ];
 
+const customerNav = [
+  { to: "/marketplace", label: "Marketplace" },
+  { to: "/account", label: "Account" },
+  { to: "/orders", label: "Orders" },
+];
+
 export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,7 +44,7 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
         </Link>
 
         <nav className="hidden items-center gap-7 text-sm font-medium text-muted-foreground lg:flex">
-          {!user && (
+          {!user ? (
             <>
               {nav.map((n) => (
                 <Link
@@ -51,7 +57,20 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
                 </Link>
               ))}
             </>
-          )}
+          ) : user.role === "customer" ? (
+            <>
+              {customerNav.map((n) => (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  activeProps={{ className: "text-primary font-semibold" }}
+                  className="transition-colors hover:text-foreground"
+                >
+                  {n.label}
+                </Link>
+              ))}
+            </>
+          ) : null}
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
