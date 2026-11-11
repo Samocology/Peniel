@@ -1,19 +1,7 @@
-
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-  Heart,
-  Menu,
-  Receipt,
-  Search,
-  ShoppingCart,
-  MapPin,
-  LayoutGrid,
-} from "lucide-react";
+import { Heart, Menu, Receipt, Search, ShoppingCart, MapPin, LayoutGrid } from "lucide-react";
 import { useApp, app as storeApi } from "@/lib/peniel-store";
-import {
-  MARKETPLACE_LOCATIONS,
-  normalizeLocationLabel,
-} from "@/lib/location";
+import { MARKETPLACE_LOCATIONS, normalizeLocationLabel } from "@/lib/location";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,9 +21,7 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
   const navigate = useNavigate();
 
   const user = appState.user;
-  const selectedLocation = normalizeLocationLabel(
-    appState.customer.city ?? "Lagos State"
-  );
+  const selectedLocation = normalizeLocationLabel(appState.customer.city ?? "Lagos State");
 
   const saveLocation = (city: string) => {
     storeApi.saveCustomer({
@@ -52,16 +38,20 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
         </Link>
 
         <nav className="hidden items-center gap-7 text-sm font-medium text-muted-foreground lg:flex">
-          {nav.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              activeProps={{ className: "text-primary font-semibold" }}
-              className="transition-colors hover:text-foreground"
-            >
-              {n.label}
-            </Link>
-          ))}
+          {!user && (
+            <>
+              {nav.map((n) => (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  activeProps={{ className: "text-primary font-semibold" }}
+                  className="transition-colors hover:text-foreground"
+                >
+                  {n.label}
+                </Link>
+              ))}
+            </>
+          )}
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
@@ -150,16 +140,20 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
       {open && (
         <div className="border-t border-border bg-card px-4 py-3 lg:hidden">
           <div className="flex flex-col gap-1">
-            {nav.map((n) => (
-              <Link
-                key={n.to}
-                to={n.to}
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
-              >
-                {n.label}
-              </Link>
-            ))}
+            {!user && (
+              <>
+                {nav.map((n) => (
+                  <Link
+                    key={n.to}
+                    to={n.to}
+                    onClick={() => setOpen(false)}
+                    className="rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
+                  >
+                    {n.label}
+                  </Link>
+                ))}
+              </>
+            )}
 
             <Link
               to="/search"
@@ -218,9 +212,7 @@ export function CustomerBar() {
 
             <select
               aria-label="Select marketplace state"
-              value={normalizeLocationLabel(
-                appState.customer.city ?? "Lagos State"
-              )}
+              value={normalizeLocationLabel(appState.customer.city ?? "Lagos State")}
               onChange={(event) =>
                 storeApi.saveCustomer({
                   ...appState.customer,
@@ -239,10 +231,7 @@ export function CustomerBar() {
 
           <div className="relative max-w-xl flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search businesses, products, services…"
-              className="h-10 pl-9"
-            />
+            <Input placeholder="Search businesses, products, services…" className="h-10 pl-9" />
           </div>
         </div>
 

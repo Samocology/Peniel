@@ -29,6 +29,7 @@ export const Route = createFileRoute("/auth")({
     mode: z.enum(["login", "signup"]).catch("login"),
     role: z.enum(["customer", "vendor"]).optional(),
     returnTo: z.string().optional(),
+    email: z.string().email().optional(),
   }),
   head: () => ({
     meta: [
@@ -43,13 +44,14 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { mode, role: requestedRole, returnTo } = Route.useSearch();
+  const { mode, role: requestedRole, returnTo, email: searchEmail } = Route.useSearch();
   const state = useApp();
   const navigate = useNavigate({ from: "/auth" });
 
   const [role, setRole] = useState(requestedRole ?? state.user?.role ?? "customer");
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [email, setEmail] = useState(searchEmail ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isSignup = mode === "signup";
@@ -61,9 +63,7 @@ function AuthPage() {
 
     const formData = new FormData(event.currentTarget);
 
-    const email = String(formData.get("email") ?? "")
-      .trim()
-      .toLowerCase();
+    const emailValue = email.trim().toLowerCase();
 
     const password = String(formData.get("password") ?? "");
 
@@ -74,20 +74,30 @@ function AuthPage() {
     }
 
     try {
-      let result: { ok: boolean; data?: unknown; error?: string };
+      let result: { ok: boolean; data?: unknown; error?: string; code?: string };
 
       if (isSignup) {
         result = await authApi.signup({
-          email,
+          email: emailValue,
           password,
           name: String(formData.get("name") ?? "").trim(),
           intentRole: role,
         });
       } else {
-        result = await authApi.login({ email, password });
+        result = await authApi.login({ email: emailValue, password });
       }
 
       if (!result.ok) {
+        if (
+          result.code === "EMAIL_EXISTS" ||
+          /already exists|already registered/i.test(result.error ?? "")
+        ) {
+          void navigate({
+            to: "/auth",
+            search: { mode: "login", email: emailValue },
+          });
+          return;
+        }
         setPasswordError(result.error ?? "Could not authenticate. Please try again.");
         return;
       }
@@ -403,6 +413,8 @@ function AuthPage() {
                   autoComplete="email"
                   required
                   placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.currentTarget.value)}
                   className="h-11 rounded-xl border-[#E2E7DF] bg-white pl-10 text-[13px] shadow-none placeholder:text-[#A9AFA7] focus-visible:border-[#6B886B] focus-visible:ring-[#6B886B]/15 sm:h-12"
                 />
               </div>

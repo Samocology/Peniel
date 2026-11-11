@@ -118,22 +118,54 @@ function AccountPage() {
           </button>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          {[
-            [Wallet, "Wallet balance", naira(18400)],
-            [Star, "Reviews written", String(0)],
-            [Heart, "Saved businesses", String(favourites.length)],
-          ].map(([Icon, l, v]) => {
-            const I = Icon as typeof Wallet;
-            return (
-              <div key={l as string} className="rounded-2xl border border-border bg-card p-5">
-                <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  <I className="size-3.5 text-primary" /> {l as string}
-                </p>
-                <p className="mt-2 font-display text-2xl font-bold">{v as string}</p>
-              </div>
-            );
-          })}
+        <div className="mt-6 grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3">
+          <div
+            key="wallet"
+            className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 transition-all hover:shadow-sm hover:border-primary/30"
+          >
+            <div className="absolute top-4 right-4 size-8 rounded-full bg-emerald-500/10 backdrop-blur-sm">
+              <Wallet className="size-4 text-emerald-600" />
+            </div>
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-1 flex items-center gap-1.5">
+              <span className="size-1 rounded-full bg-emerald-500" /> Wallet balance
+            </p>
+            <p className="font-display text-2xl font-bold tabular-nums text-foreground">
+              {naira(18400)}
+            </p>
+            <p className="mt-1 text-[10px] text-muted-foreground">Available to spend</p>
+          </div>
+
+          <div
+            key="reviews"
+            className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 transition-all hover:shadow-sm hover:border-amber-200/60"
+          >
+            <div className="absolute top-4 right-4 size-8 rounded-full bg-amber-500/10 backdrop-blur-sm">
+              <Star className="size-4 text-amber-500" />
+            </div>
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-1 flex items-center gap-1.5">
+              <span className="size-1 rounded-full bg-amber-500" /> Reviews written
+            </p>
+            <p className="font-display text-2xl font-bold tabular-nums text-foreground">
+              {String(0)}
+            </p>
+            <p className="mt-1 text-[10px] text-muted-foreground">Customer feedback</p>
+          </div>
+
+          <div
+            key="saved"
+            className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-2xl border border-border bg-gradient-to-b from-card to-muted/30 p-4 sm:p-5 transition-all hover:shadow-sm hover:border-primary/20"
+          >
+            <div className="absolute top-4 right-4 size-8 rounded-full bg-primary/10 backdrop-blur-sm">
+              <Heart className="size-4 text-primary" />
+            </div>
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-1 flex items-center gap-1.5">
+              <span className="size-1 rounded-full bg-primary" /> Saved businesses
+            </p>
+            <p className="font-display text-2xl font-bold tabular-nums text-foreground">
+              {String(favourites.length)}
+            </p>
+            <p className="mt-1 text-[10px] text-muted-foreground">Your favourites</p>
+          </div>
         </div>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">

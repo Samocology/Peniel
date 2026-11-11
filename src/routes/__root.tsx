@@ -10,13 +10,14 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { type ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { CustomerBottomNav } from "../components/site/bottom-nav";
 import { Toaster } from "../components/ui/sonner";
-import { useApp } from "../lib/peniel-store";
+import { useApp, app } from "../lib/peniel-store";
+import { authApi } from "../lib/api-client";
 
 function NotFoundComponent() {
   return (
@@ -132,12 +133,64 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const state = useApp();
   const navigate = useNavigate();
+  const [sessionValidated, setSessionValidated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(!!state.user);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (localStorage.getItem("peniel.onboarded")) return;
-    if (pathname === "/onboarding" || pathname === "/auth") return;
+    if (
+      pathname === "/onboarding" ||
+      pathname === "/auth" ||
+      pathname === "/verify-otp" ||
+      pathname === "/forgot-password" ||
+      pathname === "/reset-password"
+    )
+      return;
     navigate({ to: "/onboarding" });
   }, [pathname, navigate]);
+
+  // Validate the session with the backend so the local store stays in sync.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let active = true;
+    authApi
+      .session()
+      .then((result) => {
+        if (!active) return;
+        const authed = result.ok && result.data.authenticated === true;
+        setAuthenticated(authed);
+        setSessionValidated(true);
+        if (authed && result.data.user) {
+          app.signIn(result.data.user.name, result.data.user.email, state.user?.role ?? "customer");
+        } else if (!authed && state.user) {
+          void app.signOut().catch(() => {});
+        }
+      })
+      .catch(() => {
+        setSessionValidated(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const protectedPrefixes = ["/account", "/checkout", "/vendor", "/admin"];
+  const authPrefixes = ["/auth", "/verify-otp", "/forgot-password", "/reset-password"];
+  const isProtected = protectedPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  const isAuth = authPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+  useEffect(() => {
+    if (!sessionValidated) return;
+    if (isProtected && !authenticated) {
+      void navigate({ to: "/auth", search: { mode: "login", returnTo: pathname } });
+      return;
+    }
+    if (isAuth && authenticated) {
+      void navigate({ to: "/" });
+    }
+  }, [isProtected, isAuth, authenticated, sessionValidated, navigate]);
+
   const needsCustomerNavSpace =
     state.user?.role === "customer" &&
     !pathname.startsWith("/vendor") &&
@@ -146,7 +199,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <div
         className={
           needsCustomerNavSpace ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0" : ""

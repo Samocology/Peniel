@@ -175,10 +175,7 @@ function supabaseErrorMessage(payload: Record<string, unknown>, fallback: string
   return fallback;
 }
 
-async function handleSignup(
-  request: Request,
-  config: { url: string; key: string },
-) {
+async function handleSignup(request: Request, config: { url: string; key: string }) {
   const input = await readJsonObject(request, MAX_AUTH_BODY_BYTES);
   if (!input) return json({ ok: false, error: "A valid JSON request is required." }, 400);
 
@@ -210,8 +207,13 @@ async function handleSignup(
   });
   const payload = await parseSupabaseBody(response);
   if (!response.ok) {
+    const raw = String(payload["msg"] ?? payload["message"] ?? payload["error_description"] ?? "");
+    const error = supabaseErrorMessage(payload, "Could not create the account.");
+    const code = /already registered|already been registered/i.test(raw)
+      ? "EMAIL_EXISTS"
+      : undefined;
     return json(
-      { ok: false, error: supabaseErrorMessage(payload, "Could not create the account.") },
+      { ok: false, error, ...(code ? { code } : {}) },
       response.status === 422 ? 409 : response.status,
     );
   }
