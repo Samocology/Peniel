@@ -56,8 +56,7 @@ function ResetPasswordPage() {
         return;
       }
       toast.success("Password reset successfully.");
-      const destination = returnTo ?? "/";
-      void navigate({ to: destination, search: { mode: "login" } });
+      void navigate({ to: "/auth", search: { mode: "login", returnTo } });
     } catch {
       setError("The authentication service is unavailable. Please try again.");
     } finally {
