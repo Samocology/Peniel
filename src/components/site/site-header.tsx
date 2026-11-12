@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Heart,
-  Menu,
   Receipt,
   Search,
   ShoppingCart,
@@ -34,7 +33,6 @@ const customerNav = [
 ];
 
 export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
-  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const appState = useApp();
   const navigate = useNavigate();
@@ -77,24 +75,8 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
     } catch {
       // ignore logout errors; clear local state regardless
     }
-    setAccountOpen(false);
     void navigate({ to: "/" });
   };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        accountOpen &&
-        !(event.target as HTMLElement | null)?.closest(
-          "[aria-label='Account menu'], [aria-label^='Account menu']",
-        )
-      ) {
-        setAccountOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [accountOpen]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-md">
@@ -213,15 +195,20 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
           )}
         </div>
 
-        <button
-          type="button"
-          className="inline-flex size-10 items-center justify-center rounded-lg border border-border lg:hidden"
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-        >
-          <Menu className="size-5" />
-        </button>
+        {user ? (
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex size-10 items-center justify-center rounded-lg border border-destructive/20 bg-destructive/10 text-destructive lg:hidden"
+            aria-label="Log out"
+          >
+            <LogOut className="size-5" />
+          </button>
+        ) : (
+          <Button asChild variant="ghost" size="sm" className="lg:hidden">
+            <Link to="/auth">Sign in</Link>
+          </Button>
+        )}
       </div>
 
       {withSearch && (
@@ -276,87 +263,6 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
             <span>Search</span>
           </Button>
         </form>
-      )}
-
-      {open && (
-        <div className="border-t border-border bg-card px-4 py-3 lg:hidden">
-          <div className="flex flex-col gap-1">
-            {!user && (
-              <>
-                {nav.map((n) => (
-                  <Link
-                    key={n.to}
-                    to={n.to}
-                    onClick={() => setOpen(false)}
-                    className="rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
-                  >
-                    {n.label}
-                  </Link>
-                ))}
-              </>
-            )}
-
-            <Link
-              to="/search"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
-            >
-              <Search className="size-4" />
-              Search
-            </Link>
-
-            <Link
-              to="/messages"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
-            >
-              <MessageCircle className="size-4" />
-              Chats
-            </Link>
-
-            <Link
-              to="/orders"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
-            >
-              <Receipt className="size-4" />
-              My orders
-            </Link>
-
-            {user ? (
-              <>
-                <Link
-                  to="/account"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
-                >
-                  <User className="size-4" />
-                  Account
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/5"
-                >
-                  <LogOut className="size-4" />
-                  Log out
-                </button>
-                {user.role === "vendor" && (
-                  <Button asChild className="mt-2">
-                    <Link to="/vendor">Business dashboard</Link>
-                  </Button>
-                )}
-              </>
-            ) : (
-              <Link
-                to="/auth"
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-2 py-2.5 text-sm font-medium hover:bg-muted"
-              >
-                Sign in / Sign up
-              </Link>
-            )}
-          </div>
-        </div>
       )}
     </header>
   );
