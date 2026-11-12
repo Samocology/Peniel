@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
+  ArrowUpRight,
   Heart,
   MapPin,
   Pencil,
   Plus,
+  Sparkles,
   Star,
   Trash2,
   Wallet,
@@ -149,29 +151,29 @@ function AccountPage() {
         <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-sm sm:p-7">
           <div className="pointer-events-none absolute -right-12 -top-20 size-64 rounded-full bg-primary/5 blur-3xl" />
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-primary font-display text-xl font-bold text-primary-foreground shadow-lg shadow-primary/15 sm:size-[4.5rem]">
-              {initials || "U"}
-            </span>
-            <div className="min-w-0">
-              <h1 className="truncate font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
-                {displayName}
-              </h1>
-              <p className="mt-1 truncate text-sm text-muted-foreground">
-                {userEmail ?? "Your Peniel profile"}
-              </p>
-              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                <MapPin className="size-3.5" /> {state.customer.city || "Location not set"}
-              </p>
+            <div className="flex min-w-0 items-center gap-4">
+              <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-primary font-display text-xl font-bold text-primary-foreground shadow-lg shadow-primary/15 sm:size-[4.5rem]">
+                {initials || "U"}
+              </span>
+              <div className="min-w-0">
+                <h1 className="truncate font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
+                  {displayName}
+                </h1>
+                <p className="mt-1 truncate text-sm text-muted-foreground">
+                  {userEmail ?? "Your Peniel profile"}
+                </p>
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                  <MapPin className="size-3.5" /> {state.customer.city || "Location not set"}
+                </p>
+              </div>
             </div>
+            <button
+              onClick={() => setEditOpen(true)}
+              className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted sm:w-auto"
+            >
+              <Pencil className="size-4" /> Edit
+            </button>
           </div>
-          <button
-            onClick={() => setEditOpen(true)}
-            className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted sm:w-auto"
-          >
-            <Pencil className="size-4" /> Edit
-          </button>
-        </div>
         </section>
 
         <section className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
@@ -189,13 +191,13 @@ function AccountPage() {
               {naira(balance)}
             </p>
             <p className="mt-1.5 text-xs text-muted-foreground">Available to spend</p>
+            <button
+              onClick={() => setTopUpOpen(true)}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 sm:mt-4"
+            >
+              <Plus className="size-3.5" /> Add money
+            </button>
           </div>
-          <button
-            onClick={() => setTopUpOpen(true)}
-            className="flex min-h-[118px] flex-col items-start justify-between rounded-2xl border border-primary/20 bg-primary p-4 text-left text-primary-foreground shadow-sm shadow-primary/10 transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-0 sm:p-5"
-          >
-            <span className="grid size-9 place-items-center rounded-xl bg-primary-foreground/15"><Plus className="size-4" /></span><span><span className="block text-sm font-bold">Fund wallet</span><span className="mt-0.5 block text-xs text-primary-foreground/75">Add money to your wallet</span></span>
-          </button>
 
           <div
             key="reviews"
@@ -234,7 +236,12 @@ function AccountPage() {
           <div className="space-y-8">
             <section>
               <div className="flex items-center justify-between gap-3">
-                <div><h2 className="font-display text-xl font-bold tracking-tight">Recent orders</h2><p className="mt-1 text-xs text-muted-foreground">Keep track of your latest purchases</p></div>
+                <div>
+                  <h2 className="font-display text-xl font-bold tracking-tight">Recent orders</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Keep track of your latest purchases
+                  </p>
+                </div>
                 <Link to="/orders" className="text-sm font-semibold text-primary">
                   View all
                 </Link>
@@ -265,13 +272,30 @@ function AccountPage() {
                   </Link>
                 ))}
                 {myOrders.length === 0 && (
-                  <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-9 text-center"><span className="mx-auto grid size-11 place-items-center rounded-2xl bg-muted"><Wallet className="size-5 text-muted-foreground" /></span><p className="mt-3 text-sm font-semibold">No orders yet</p><p className="mt-1 text-xs text-muted-foreground">Your purchases will appear here once you place an order.</p><Link to="/marketplace" className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-primary">Explore businesses <ArrowRight className="size-3.5" /></Link></div>
+                  <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-9 text-center">
+                    <span className="mx-auto grid size-11 place-items-center rounded-2xl bg-muted">
+                      <Wallet className="size-5 text-muted-foreground" />
+                    </span>
+                    <p className="mt-3 text-sm font-semibold">No orders yet</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Your purchases will appear here once you place an order.
+                    </p>
+                    <Link
+                      to="/marketplace"
+                      className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-primary"
+                    >
+                      Explore businesses <ArrowRight className="size-3.5" />
+                    </Link>
+                  </div>
                 )}
               </div>
             </section>
 
             <section>
-              <div><h2 className="font-display text-xl font-bold tracking-tight">Saved businesses</h2><p className="mt-1 text-xs text-muted-foreground">Businesses you want to revisit</p></div>
+              <div>
+                <h2 className="font-display text-xl font-bold tracking-tight">Saved businesses</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Businesses you want to revisit</p>
+              </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {favourites.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-8 text-center sm:col-span-2">
@@ -312,13 +336,25 @@ function AccountPage() {
 
           <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
             <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
-              <div className="flex items-center justify-between gap-3"><div><p className="font-display text-lg font-bold">Delivery addresses</p><p className="mt-1 text-xs text-muted-foreground">Manage where your orders arrive</p></div><span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary"><MapPin className="size-4" /></span></div>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-display text-lg font-bold">Delivery addresses</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Manage where your orders arrive
+                  </p>
+                </div>
+                <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <MapPin className="size-4" />
+                </span>
+              </div>
               <ul className="mt-5 space-y-4 text-sm">
                 {addresses.length === 0 && (
                   <li className="rounded-xl border border-dashed border-border px-4 py-5 text-center">
                     <MapPin className="mx-auto size-5 text-muted-foreground" />
                     <p className="mt-2 text-sm font-medium">No saved addresses</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Add an address to make checkout faster.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Add an address to make checkout faster.
+                    </p>
                   </li>
                 )}
                 {addresses.map(({ id, label, address }) => (
@@ -362,9 +398,12 @@ function AccountPage() {
 
             <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-primary-soft p-5 shadow-sm sm:p-6">
               <div className="pointer-events-none absolute -right-8 -top-8 size-28 rounded-full bg-primary/10 blur-2xl" />
-              <p className="relative font-display text-lg font-bold">Grow your business on Peniel</p>
+              <p className="relative font-display text-lg font-bold">
+                Grow your business on Peniel
+              </p>
               <p className="relative mt-2 text-sm leading-6 text-muted-foreground">
-                Create your own online storefront and make it easier for customers to discover and order from you.
+                Create your own online storefront and make it easier for customers to discover and
+                order from you.
               </p>
               <Link
                 to="/vendor/onboarding"
@@ -531,15 +570,29 @@ function AccountPage() {
         </DialogContent>
       </Dialog>
       <Dialog open={topUpOpen} onOpenChange={setTopUpOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Fund your wallet</DialogTitle>
-            <DialogDescription>
-              Add money to your Peniel Wallet to pay for orders instantly.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-md">
+          <div className="rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 border border-emerald-200/50 p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="grid size-12 place-items-center rounded-2xl bg-emerald-500/10">
+                  <Sparkles className="size-6 text-emerald-600" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold">Fund your wallet</DialogTitle>
+                  <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+                    Add money to pay instantly on Peniel — no card details at checkout.
+                  </DialogDescription>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2 text-emerald-700 font-semibold">
+                <Sparkles className="size-4" />
+                <span className="font-display">{naira(balance)}</span>
+              </div>
+            </div>
+          </div>
+
           <form
-            className="space-y-4"
+            className="space-y-5"
             onSubmit={(event) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
@@ -581,24 +634,87 @@ function AccountPage() {
               Amount to add
               <span className="ml-1 text-xs text-muted-foreground">(minimum ₦100)</span>
             </label>
-            <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-input bg-background px-3 py-2.5 outline-none transition placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/10">
-              <span className="text-muted-foreground">₦</span>
+            <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-input bg-background px-4 py-3 outline-none transition placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/10">
+              <span className="text-muted-foreground text-lg font-semibold">₦</span>
               <input
                 required
                 name="amount"
                 type="number"
                 min="100"
                 step="100"
-                className="w-full bg-transparent outline-none placeholder:text-muted-foreground/60"
+                className="w-full bg-transparent outline-none placeholder:text-muted-foreground/60 text-lg font-semibold"
+                placeholder="Enter amount"
               />
             </div>
-            {topUpError && <p className="text-sm text-destructive">{topUpError}</p>}
+
+            <p className="text-xs text-center text-muted-foreground">Quick amounts</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { amount: 1000, label: "₦1,000" },
+                { amount: 2500, label: "₦2,500" },
+                { amount: 5000, label: "₦5,000" },
+                { amount: 10000, label: "₦10,000" },
+                { amount: 20000, label: "₦20,000" },
+                { amount: 50000, label: "₦50,000" },
+              ].map((preset) => (
+                <button
+                  key={preset.amount}
+                  type="button"
+                  onClick={() => {
+                    const input = document.querySelector<HTMLInputElement>('input[name="amount"]');
+                    if (input) input.value = String(preset.amount);
+                  }}
+                  className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-medium transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
+            {topUpError && <p className="text-sm text-destructive text-center">{topUpError}</p>}
+
+            <div className="mt-2 flex items-center gap-2 rounded-xl bg-muted/50 p-3">
+              <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                You will be redirected to Flutterwave to complete the payment securely.
+              </p>
+            </div>
+
             <button
               type="submit"
               disabled={toppingUp}
-              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition disabled:opacity-50 disabled:pointer-events-none"
+              className="w-full rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-bold text-emerald-50 transition hover:bg-emerald-700 disabled:opacity-50 disabled:pointer-events-none group"
             >
-              {toppingUp ? "Starting payment…" : "Continue to payment"}
+              {toppingUp ? (
+                <>
+                  <svg
+                    className="mr-2 size-4 animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Starting payment…
+                </>
+              ) : (
+                <>
+                  Continue to Flutterwave
+                  <ArrowUpRight className="ml-2 size-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
           </form>
         </DialogContent>
