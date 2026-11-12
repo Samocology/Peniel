@@ -55,3 +55,20 @@ using (customer_id = (select auth.uid()) or public.is_admin())
 with check (customer_id = (select auth.uid()) or public.is_admin());
 
 grant select, insert on public.wallet_topups to authenticated;
+
+create table if not exists public.carts (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null unique references public.profiles(id) on delete cascade,
+  items jsonb not null default '[]'::jsonb,
+  promo text,
+  updated_at timestamptz not null default now()
+);
+create index carts_customer_idx on public.carts(customer_id);
+
+alter table public.carts enable row level security;
+
+create policy carts_owner_all on public.carts for all
+using (customer_id = (select auth.uid()) or public.is_admin())
+with check (customer_id = (select auth.uid()) or public.is_admin());
+
+grant select, insert, update on public.carts to authenticated;

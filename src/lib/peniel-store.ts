@@ -8,6 +8,7 @@ import {
   type Vendor,
 } from "./data";
 import { sanitizeChat } from "./chat-guard";
+import { customersApi, type CartItem as ApiCartItem } from "./api-client";
 
 /**
  * Local-first app state (no backend yet). Saved in the browser and synced live
@@ -117,7 +118,7 @@ const seedOrders: VendorOrder[] = [
   {
     id: "#ORD-7F4X2",
     vendorSlug: "abigails-kitchen",
-       customer: "Tosin A.",
+    customer: "Tosin A.",
     items: "2 items",
     mode: "Delivery · VI",
     total: 26760,
@@ -216,7 +217,7 @@ function makeInitial(): State {
     supportTickets: [],
     accounts: {},
     adminSettings: defaultAdminSettings(),
-    cart: seedCart.map((l, i) => ({ ...l, id: "seed-" + i })),
+    cart: [],
     favorites: [],
     orders: seedOrders,
     completedCheckouts: {},
@@ -247,6 +248,7 @@ function makeInitial(): State {
 const initial = makeInitial();
 let state: State = initial;
 let loaded = false;
+let cartLoadedFromApi = false;
 let authRequestSequence = 0;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -285,7 +287,11 @@ function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
   read();
-  void restoreAuthSession();
+  void restoreAuthSession().then(() => {
+    if (!cartLoadedFromApi) {
+      void loadCartFromApi();
+    }
+  });
   window.addEventListener("storage", (e) => {
     if (e.key === KEY) {
       read();
@@ -293,6 +299,35 @@ function load() {
       void restoreAuthSession();
     }
   });
+}
+
+async function loadCartFromApi() {
+  if (cartLoadedFromApi || typeof window === "undefined") return;
+  const s = app.get();
+  if (!s.user) return;
+  try {
+    const result = await customersApi.cart();
+    if (result.ok && result.data) {
+      const items = (result.data.items ?? []).map((item, i) => ({
+        ...item,
+        id: item.id ?? `api-${i}-${Date.now()}`,
+      }));
+      set((s) => ({ ...s, cart: items, promo: result.data.promo ?? undefined }));
+      cartLoadedFromApi = true;
+    }
+  } catch {
+    // ignore API errors, keep local cart
+  }
+}
+
+async function syncCartToApi() {
+  const s = app.get();
+  if (!s.user) return;
+  try {
+    await customersApi.updateCart(s.cart, s.promo ?? null);
+  } catch {
+    // ignore sync errors, local state is authoritative
+  }
 }
 
 function set(fn: (s: State) => State) {
@@ -536,10 +571,11 @@ export const app = {
         completedCheckouts: { ...completed, [checkoutId]: orderIds },
       };
     });
+    void syncCartToApi();
     return orderIds;
   },
 
-  addToCart: (line: CartLine) =>
+  addToCart: (line: CartLine) => {
     set((s) => {
       const same = s.cart.find(
         (c) => c.vendorSlug === line.vendorSlug && c.item === line.item && c.meta === line.meta,
@@ -550,20 +586,28 @@ export const app = {
           cart: s.cart.map((c) => (c === same ? { ...c, qty: c.qty + line.qty } : c)),
         };
       return { ...s, cart: [...s.cart, { ...line, id: Date.now().toString(36) }] };
-    }),
-  setQty: (id: string, qty: number) =>
+    });
+    void syncCartToApi();
+  },
+  setQty: (id: string, qty: number) => {
     set((s) => ({
       ...s,
       cart:
         qty <= 0
           ? s.cart.filter((c) => c.id !== id)
           : s.cart.map((c) => (c.id === id ? { ...c, qty } : c)),
-    })),
-  clearCart: () => set((s) => ({ ...s, cart: [], promo: undefined })),
+    }));
+    void syncCartToApi();
+  },
+  clearCart: () => {
+    set((s) => ({ ...s, cart: [], promo: undefined }));
+    void syncCartToApi();
+  },
   applyPromo(code: string) {
     const c = code.trim().toUpperCase();
     if (!(c in PROMO_CODES)) return false;
     set((s) => ({ ...s, promo: c }));
+    void syncCartToApi();
     return true;
   },
   toggleFavorite: (slug: string) =>

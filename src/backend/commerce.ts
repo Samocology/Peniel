@@ -1190,6 +1190,69 @@ async function getCustomerReviews(env: BackendEnv, identity: Identity) {
   return json({ ok: true, data: payload ?? [] });
 }
 
+async function getCustomerCart(env: BackendEnv, identity: Identity) {
+  const response = await databaseRequest(
+    env,
+    `carts?select=items,promo,updated_at&customer_id=eq.${encodeURIComponent(identity.id)}`,
+    identity.accessToken,
+  );
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  if (!Array.isArray(payload) || !payload[0]) {
+    return json({ ok: true, data: { items: [], promo: null, updated_at: null } });
+  }
+  return json({ ok: true, data: payload[0] });
+}
+
+async function updateCustomerCart(request: Request, env: BackendEnv, identity: Identity) {
+  const input = await readJsonObject(request);
+  if (!input) {
+    return json({ ok: false, error: "A valid JSON request is required." }, 400);
+  }
+  const items = input["items"];
+  const promo = input["promo"];
+  if (!Array.isArray(items)) {
+    return json({ ok: false, error: "Items array is required." }, 400);
+  }
+  for (const item of items) {
+    if (
+      !item ||
+      typeof item.vendor !== "string" ||
+      typeof item.vendorSlug !== "string" ||
+      typeof item.item !== "string" ||
+      typeof item.meta !== "string" ||
+      !Number.isInteger(item.qty) ||
+      item.qty < 1 ||
+      !Number.isFinite(item.price) ||
+      item.price < 0
+    ) {
+      return json({ ok: false, error: "One or more cart items are invalid." }, 400);
+    }
+  }
+  if (promo !== undefined && promo !== null && typeof promo !== "string") {
+    return json({ ok: false, error: "Promo must be a string." }, 400);
+  }
+  const response = await databaseRequest(env, "carts", identity.accessToken, {
+    method: "POST",
+    body: JSON.stringify({ customer_id: identity.id, items, promo: promo ?? null }),
+  });
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  return json({ ok: true, data: { saved: true } });
+}
+
+async function clearCustomerCart(env: BackendEnv, identity: Identity) {
+  const response = await databaseRequest(
+    env,
+    `carts?customer_id=eq.${encodeURIComponent(identity.id)}`,
+    identity.accessToken,
+    { method: "DELETE" },
+  );
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  return json({ ok: true, data: { cleared: true } });
+}
+
 export async function handleCommerceRequest(
   request: Request,
   env: BackendEnv,
@@ -1267,6 +1330,21 @@ export async function handleCommerceRequest(
       const auth = await requireIdentity(request, env);
       if ("response" in auth) return auth.response;
       return topupWallet(request, env, auth.identity);
+    }
+    if (path === "/api/customer/cart" && request.method === "GET") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return getCustomerCart(env, auth.identity);
+    }
+    if (path === "/api/customer/cart" && request.method === "POST") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return updateCustomerCart(request, env, auth.identity);
+    }
+    if (path === "/api/customer/cart" && request.method === "DELETE") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return clearCustomerCart(env, auth.identity);
     }
     if (path === "/api/customer/addresses" && request.method === "GET") {
       const auth = await requireIdentity(request, env);

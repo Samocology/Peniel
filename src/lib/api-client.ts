@@ -273,6 +273,23 @@ export type UpdateCustomerProfileInput = {
   phone?: string | null;
 };
 
+export type CartItem = {
+  id: string;
+  vendor: string;
+  vendorSlug: string;
+  item: string;
+  meta: string;
+  qty: number;
+  price: number;
+  productId?: string;
+};
+
+export type CartRecord = {
+  items: CartItem[];
+  promo: string | null;
+  updated_at: string | null;
+};
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export const authApi = {
@@ -525,6 +542,10 @@ export const customersApi = {
   deleteAddress: (id: string) =>
     del<{ deleted: boolean }>(`/api/customer/addresses/${encodeURIComponent(id)}`),
   reviews: () => get<CustomerReview[]>("/api/customer/reviews"),
+  cart: () => get<CartRecord>("/api/customer/cart"),
+  updateCart: (items: CartItem[], promo?: string | null) =>
+    post<{ saved: boolean }>("/api/customer/cart", { items, promo }),
+  clearCart: () => del<{ cleared: boolean }>("/api/customer/cart"),
 };
 
 // ── Notifications ─────────────────────────────────────────────────────────────
