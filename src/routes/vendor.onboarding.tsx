@@ -26,15 +26,23 @@ export const Route = createFileRoute("/vendor/onboarding")({
   head: () => ({
     meta: [
       { title: "Create your storefront - Peniel onboarding" },
-      { name: "description", content: "Nine guided steps from business name to a live storefront link. No developer, no code, no payment setup." },
+      {
+        name: "description",
+        content:
+          "Nine guided steps from business name to a live storefront link. No developer, no code, no payment setup.",
+      },
       { property: "og:title", content: "Create your storefront - Peniel" },
-      { property: "og:description", content: "Set up your business and get your own storefront link in minutes." },
+      {
+        property: "og:description",
+        content: "Set up your business and get your own storefront link in minutes.",
+      },
     ],
   }),
   component: Onboarding,
 });
 
-const field = "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary";
+const field =
+  "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:border-primary";
 const label = "mb-1.5 block text-xs font-semibold tracking-wide uppercase text-muted-foreground";
 const categoryTypes: Record<string, BusinessType> = {
   restaurants: "restaurant",
@@ -168,18 +176,25 @@ function Onboarding() {
             <p className="text-xs font-semibold tracking-wide text-primary uppercase">
               Step {step} of {steps.length}
             </p>
-            <h1 className="mt-1 truncate font-display text-2xl font-bold sm:text-3xl">{steps[step - 1]}</h1>
+            <h1 className="mt-1 truncate font-display text-2xl font-bold sm:text-3xl">
+              {steps[step - 1]}
+            </h1>
           </div>
           <span className="shrink-0 text-sm font-semibold text-muted-foreground">{pct}%</span>
         </div>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${pct}%` }}
+          />
         </div>
 
         <div className="mt-8 rounded-2xl border border-border bg-card p-5 sm:p-7">
           {step === 1 && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">This is the name customers will see on your storefront.</p>
+              <p className="text-sm text-muted-foreground">
+                This is the name customers will see on your storefront.
+              </p>
               <div>
                 <span className={label}>Business name</span>
                 <input
@@ -190,7 +205,11 @@ function Onboarding() {
                     const value = event.target.value;
                     setBusinessName(value);
                     setBusinessSlug(
-                      value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+                      value
+                        .trim()
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/^-|-$/g, ""),
                     );
                   }}
                 />
@@ -246,7 +265,9 @@ function Onboarding() {
                     }}
                     className={
                       "rounded-xl border p-4 text-left transition " +
-                      (i === selectedCategory ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40")
+                      (i === selectedCategory
+                        ? "border-primary bg-primary-soft"
+                        : "border-border hover:border-primary/40")
                     }
                     type="button"
                   >
@@ -262,15 +283,27 @@ function Onboarding() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <span className={label}>Street address</span>
-                <input className={field} value={address} onChange={(event) => setAddress(event.target.value)} />
+                <input
+                  className={field}
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                />
               </div>
               <div>
                 <span className={label}>City</span>
-                <input className={field} value={city} onChange={(event) => setCity(event.target.value)} />
+                <input
+                  className={field}
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                />
               </div>
               <div>
                 <span className={label}>State</span>
-                <input className={field} value={region} onChange={(event) => setRegion(event.target.value)} />
+                <input
+                  className={field}
+                  value={region}
+                  onChange={(event) => setRegion(event.target.value)}
+                />
               </div>
               <div className="sm:col-span-2 rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
                 We use your location for discovery, delivery estimates and “popular near you”.
@@ -298,7 +331,10 @@ function Onboarding() {
                   {["#14532d", "#7c2d12", "#1e3a5f", "#c2410c", "#4c1d95"].map((c, i) => (
                     <span
                       key={c}
-                      className={"size-9 rounded-full " + (i === 0 ? "ring-2 ring-primary ring-offset-2" : "")}
+                      className={
+                        "size-9 rounded-full " +
+                        (i === 0 ? "ring-2 ring-primary ring-offset-2" : "")
+                      }
                       style={{ background: c }}
                     />
                   ))}
@@ -310,8 +346,8 @@ function Onboarding() {
           {step === 5 && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Pick how your storefront looks. We start you on a default that fits your category. On the free plan you
-                can choose once; paid plans can switch any time.
+                Pick how your storefront looks. We start you on a default that fits your category.
+                On the free plan you can choose once; paid plans can switch any time.
               </p>
               <CurrentPicker />
             </div>
@@ -319,14 +355,22 @@ function Onboarding() {
 
           {step === 6 && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">Add your first few items. You can add more any time.</p>
+              <p className="text-sm text-muted-foreground">
+                Add your first few items. You can add more any time.
+              </p>
               {vendor.products.slice(0, 2).map((product) => (
-                <div key={product.id} className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_140px]">
+                <div
+                  key={product.id}
+                  className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_140px]"
+                >
                   <input className={field} defaultValue={product.name} />
                   <input className={field} defaultValue={String(product.price)} />
                 </div>
               ))}
-              <Link to="/vendor/products/new" className="inline-block rounded-xl border border-dashed border-border px-4 py-3 text-sm font-semibold text-primary">
+              <Link
+                to="/vendor/products/new"
+                className="inline-block rounded-xl border border-dashed border-border px-4 py-3 text-sm font-semibold text-primary"
+              >
                 + Add another item
               </Link>
             </div>
@@ -359,7 +403,13 @@ function Onboarding() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Example: a {naira(vendor.products[0]?.price ?? 15000)} {vendor.fulfilment === "order" ? "order" : vendor.fulfilment === "booking" ? "appointment" : "reservation"} is charged a 2% platform fee.
+                Example: a {naira(vendor.products[0]?.price ?? 15000)}{" "}
+                {vendor.fulfilment === "order"
+                  ? "order"
+                  : vendor.fulfilment === "booking"
+                    ? "appointment"
+                    : "reservation"}{" "}
+                is charged a 2% platform fee.
               </p>
             </div>
           )}
@@ -375,7 +425,9 @@ function Onboarding() {
                         key={o}
                         className={
                           "rounded-full border px-4 py-2 text-sm " +
-                          (i === 0 ? "border-primary bg-primary-soft font-semibold text-primary" : "border-border text-muted-foreground")
+                          (i === 0
+                            ? "border-primary bg-primary-soft font-semibold text-primary"
+                            : "border-border text-muted-foreground")
                         }
                       >
                         {o}
@@ -402,13 +454,19 @@ function Onboarding() {
                     {[0, 1, 2].map((i) => (
                       <div key={i} className="rounded-xl bg-card p-3">
                         <div className="h-16 rounded-lg bg-muted" />
-                        <p className="mt-2 text-xs font-semibold">{vendor.products[i]?.name ?? "Listing"}</p>
+                        <p className="mt-2 text-xs font-semibold">
+                          {vendor.products[i]?.name ?? "Listing"}
+                        </p>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-              <Link to="/store/$slug" params={{ slug: businessSlug }} className="mt-4 inline-block text-sm font-semibold text-primary">
+              <Link
+                to="/store/$slug"
+                params={{ slug: businessSlug }}
+                className="mt-4 inline-block text-sm font-semibold text-primary"
+              >
                 Open full preview →
               </Link>
             </div>
@@ -420,16 +478,26 @@ function Onboarding() {
                 <PartyPopper className="size-7 text-success" />
               </div>
               <h2 className="mt-4 font-display text-2xl font-bold">
-                {vendorSubmitted ? "Store submitted for review" : "Ready to submit your store"}
+                {vendorSubmitted ? "Store published!" : "Ready to publish your store"}
               </h2>
               <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
                 {vendorSubmitted
-                  ? "Your storefront is saved as pending review. Customers will be able to visit it after approval."
-                  : "Submit your storefront for review before it becomes visible to customers."}
+                  ? "Your storefront is live. Customers can now visit and order from you."
+                  : "Publish your storefront to make it visible to customers instantly."}
               </p>
               <div className="mx-auto mt-5 flex max-w-md items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm">
-                <span className="min-w-0 flex-1 truncate font-semibold">peniel.com.ng/store/{businessSlug}</span>
-                <button type="button" onClick={() => void navigator.clipboard.writeText(`${window.location.origin}/store/${businessSlug}`).then(() => toast.success("Link copied"))} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">
+                <span className="min-w-0 flex-1 truncate font-semibold">
+                  peniel.com.ng/store/{businessSlug}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void navigator.clipboard
+                      .writeText(`${window.location.origin}/store/${businessSlug}`)
+                      .then(() => toast.success("Link copied"))
+                  }
+                  className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary"
+                >
                   <Copy className="size-3.5" /> Copy
                 </button>
               </div>
@@ -441,11 +509,14 @@ function Onboarding() {
                     disabled={savingVendor}
                     className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
                   >
-                    {savingVendor ? "Submitting…" : "Submit for review"}
+                    {savingVendor ? "Publishing…" : "Publish store"}
                   </button>
                 )}
                 {vendorSubmitted && (
-                  <Link to="/vendor" className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">
+                  <Link
+                    to="/vendor"
+                    className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+                  >
                     Go to dashboard
                   </Link>
                 )}

@@ -465,7 +465,7 @@ begin
   ) values (
     v_owner, p_slug, trim(p_name), left(coalesce(p_description, ''), 4000),
     left(p_business_type, 80), v_category, left(coalesce(p_location, ''), 160),
-    left(coalesce(p_address, ''), 500), p_fulfilment, 'pending_review'
+    left(coalesce(p_address, ''), 500), p_fulfilment, 'active'
   ) returning id into v_vendor;
   insert into public.vendor_members (vendor_id, profile_id) values (v_vendor, v_owner);
   insert into public.storefronts (vendor_id, template_id, layout)

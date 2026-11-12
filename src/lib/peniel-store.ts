@@ -291,6 +291,7 @@ function load() {
     if (!cartLoadedFromApi) {
       void loadCartFromApi();
     }
+    void subscribeToVendorChanges();
   });
   window.addEventListener("storage", (e) => {
     if (e.key === KEY) {
@@ -299,6 +300,151 @@ function load() {
       void restoreAuthSession();
     }
   });
+}
+
+let vendorRealtimeChannel: { unsubscribe: () => void } | null = null;
+
+interface RealtimePayload {
+  new: {
+    id: string;
+    slug: string;
+    name: string;
+    description: string;
+    business_type: string;
+    location: string;
+    phone: string;
+    fulfilment: string;
+    categories?: { slug: string; name: string };
+    storefronts?: { layout: string; template_id: string }[];
+  };
+}
+
+async function subscribeToVendorChanges() {
+  if (typeof window === "undefined") return;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = (window as { supabase?: any }).supabase;
+  if (!supabase) return;
+  if (vendorRealtimeChannel) return;
+
+  const s = app.get();
+  if (!s.user) return;
+
+  try {
+    const channel = supabase
+      .channel("vendors-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "vendors",
+          filter: "status=eq.active",
+        },
+        (payload: { new: RealtimePayload["new"] }) => {
+          const newVendor = payload.new;
+          if (!newVendor) return;
+          set((state) => {
+            const exists = state.customVendors?.some((v) => v.slug === newVendor.slug);
+            if (exists) return state;
+            return {
+              ...state,
+              customVendors: [
+                {
+                  id: newVendor.id,
+                  slug: newVendor.slug,
+                  name: newVendor.name,
+                  tagline: newVendor.description,
+                  about: newVendor.description,
+                  cover: "",
+                  monogram: "",
+                  type: newVendor.business_type as import("./data").BusinessType,
+                  categorySlug: newVendor.categories?.slug ?? "",
+                  categoryLabel: newVendor.categories?.name ?? "",
+                  fulfilment: newVendor.fulfilment as "order" | "booking" | "reservation",
+                  location: newVendor.location,
+                  phone: newVendor.phone,
+                  email: "",
+                  verified: true,
+                  featured: false,
+                  rating: 0,
+                  reviews: 0,
+                  orders: "New on Peniel",
+                  hours: "",
+                  delivery: "",
+                  products: [],
+                  groups: [],
+                  layout:
+                    (newVendor.storefronts?.[0]?.layout as import("./data").StoreLayout) ??
+                    "cinematic",
+                  templateId: newVendor.storefronts?.[0]?.template_id,
+                  theme: {
+                    bg: "#ffffff",
+                    ink: "#111827",
+                    accent: "#14532d",
+                    accentInk: "#ffffff",
+                    soft: "#f0fdf4",
+                    line: "#e2e7df",
+                    radius: "rounded-xl",
+                    heading: "font-display",
+                  },
+                  brandColor: "",
+                  hidden: [],
+                  stock: {},
+                  promos: [],
+                  payoutBank: undefined,
+                },
+                ...(state.customVendors ?? []),
+              ],
+            };
+          });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "vendors",
+          filter: "status=eq.active",
+        },
+        (payload: { new: RealtimePayload["new"] }) => {
+          const updatedVendor = payload.new;
+          if (!updatedVendor) return;
+          set((state) => ({
+            ...state,
+            customVendors: (state.customVendors ?? []).map((v) =>
+              v.slug === updatedVendor.slug
+                ? {
+                    ...v,
+                    name: updatedVendor.name,
+                    tagline: updatedVendor.description,
+                    about: updatedVendor.description,
+                    type: updatedVendor.business_type as import("./data").BusinessType,
+                    categorySlug: updatedVendor.categories?.slug ?? "",
+                    categoryLabel: updatedVendor.categories?.name ?? "",
+                    fulfilment: updatedVendor.fulfilment as "order" | "booking" | "reservation",
+                    location: updatedVendor.location,
+                    phone: updatedVendor.phone,
+                    layout:
+                      (updatedVendor.storefronts?.[0]?.layout as import("./data").StoreLayout) ??
+                      "cinematic",
+                    templateId: updatedVendor.storefronts?.[0]?.template_id,
+                  }
+                : v,
+            ),
+          }));
+        },
+      )
+      .subscribe((status: string) => {
+        if (status !== "SUBSCRIBED") {
+          console.warn("Vendor realtime subscription failed:", status);
+        }
+      });
+
+    vendorRealtimeChannel = channel;
+  } catch (error) {
+    console.warn("Could not subscribe to vendor changes:", error);
+  }
 }
 
 async function loadCartFromApi() {
