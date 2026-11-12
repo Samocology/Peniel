@@ -1,5 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Heart, MapPin, Pencil, Plus, Star, Trash2, Wallet } from "lucide-react";
+import {
+  ArrowRight,
+  CreditCard,
+  Heart,
+  MapPin,
+  Pencil,
+  Plus,
+  Star,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -59,6 +69,9 @@ function AccountPage() {
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [vendors, setVendors] = useState<VendorRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [toppingUp, setToppingUp] = useState(false);
+  const [topUpError, setTopUpError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -172,6 +185,12 @@ function AccountPage() {
             </p>
             <p className="mt-1 text-[10px] text-muted-foreground">Available to spend</p>
           </div>
+          <button
+            onClick={() => setTopUpOpen(true)}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold transition hover:border-primary/40"
+          >
+            <Plus className="size-4" /> Fund wallet
+          </button>
 
           <div
             key="reviews"
@@ -494,6 +513,79 @@ function AccountPage() {
               className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"
             >
               Save address
+            </button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={topUpOpen} onOpenChange={setTopUpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fund your wallet</DialogTitle>
+            <DialogDescription>
+              Add money to your Peniel Wallet to pay for orders instantly.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              const amountRaw = String(form.get("amount") ?? "").trim();
+              const amountNaira = Number(amountRaw);
+              if (!amountNaira || amountNaira < 100) {
+                setTopUpError("Minimum top-up is ₦100.");
+                return;
+              }
+              if (!Number.isFinite(amountNaira)) {
+                setTopUpError("Enter a valid amount.");
+                return;
+              }
+              setToppingUp(true);
+              setTopUpError("");
+              const idempotencyKey = globalThis.crypto?.randomUUID?.() ?? `topup-${Date.now()}`;
+              void customersApi
+                .walletTopup({ amount_minor: Math.round(amountNaira * 100), idempotencyKey })
+                .then(async (result) => {
+                  setToppingUp(false);
+                  if (!result.ok) {
+                    setTopUpError(result.error ?? "Could not initialize top-up.");
+                    return;
+                  }
+                  if (result.data?.walletTopup && result.data?.paymentUrl) {
+                    setTopUpOpen(false);
+                    window.location.assign(result.data.paymentUrl);
+                    return;
+                  }
+                  setTopUpError("No payment URL returned.");
+                })
+                .catch(() => {
+                  setToppingUp(false);
+                  setTopUpError("Could not initialize top-up. Please retry.");
+                });
+            }}
+          >
+            <label className="block text-sm font-medium">
+              Amount to add
+              <span className="ml-1 text-xs text-muted-foreground">(minimum ₦100)</span>
+            </label>
+            <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-input bg-background px-3 py-2.5">
+              <span className="text-muted-foreground">₦</span>
+              <input
+                required
+                name="amount"
+                type="number"
+                min="100"
+                step="100"
+                className="w-full bg-transparent outline-none"
+              />
+            </div>
+            {topUpError && <p className="text-sm text-destructive">{topUpError}</p>}
+            <button
+              type="submit"
+              disabled={toppingUp}
+              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {toppingUp ? "Starting payment…" : "Continue to payment"}
             </button>
           </form>
         </DialogContent>

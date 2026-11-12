@@ -513,6 +513,12 @@ export const customersApi = {
   wallet: () => get<CustomerWallet>("/api/customer/wallet"),
   walletDebit: (body: { amount_minor: number; reference: string; description?: string }) =>
     post<{ debitedMinor: number; balanceMinor: number }>("/api/customer/wallet/debit", body),
+  walletTopup: (body: { amount_minor: number; idempotencyKey: string }) =>
+    post<{
+      paymentUrl: string | null;
+      reference: string;
+      walletTopup: boolean;
+    }>("/api/customer/wallet/topup", body),
   addresses: () => get<CustomerAddress[]>("/api/customer/addresses"),
   createAddress: (body: CreateCustomerAddressInput) =>
     post<{ created: boolean; address: CustomerAddress | null }>("/api/customer/addresses", body),

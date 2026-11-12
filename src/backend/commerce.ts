@@ -971,6 +971,154 @@ async function debitCustomerWallet(request: Request, env: BackendEnv, identity: 
   });
 }
 
+async function topupWallet(request: Request, env: BackendEnv, identity: Identity) {
+  const input = await readJsonObject(request);
+  if (!input) {
+    return json({ ok: false, error: "A valid JSON request is required." }, 400);
+  }
+  const amountMinor = typeof input["amount_minor"] === "number" ? Number(input["amount_minor"]) : 0;
+  const key = typeof input["idempotencyKey"] === "string" ? input["idempotencyKey"] : "";
+  if (!Number.isInteger(amountMinor) || amountMinor <= 0 || amountMinor > 10_000_000_000) {
+    return json({ ok: false, error: "Enter a valid top-up amount." }, 400);
+  }
+  if (!/^[a-zA-Z0-9:_-]{8,120}$/.test(key)) {
+    return json({ ok: false, error: "A valid idempotency key is required." }, 400);
+  }
+  if (!env.FLUTTERWAVE_SECRET_KEY || !env.APP_BASE_URL) {
+    return json(
+      { ok: false, error: "Payments are not configured. Wallet top-up is unavailable." },
+      503,
+    );
+  }
+
+  const appUrl = env.APP_BASE_URL.replace(/\/+$/, "");
+  const reference = `wallet-topup-${key}`;
+
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) {
+    return json({ ok: false, error: "Server payment configuration is incomplete." }, 503);
+  }
+
+  const created = await databaseRequest(env, "payments", serviceKey, {
+    method: "POST",
+    body: JSON.stringify({
+      order_id: null,
+      reference,
+      provider: "wallet_topup",
+      provider_transaction_id: null,
+      amount_minor: amountMinor,
+      currency: "NGN",
+      checkout_url: null,
+      idempotency_key: key,
+      status: "initialized",
+    }),
+  });
+  const createdPayload = await databasePayload(created);
+  if (!created.ok) return errorFromDatabase(created.status, createdPayload);
+
+  const paymentData = {
+    id: null,
+    reference,
+    amount_minor: amountMinor,
+    checkout_url: null as unknown,
+    status: "initialized",
+  };
+
+  const paymentKey = `wallet-topup:${key}`;
+  const paymentInit = await databaseRequest(
+    env,
+    "rpc/initialize_flutterwave_payment",
+    identity.accessToken,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        p_order_id: null,
+        p_idempotency_key: paymentKey,
+        p_reference: reference,
+      }),
+    },
+  );
+  const initPayload = await databasePayload(paymentInit);
+  if (!paymentInit.ok || initPayload === null || typeof initPayload !== "object") {
+    return errorFromDatabase(paymentInit.status, initPayload);
+  }
+  const initialized = initPayload as {
+    reference?: unknown;
+    amount_minor?: unknown;
+    checkout_url?: unknown;
+  };
+  if (typeof initialized.reference !== "string" || typeof initialized.amount_minor !== "number") {
+    return json({ ok: false, error: "Could not prepare wallet top-up payment." }, 502);
+  }
+
+  if (typeof initialized.checkout_url === "string") {
+    return json({
+      ok: true,
+      data: {
+        orderId: null,
+        reference: initialized.reference,
+        paymentUrl: initialized.checkout_url,
+        walletTopup: true,
+      },
+    });
+  }
+
+  const response = await fetch("https://api.flutterwave.com/v3/payments", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${env.FLUTTERWAVE_SECRET_KEY}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      tx_ref: initialized.reference,
+      amount: parseFlutterwaveAmount(initialized.amount_minor),
+      currency: "NGN",
+      redirect_url: `${appUrl}/payment?status=success&tx_ref=${encodeURIComponent(reference)}`,
+      customer: { email: identity.email },
+      customizations: {
+        title: "Peniel Wallet Top-up",
+        description: `Fund wallet ₦${amountMinor / 100}`,
+      },
+    }),
+  });
+  const flutterwaveResult = (await databasePayload(response)) as {
+    status?: string;
+    message?: string;
+    data?: { link?: string };
+  } | null;
+  const link = flutterwaveResult?.data?.link;
+  if (!response.ok || flutterwaveResult?.status !== "success" || typeof link !== "string") {
+    console.error("Flutterwave wallet top-up initialization failed", {
+      status: response.status,
+      message: flutterwaveResult?.message,
+    });
+    return json({ ok: false, error: "Could not initialize wallet top-up. Please retry." }, 502);
+  }
+
+  const persistUrl = await databaseRequest(
+    env,
+    "rpc/set_flutterwave_checkout_url",
+    identity.accessToken,
+    {
+      method: "POST",
+      body: JSON.stringify({ p_reference: initialized.reference, p_checkout_url: link }),
+    },
+  );
+  if (!persistUrl.ok) {
+    const payload = await databasePayload(persistUrl);
+    console.error("Could not persist Flutterwave checkout URL", persistUrl.status, payload);
+    return json(
+      { ok: false, error: "Top-up was initialized but could not be linked. Contact support." },
+      502,
+    );
+  }
+
+  return json({
+    ok: true,
+    data: { orderId: null, reference: initialized.reference, paymentUrl: link, walletTopup: true },
+  });
+}
+
 async function getCustomerAddresses(env: BackendEnv, identity: Identity) {
   const response = await databaseRequest(
     env,
@@ -1114,6 +1262,11 @@ export async function handleCommerceRequest(
       const auth = await requireIdentity(request, env);
       if ("response" in auth) return auth.response;
       return debitCustomerWallet(request, env, auth.identity);
+    }
+    if (path === "/api/customer/wallet/topup" && request.method === "POST") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return topupWallet(request, env, auth.identity);
     }
     if (path === "/api/customer/addresses" && request.method === "GET") {
       const auth = await requireIdentity(request, env);

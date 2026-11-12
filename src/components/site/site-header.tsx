@@ -10,6 +10,7 @@ import {
   MessageCircle,
   User,
   LogOut,
+  Wallet,
 } from "lucide-react";
 import { useApp, app as storeApi } from "@/lib/peniel-store";
 import { MARKETPLACE_LOCATIONS, normalizeLocationLabel } from "@/lib/location";
@@ -17,6 +18,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "./logo";
+import { customersApi } from "@/lib/api-client";
 
 const nav = [
   { to: "/marketplace", label: "Marketplace" },
@@ -53,6 +55,21 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
     (thread) => thread.customer === userEmail && thread.readC < thread.messages.length,
   ).length;
   const [accountOpen, setAccountOpen] = useState(false);
+  const [walletBalanceKobo, setWalletBalanceKobo] = useState<number | null>(null);
+
+  const refreshWallet = async () => {
+    try {
+      const result = await customersApi.wallet();
+      if (result.ok) setWalletBalanceKobo(result.data.balanceMinor);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleOpenAccount = () => {
+    void refreshWallet();
+    setAccountOpen(true);
+  };
 
   const handleLogout = async () => {
     try {
@@ -150,7 +167,7 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
               <div className="relative group">
                 <Button
                   size="sm"
-                  onClick={() => setAccountOpen((open) => !open)}
+                  onClick={handleOpenAccount}
                   aria-label="Account menu"
                   className="flex items-center gap-2"
                 >
@@ -161,6 +178,10 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
                 </Button>
                 {accountOpen && (
                   <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-border bg-card shadow-xl p-1 z-50 animate-in fade-in zoom-in duration-100">
+                    <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium bg-muted/40">
+                      <Wallet className="size-3.5 text-emerald-600" />
+                      <span>₦{(walletBalanceKobo ?? 0) / 100}</span>
+                    </div>
                     <Link
                       to="/account"
                       onClick={() => setAccountOpen(false)}

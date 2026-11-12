@@ -32,5 +32,26 @@ using (customer_id = (select auth.uid()) or public.is_admin());
 create policy wallet_transactions_owner_insert on public.wallet_transactions for insert
 with check (customer_id = (select auth.uid()) or public.is_admin());
 
-grant select, insert, update on public.customer_wallets to authenticated;
-grant select, insert on public.wallet_transactions to authenticated;
+create table if not exists public.wallet_topups (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.profiles(id) on delete cascade,
+  reference text not null unique,
+  amount_minor bigint not null check (amount_minor > 0),
+  currency text not null default 'NGN' check (currency = 'NGN'),
+  status public.payment_status not null default 'initialized',
+  provider_transaction_id text,
+  checkout_url text,
+  idempotency_key text not null unique,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index wallet_topups_customer_idx on public.wallet_topups(customer_id, created_at desc);
+create index wallet_topups_reference_idx on public.wallet_topups(reference);
+
+alter table public.wallet_topups enable row level security;
+
+create policy wallet_topups_owner_all on public.wallet_topups for all
+using (customer_id = (select auth.uid()) or public.is_admin())
+with check (customer_id = (select auth.uid()) or public.is_admin());
+
+grant select, insert on public.wallet_topups to authenticated;
