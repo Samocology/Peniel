@@ -224,6 +224,55 @@ export type OrderRecord = {
   vendor_orders: VendorOrderRecord[];
 };
 
+// ── Customers ─────────────────────────────────────────────────────────────────
+
+export type CustomerProfile = {
+  id: string;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  role: string;
+  notification_preferences: Record<string, unknown>;
+};
+
+export type CustomerWallet = {
+  balanceMinor: number;
+  currency: string;
+};
+
+export type CustomerAddress = {
+  id: string;
+  label: string;
+  address: string;
+  city: string;
+  state: string;
+  delivery_instructions: string;
+  created_at: string;
+};
+
+export type CustomerReview = {
+  id: string;
+  rating: number;
+  body: string;
+  moderation_status: string;
+  created_at: string;
+  vendor_order_id: string;
+  vendor_id: string;
+};
+
+export type CreateCustomerAddressInput = {
+  label: string;
+  address: string;
+  city: string;
+  state: string;
+  delivery_instructions?: string;
+};
+
+export type UpdateCustomerProfileInput = {
+  full_name: string;
+  phone?: string | null;
+};
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export const authApi = {
@@ -458,6 +507,16 @@ export const customersApi = {
         orders: { customer_snapshot: Record<string, string>; reference: string };
       }[]
     >(`/api/vendor/customers?vendor_id=${vendorId}`),
+  profile: () => get<CustomerProfile>("/api/customer/profile"),
+  updateProfile: (body: UpdateCustomerProfileInput) =>
+    patch<CustomerProfile>("/api/customer/profile", body),
+  wallet: () => get<CustomerWallet>("/api/customer/wallet"),
+  addresses: () => get<CustomerAddress[]>("/api/customer/addresses"),
+  createAddress: (body: CreateCustomerAddressInput) =>
+    post<{ created: boolean; address: CustomerAddress | null }>("/api/customer/addresses", body),
+  deleteAddress: (id: string) =>
+    del<{ deleted: boolean }>(`/api/customer/addresses/${encodeURIComponent(id)}`),
+  reviews: () => get<CustomerReview[]>("/api/customer/reviews"),
 };
 
 // ── Notifications ─────────────────────────────────────────────────────────────

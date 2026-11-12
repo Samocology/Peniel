@@ -683,6 +683,141 @@ async function flutterwaveWebhook(request: Request, env: BackendEnv) {
   return json({ ok: true, data: { accepted: true } });
 }
 
+async function getCustomerProfile(env: BackendEnv, identity: Identity) {
+  const response = await databaseRequest(
+    env,
+    `profiles?select=id,full_name,phone,role,notification_preferences&id=eq.${encodeURIComponent(identity.id)}`,
+    identity.accessToken,
+  );
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  if (!Array.isArray(payload) || !payload[0]) {
+    return json({ ok: false, error: "Profile not found." }, 404);
+  }
+  return json({
+    ok: true,
+    data: {
+      id: identity.id,
+      email: identity.email,
+      ...(payload[0] as Record<string, unknown>),
+    },
+  });
+}
+
+async function updateCustomerProfile(request: Request, env: BackendEnv, identity: Identity) {
+  const input = await readJsonObject(request);
+  const fullName =
+    typeof input?.["full_name"] === "string" ? String(input["full_name"]).trim() : "";
+  const phone =
+    typeof input?.["phone"] === "string" && String(input["phone"]).trim().length > 0
+      ? String(input["phone"]).trim()
+      : null;
+  if (!fullName || fullName.length > 120) {
+    return json({ ok: false, error: "Enter a valid name." }, 400);
+  }
+  const response = await databaseRequest(
+    env,
+    `profiles?full_name=eq.${encodeURIComponent(fullName)}&phone=eq.${encodeURIComponent(
+      phone ?? "",
+    )}&id=eq.${encodeURIComponent(identity.id)}`,
+    identity.accessToken,
+    { method: "PATCH" },
+  );
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  return json({ ok: true, data: { updated: true } });
+}
+
+async function getCustomerWallet(env: BackendEnv, identity: Identity) {
+  const response = await databaseRequest(
+    env,
+    `payments?select=amount_minor&orders!inner(customer_id)=eq.${encodeURIComponent(
+      identity.id,
+    )}&status=eq.successful`,
+    identity.accessToken,
+  );
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  const balance = Array.isArray(payload)
+    ? payload.reduce(
+        (sum: number, row: { amount_minor?: number }) => sum + Number(row?.amount_minor ?? 0),
+        0,
+      )
+    : 0;
+  return json({ ok: true, data: { balanceMinor: balance, currency: "NGN" } });
+}
+
+async function getCustomerAddresses(env: BackendEnv, identity: Identity) {
+  const response = await databaseRequest(
+    env,
+    "customer_addresses?select=id,label,address,city,state,delivery_instructions,created_at&order=created_at.desc",
+    identity.accessToken,
+  );
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  return json({ ok: true, data: payload });
+}
+
+async function createCustomerAddress(request: Request, env: BackendEnv, identity: Identity) {
+  const input = await readJsonObject(request);
+  const label = typeof input?.["label"] === "string" ? String(input["label"]).trim() : "";
+  const address = typeof input?.["address"] === "string" ? String(input["address"]).trim() : "";
+  const city = typeof input?.["city"] === "string" ? String(input["city"]).trim() : "";
+  const state = typeof input?.["state"] === "string" ? String(input["state"]).trim() : "";
+  const instructions =
+    typeof input?.["delivery_instructions"] === "string"
+      ? String(input["delivery_instructions"]).trim()
+      : "";
+  if (!label || !address || !city || !state) {
+    return json({ ok: false, error: "Label, address, city and state are required." }, 400);
+  }
+  const response = await databaseRequest(env, "customer_addresses", identity.accessToken, {
+    method: "POST",
+    body: JSON.stringify({
+      customer_id: identity.id,
+      label,
+      address,
+      city,
+      state,
+      delivery_instructions: instructions,
+    }),
+  });
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  return json({
+    ok: true,
+    data: { created: true, address: Array.isArray(payload) ? payload[0] : null },
+  });
+}
+
+async function deleteCustomerAddress(request: Request, env: BackendEnv, identity: Identity) {
+  const url = new URL(request.url);
+  const id = url.pathname.split("/").pop() ?? "";
+  if (!id) {
+    return json({ ok: false, error: "Address id is required." }, 400);
+  }
+  const response = await databaseRequest(
+    env,
+    `customer_addresses?id=eq.${encodeURIComponent(id)}`,
+    identity.accessToken,
+    { method: "DELETE" },
+  );
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  return json({ ok: true, data: { deleted: true } });
+}
+
+async function getCustomerReviews(env: BackendEnv, identity: Identity) {
+  const response = await databaseRequest(
+    env,
+    `reviews?select=id,rating,body,moderation_status,created_at,vendor_order_id,vendor_id&customer_id=eq.${encodeURIComponent(identity.id)}&order=created_at.desc`,
+    identity.accessToken,
+  );
+  const payload = await databasePayload(response);
+  if (!response.ok) return errorFromDatabase(response.status, payload);
+  return json({ ok: true, data: payload ?? [] });
+}
+
 export async function handleCommerceRequest(
   request: Request,
   env: BackendEnv,
@@ -735,6 +870,41 @@ export async function handleCommerceRequest(
       const auth = await requireIdentity(request, env);
       if ("response" in auth) return auth.response;
       return verifyPayment(request, env, auth.identity);
+    }
+    if (path === "/api/customer/profile" && request.method === "GET") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return getCustomerProfile(env, auth.identity);
+    }
+    if (path === "/api/customer/profile" && request.method === "PATCH") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return updateCustomerProfile(request, env, auth.identity);
+    }
+    if (path === "/api/customer/wallet" && request.method === "GET") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return getCustomerWallet(env, auth.identity);
+    }
+    if (path === "/api/customer/addresses" && request.method === "GET") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return getCustomerAddresses(env, auth.identity);
+    }
+    if (path === "/api/customer/addresses" && request.method === "POST") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return createCustomerAddress(request, env, auth.identity);
+    }
+    if (path.startsWith("/api/customer/addresses/") && request.method === "DELETE") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return deleteCustomerAddress(request, env, auth.identity);
+    }
+    if (path === "/api/customer/reviews" && request.method === "GET") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return getCustomerReviews(env, auth.identity);
     }
     if (path.startsWith("/api/") && path !== "/api/health" && !path.startsWith("/api/auth/")) {
       return json({ ok: false, error: "API endpoint not found." }, 404);

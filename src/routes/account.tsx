@@ -4,9 +4,21 @@ import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { StatusPill } from "@/components/site/bits";
-import { naira, vendors } from "@/lib/data";
+import { naira } from "@/lib/data";
 import { app, useApp } from "@/lib/peniel-store";
-import { authApi, ordersApi, type OrderRecord } from "@/lib/api-client";
+import {
+  authApi,
+  customersApi,
+  ordersApi,
+  type CustomerAddress,
+  type CustomerProfile,
+  type CustomerReview,
+  type CustomerWallet,
+  type OrderRecord,
+  type UpdateCustomerProfileInput,
+  type VendorRecord,
+  vendorsApi,
+} from "@/lib/api-client";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -41,35 +53,61 @@ function AccountPage() {
     user: { id: string; email: string; name: string } | null;
   } | null>(null);
   const [myOrders, setMyOrders] = useState<OrderRecord[]>([]);
+  const [wallet, setWallet] = useState<CustomerWallet | null>(null);
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [vendors, setVendors] = useState<VendorRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    Promise.all([authApi.session(), ordersApi.myOrders()]).then(([sessionResult, ordersResult]) => {
-      if (!active) return;
-      if (sessionResult.ok) {
-        setSession(sessionResult.data);
-      }
-      if (ordersResult.ok) {
-        setMyOrders(ordersResult.data);
-      }
-      setLoading(false);
-    });
+    Promise.all([
+      authApi.session(),
+      ordersApi.myOrders(),
+      customersApi.profile(),
+      customersApi.wallet(),
+      customersApi.addresses(),
+      customersApi.reviews(),
+      vendorsApi.public(),
+    ]).then(
+      ([
+        sessionResult,
+        ordersResult,
+        profileResult,
+        walletResult,
+        addressesResult,
+        reviewsResult,
+        vendorsResult,
+      ]) => {
+        if (!active) return;
+        if (sessionResult.ok) setSession(sessionResult.data);
+        if (ordersResult.ok) setMyOrders(ordersResult.data);
+        if (profileResult.ok) setProfile(profileResult.data);
+        if (walletResult.ok) setWallet(walletResult.data);
+        if (addressesResult.ok) setAddresses(addressesResult.data);
+        if (reviewsResult.ok) setReviews(reviewsResult.data);
+        if (vendorsResult.ok) setVendors(vendorsResult.data);
+        setLoading(false);
+      },
+    );
     return () => {
       active = false;
     };
   }, []);
 
-  const favourites = vendors.filter((vendor) => state.favorites.includes(vendor.slug));
-  const user = session?.user;
-  const displayName = user?.name ?? state.user?.name ?? state.customer.name;
-  const userEmail = user?.email ?? state.user?.email;
+  const sessionUser = session?.user;
+  const displayName = profile?.full_name ?? sessionUser?.name ?? state.customer.name;
+  const userEmail = sessionUser?.email ?? profile?.email ?? state.user?.email;
   const initials = displayName
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+  const balance = wallet?.balanceMinor ?? 0;
+
+  const favourites = vendors.filter((vendor) => state.favorites.includes(vendor.slug));
 
   if (loading) {
     return (
@@ -130,7 +168,7 @@ function AccountPage() {
               <span className="size-1 rounded-full bg-emerald-500" /> Wallet balance
             </p>
             <p className="font-display text-2xl font-bold tabular-nums text-foreground">
-              {naira(18400)}
+              {naira(balance)}
             </p>
             <p className="mt-1 text-[10px] text-muted-foreground">Available to spend</p>
           </div>
@@ -146,7 +184,7 @@ function AccountPage() {
               <span className="size-1 rounded-full bg-amber-500" /> Reviews written
             </p>
             <p className="font-display text-2xl font-bold tabular-nums text-foreground">
-              {String(0)}
+              {String(reviews.length)}
             </p>
             <p className="mt-1 text-[10px] text-muted-foreground">Customer feedback</p>
           </div>
@@ -233,15 +271,13 @@ function AccountPage() {
                     params={{ slug: v.slug }}
                     className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:border-primary/40"
                   >
-                    <img
-                      src={v.cover}
-                      alt=""
-                      className="size-12 shrink-0 rounded-xl object-cover"
-                    />
+                    <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary font-display text-lg font-bold text-primary-foreground shadow-sm">
+                      {v.name.charAt(0).toUpperCase()}
+                    </div>
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">{v.name}</span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {v.categoryLabel}
+                        {v.categories?.name ?? v.business_type}
                       </span>
                     </span>
                   </Link>
@@ -254,7 +290,7 @@ function AccountPage() {
             <div className="rounded-2xl border border-border bg-card p-5">
               <p className="font-display text-lg font-bold">Addresses</p>
               <ul className="mt-3 space-y-3 text-sm">
-                {(state.addresses ?? []).map(({ id, label, address }) => (
+                {addresses.map(({ id, label, address }) => (
                   <li key={id} className="flex min-w-0 items-start gap-2.5">
                     <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
                     <span className="min-w-0 flex-1">
@@ -264,7 +300,20 @@ function AccountPage() {
                     <button
                       type="button"
                       aria-label={`Remove ${label} address`}
-                      onClick={() => app.removeCustomerAddress(id)}
+                      onClick={() => {
+                        void customersApi
+                          .deleteAddress(id)
+                          .then(async (result) => {
+                            if (result.ok) {
+                              const refreshed = await customersApi.addresses();
+                              if (refreshed.ok) setAddresses(refreshed.data);
+                              toast.success("Address removed");
+                            } else {
+                              toast.error(result.error ?? "Could not remove address.");
+                            }
+                          })
+                          .catch(() => toast.error("Could not remove address."));
+                      }}
                       className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="size-3.5" />
@@ -309,12 +358,24 @@ function AccountPage() {
             onSubmit={(event) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
-              app.saveCustomer({
-                ...state.customer,
-                name: String(form.get("name") ?? "").trim(),
-                city: String(form.get("city") ?? "").trim(),
-              });
-              toast.success("Profile updated");
+              const name = String(form.get("name") ?? "").trim();
+              const city = String(form.get("city") ?? "").trim();
+              if (!name) {
+                toast.error("Name is required.");
+                return;
+              }
+              void customersApi
+                .updateProfile({ full_name: name })
+                .then(async (result) => {
+                  if (result.ok) {
+                    setProfile({ ...(profile ?? result.data), full_name: name });
+                    app.saveCustomer({ ...state.customer, name, city });
+                    toast.success("Profile updated");
+                  } else {
+                    toast.error(result.error ?? "Could not update profile.");
+                  }
+                })
+                .catch(() => toast.error("Could not update profile."));
               setEditOpen(false);
             }}
           >
@@ -356,11 +417,27 @@ function AccountPage() {
             onSubmit={(event) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
-              app.saveCustomerAddress(
-                String(form.get("label") ?? ""),
-                String(form.get("address") ?? ""),
-              );
-              toast.success("Address saved");
+              const label = String(form.get("label") ?? "").trim();
+              const address = String(form.get("address") ?? "").trim();
+              const city = String(form.get("city") ?? "").trim();
+              const state = String(form.get("state") ?? "").trim();
+              const instructions = String(form.get("delivery_instructions") ?? "").trim();
+              if (!label || !address || !city || !state) {
+                toast.error("Label, address, city and state are required.");
+                return;
+              }
+              void customersApi
+                .createAddress({ label, address, city, state, delivery_instructions: instructions })
+                .then(async (result) => {
+                  if (result.ok) {
+                    toast.success("Address saved");
+                    const refreshed = await customersApi.addresses();
+                    if (refreshed.ok) setAddresses(refreshed.data);
+                  } else {
+                    toast.error(result.error ?? "Could not save address.");
+                  }
+                })
+                .catch(() => toast.error("Could not save address."));
               setAddressOpen(false);
             }}
           >
@@ -379,7 +456,36 @@ function AccountPage() {
                 required
                 name="address"
                 rows={3}
-                placeholder="Street, area, city"
+                placeholder="Street, area, landmark"
+                className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2.5"
+              />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium">
+                City
+                <input
+                  required
+                  name="city"
+                  placeholder="Lagos"
+                  className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2.5"
+                />
+              </label>
+              <label className="block text-sm font-medium">
+                State
+                <input
+                  required
+                  name="state"
+                  placeholder="Lagos State"
+                  className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2.5"
+                />
+              </label>
+            </div>
+            <label className="block text-sm font-medium">
+              Delivery instructions (optional)
+              <textarea
+                name="delivery_instructions"
+                rows={2}
+                placeholder="Gate code, floor, etc."
                 className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2.5"
               />
             </label>
