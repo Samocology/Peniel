@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CreditCard, Lock, ShieldCheck, Truck } from "lucide-react";
-import { useRef, useState, type FormEvent } from "react";
+import { CreditCard, Lock, ShieldCheck, Truck, Wallet } from "lucide-react";
+import { useRef, useState, useEffect, type FormEvent } from "react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { naira } from "@/lib/data";
-import { totalsFor, useApp } from "@/lib/peniel-store";
+import { app, totalsFor, useApp } from "@/lib/peniel-store";
+import { customersApi } from "@/lib/api-client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -26,11 +28,32 @@ function CheckoutPage() {
   const s = useApp();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
+  const [wallet, setWallet] = useState<{ balanceMinor: number; currency: string } | null>(null);
+  const [useWallet, setUseWallet] = useState(false);
   const idempotencyKey = useRef(
     globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
   );
   const cartLines = s.cart;
   const totals = totalsFor(cartLines, s.promo);
+
+  useEffect(() => {
+    let active = true;
+    customersApi
+      .wallet()
+      .then((result) => {
+        if (!active) return;
+        if (result.ok) setWallet(result.data);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const walletBalanceKobo = wallet?.balanceMinor ?? 0;
+  const walletAmountKobo = useWallet ? Math.min(walletBalanceKobo, totals.total * 100) : 0;
+  const payableTotal = totals.total - walletAmountKobo / 100;
+
   const startPayment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setCheckoutError("");
@@ -60,16 +83,30 @@ function CheckoutPage() {
             landmark: formData.get("landmark"),
             note: formData.get("note"),
           },
+          useWallet,
+          walletAmountMinor: walletAmountKobo,
         }),
       });
       const result = (await response.json()) as {
         ok?: boolean;
         error?: string;
-        data?: { paymentUrl?: string };
+        data?: {
+          paymentUrl?: string | null;
+          walletPaid?: boolean;
+          walletUsedMinor?: number;
+        };
       };
-      if (!response.ok || !result.ok || !result.data?.paymentUrl) {
+      if (!response.ok || !result.ok) {
         setCheckoutError(
           result.error ?? "Could not start checkout. Your cart has not been charged.",
+        );
+        return;
+      }
+
+      if (result.data?.walletPaid || !result.data?.paymentUrl) {
+        app.clearCart();
+        window.location.assign(
+          `/payment?status=success&tx_ref=${result.data?.walletPaid ? "wallet" : ""}`,
         );
         return;
       }
@@ -219,6 +256,33 @@ function CheckoutPage() {
                     </span>
                   </span>
                 </div>
+                {walletBalanceKobo > 0 && (
+                  <div
+                    className={[
+                      "mt-3 flex items-center gap-3 rounded-xl border p-4",
+                      useWallet ? "border-primary bg-primary-soft" : "border-border bg-muted",
+                    ].join(" ")}
+                  >
+                    <Wallet className="size-4 shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={useWallet}
+                          onChange={() => setUseWallet((u) => !u)}
+                          className="rounded border-primary text-primary bg-transparent"
+                        />
+                        <span className="block font-semibold">Use Peniel Wallet</span>
+                        <span className="block text-xs text-muted-foreground">
+                          Pay ₦{walletBalanceKobo / 100} from your wallet balance
+                        </span>
+                      </label>
+                    </span>
+                    <span className="shrink-0 font-display font-bold text-primary">
+                      -{naira(walletAmountKobo / 100)}
+                    </span>
+                  </div>
+                )}
               </section>
             </div>
 
@@ -246,6 +310,9 @@ function CheckoutPage() {
                     ...(totals.discount ? [["Promo discount", -totals.discount]] : []),
                     ["Delivery", totals.delivery],
                     ["Platform fee", totals.platformFee],
+                    ...(useWallet && walletAmountKobo > 0
+                      ? [["Wallet", -walletAmountKobo / 100]]
+                      : []),
                   ].map(([l, v]) => (
                     <div key={l as string} className="flex justify-between">
                       <dt className="text-muted-foreground">{l as string}</dt>
@@ -254,9 +321,9 @@ function CheckoutPage() {
                   ))}
                 </dl>
                 <div className="mt-4 flex justify-between border-t border-border pt-4">
-                  <span className="font-semibold">Estimated total</span>
+                  <span className="font-semibold">Payable total</span>
                   <span className="font-display text-xl font-bold text-primary">
-                    {naira(totals.total)}
+                    {naira(payableTotal)}
                   </span>
                 </div>
                 <button

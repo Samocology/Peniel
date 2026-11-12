@@ -297,6 +297,7 @@ async function initializeFlutterwave(
   order: { order_id: string; reference: string; amount_minor: number },
   email: string,
   idempotencyKey: string,
+  amountOverrideMinor?: number,
 ) {
   const secret = env.FLUTTERWAVE_SECRET_KEY;
   const appUrl = env.APP_BASE_URL;
@@ -325,12 +326,38 @@ async function initializeFlutterwave(
     return errorFromDatabase(paymentInit.status, payment);
   }
   const paymentData = payment as {
+    id?: unknown;
     reference?: unknown;
     amount_minor?: unknown;
     checkout_url?: unknown;
+    status?: unknown;
   };
   if (typeof paymentData.reference !== "string" || typeof paymentData.amount_minor !== "number") {
     return json({ ok: false, error: "Could not prepare a secure payment." }, 502);
+  }
+
+  const payAmount: number =
+    amountOverrideMinor != null && Number.isInteger(amountOverrideMinor) && amountOverrideMinor > 0
+      ? amountOverrideMinor
+      : paymentData.amount_minor;
+
+  if (amountOverrideMinor && payAmount !== paymentData.amount_minor) {
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) {
+      return json({ ok: false, error: "Payment service is not configured." }, 503);
+    }
+    const updated = await databaseRequest(
+      env,
+      `payments?amount_minor=eq.${paymentData.amount_minor}&reference=eq.${encodeURIComponent(
+        paymentData.reference,
+      )}`,
+      serviceKey,
+      { method: "PATCH", body: JSON.stringify({ amount_minor: payAmount }) },
+    );
+    if (!updated.ok) {
+      const payload = await databasePayload(updated);
+      return errorFromDatabase(updated.status, payload);
+    }
   }
 
   if (typeof paymentData.checkout_url === "string") {
@@ -352,7 +379,7 @@ async function initializeFlutterwave(
     },
     body: JSON.stringify({
       tx_ref: paymentData.reference,
-      amount: parseFlutterwaveAmount(paymentData.amount_minor),
+      amount: parseFlutterwaveAmount(payAmount),
       currency: "NGN",
       redirect_url: `${appUrl.replace(/\/+$/, "")}/payment`,
       customer: { email },
@@ -414,6 +441,9 @@ async function checkout(request: Request, env: BackendEnv, identity: Identity) {
   if (!input) return json({ ok: false, error: "A valid JSON request is required." }, 400);
   const key = typeof input["idempotencyKey"] === "string" ? input["idempotencyKey"] : "";
   const lines = input["items"];
+  const useWallet = typeof input["useWallet"] === "boolean" ? Boolean(input["useWallet"]) : false;
+  const walletAmountMinor =
+    typeof input["walletAmountMinor"] === "number" ? Number(input["walletAmountMinor"]) : 0;
   if (
     !/^[a-zA-Z0-9:_-]{8,120}$/.test(key) ||
     !Array.isArray(lines) ||
@@ -504,12 +534,142 @@ async function checkout(request: Request, env: BackendEnv, identity: Identity) {
   ) {
     return json({ ok: false, error: "Checkout could not create a valid order." }, 502);
   }
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  let walletUsedMinor = 0;
+  if (useWallet) {
+    const wallet = await databaseRequest(
+      env,
+      `customer_wallets?select=balance_minor&customer_id=eq.${encodeURIComponent(identity.id)}`,
+      identity.accessToken,
+    );
+    const walletPayload = await databasePayload(wallet);
+    let balanceMinor = 0;
+    if (wallet.ok && Array.isArray(walletPayload) && walletPayload[0]) {
+      balanceMinor = Number(walletPayload[0]?.balance_minor ?? 0);
+    }
+    const requested = walletAmountMinor > 0 ? walletAmountMinor : balanceMinor;
+    walletUsedMinor = Math.max(0, Math.min(requested, balanceMinor));
+    if (walletUsedMinor > 0) {
+      const debited = await debitCustomerWallet(
+        new Request("https://peniel.internal/api/customer/wallet/debit", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            amount_minor: walletUsedMinor,
+            reference: `wallet-${key}`,
+            description: `Wallet payment for order ${key}`,
+          }),
+        }),
+        env,
+        identity,
+      );
+      const debitResult = await databasePayload(debited);
+      if (!debited.ok || !debitResult || typeof debitResult !== "object") {
+        return json(
+          { ok: false, error: "Could not apply wallet balance. Please retry checkout." },
+          400,
+        );
+      }
+    }
+  }
+
+  const orderTotal = order.amount_minor;
+  const remaining = orderTotal - walletUsedMinor;
+
+  if (walletUsedMinor > 0 && serviceKey) {
+    await databaseRequest(
+      env,
+      `payments?reference=eq.wallet-${encodeURIComponent(key)}`,
+      serviceKey,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          order_id: order.order_id,
+          reference: `wallet-${key}`,
+          provider: "wallet",
+          provider_transaction_id: null,
+          amount_minor: walletUsedMinor,
+          currency: "NGN",
+          checkout_url: null,
+          idempotency_key: `wallet-${key}`,
+          status: "successful",
+        }),
+      },
+    );
+  }
+
+  if (remaining <= 0) {
+    if (!serviceKey) {
+      return json({ ok: false, error: "Server payment configuration is incomplete." }, 503);
+    }
+    await databaseRequest(
+      env,
+      `orders?status=eq.pending_payment&id=eq.${encodeURIComponent(order.order_id)}`,
+      serviceKey,
+      { method: "PATCH", body: JSON.stringify({ status: "paid" }) },
+    );
+    await databaseRequest(env, "order_status_events", serviceKey, {
+      method: "POST",
+      body: JSON.stringify({
+        order_id: order.order_id,
+        to_status: "paid",
+        actor_id: identity.id,
+      }),
+    });
+    const vendorOrders = await databaseRequest(
+      env,
+      `vendor_orders?select=id,vendor_id,subtotal_minor,delivery_minor,commission_minor,vendor_net_minor&order_id=eq.${encodeURIComponent(order.order_id)}`,
+      serviceKey,
+    );
+    const voPayload = await databasePayload(vendorOrders);
+    if (Array.isArray(voPayload)) {
+      for (const vo of voPayload) {
+        const vendorId = String(vo.vendor_id ?? "");
+        const subtotal = Number(vo.subtotal_minor ?? 0);
+        const delivery = Number(vo.delivery_minor ?? 0);
+        const commission = Number(vo.commission_minor ?? 0);
+        await databaseRequest(env, "ledger_entries", serviceKey, {
+          method: "POST",
+          body: JSON.stringify({
+            vendor_id: vendorId,
+            order_id: order.order_id,
+            entry_type: "sale",
+            amount_minor: subtotal + delivery,
+            source_reference: order.reference,
+          }),
+        });
+        await databaseRequest(env, "ledger_entries", serviceKey, {
+          method: "POST",
+          body: JSON.stringify({
+            vendor_id: vendorId,
+            order_id: order.order_id,
+            entry_type: "commission",
+            amount_minor: -commission,
+            source_reference: order.reference,
+          }),
+        });
+      }
+    }
+    return json({
+      ok: true,
+      data: {
+        orderId: order.order_id,
+        reference: order.reference,
+        paymentUrl: null,
+        walletPaid: true,
+        walletUsedMinor,
+      },
+    });
+  }
+
   return initializeFlutterwave(
     env,
     identity,
     order as { order_id: string; reference: string; amount_minor: number },
     identity.email,
     key,
+    remaining,
   );
 }
 
@@ -731,20 +891,84 @@ async function updateCustomerProfile(request: Request, env: BackendEnv, identity
 async function getCustomerWallet(env: BackendEnv, identity: Identity) {
   const response = await databaseRequest(
     env,
-    `payments?select=amount_minor&orders!inner(customer_id)=eq.${encodeURIComponent(
-      identity.id,
-    )}&status=eq.successful`,
+    `customer_wallets?select=balance_minor,currency&customer_id=eq.${encodeURIComponent(identity.id)}`,
     identity.accessToken,
   );
   const payload = await databasePayload(response);
   if (!response.ok) return errorFromDatabase(response.status, payload);
-  const balance = Array.isArray(payload)
-    ? payload.reduce(
-        (sum: number, row: { amount_minor?: number }) => sum + Number(row?.amount_minor ?? 0),
-        0,
-      )
-    : 0;
-  return json({ ok: true, data: { balanceMinor: balance, currency: "NGN" } });
+  let balanceMinor = 0;
+  let currency = "NGN";
+  if (Array.isArray(payload) && payload[0]) {
+    balanceMinor = Number(payload[0]?.balance_minor ?? 0);
+    currency = String(payload[0]?.currency ?? "NGN");
+  } else {
+    const created = await databaseRequest(env, "customer_wallets", identity.accessToken, {
+      method: "POST",
+      body: JSON.stringify({ customer_id: identity.id, balance_minor: 0, currency: "NGN" }),
+    });
+    const createdPayload = await databasePayload(created);
+    if (created.ok && Array.isArray(createdPayload) && createdPayload[0]) {
+      balanceMinor = Number(createdPayload[0]?.balance_minor ?? 0);
+      currency = String(createdPayload[0]?.currency ?? "NGN");
+    }
+  }
+  return json({ ok: true, data: { balanceMinor, currency } });
+}
+
+async function debitCustomerWallet(request: Request, env: BackendEnv, identity: Identity) {
+  const input = await readJsonObject(request);
+  const amountMinor =
+    typeof input?.["amount_minor"] === "number" ? Number(input["amount_minor"]) : 0;
+  const reference =
+    typeof input?.["reference"] === "string" ? String(input["reference"]).trim() : "";
+  const description =
+    typeof input?.["description"] === "string"
+      ? String(input["description"]).trim()
+      : "Wallet payment";
+  if (!Number.isInteger(amountMinor) || amountMinor <= 0) {
+    return json({ ok: false, error: "Invalid wallet debit amount." }, 400);
+  }
+  if (!reference) {
+    return json({ ok: false, error: "A reference is required." }, 400);
+  }
+  const wallet = await databaseRequest(
+    env,
+    `customer_wallets?select=balance_minor&customer_id=eq.${encodeURIComponent(identity.id)}`,
+    identity.accessToken,
+  );
+  const walletPayload = await databasePayload(wallet);
+  if (!wallet.ok) return errorFromDatabase(wallet.status, walletPayload);
+  const current =
+    Array.isArray(walletPayload) && walletPayload[0]
+      ? Number(walletPayload[0]?.balance_minor ?? 0)
+      : 0;
+  if (current < amountMinor) {
+    return json({ ok: false, error: "Insufficient wallet balance." }, 400);
+  }
+  const updated = await databaseRequest(
+    env,
+    `customer_wallets?balance_minor=eq.${current}&customer_id=eq.${encodeURIComponent(identity.id)}`,
+    identity.accessToken,
+    { method: "PATCH", body: JSON.stringify({ balance_minor: current - amountMinor }) },
+  );
+  const updatedPayload = await databasePayload(updated);
+  if (!updated.ok) return errorFromDatabase(updated.status, updatedPayload);
+  const tx = await databaseRequest(env, "wallet_transactions", identity.accessToken, {
+    method: "POST",
+    body: JSON.stringify({
+      customer_id: identity.id,
+      type: "debit",
+      amount_minor: amountMinor,
+      reference,
+      description,
+    }),
+  });
+  const txPayload = await databasePayload(tx);
+  if (!tx.ok) return errorFromDatabase(tx.status, txPayload);
+  return json({
+    ok: true,
+    data: { debitedMinor: amountMinor, balanceMinor: current - amountMinor },
+  });
 }
 
 async function getCustomerAddresses(env: BackendEnv, identity: Identity) {
@@ -885,6 +1109,11 @@ export async function handleCommerceRequest(
       const auth = await requireIdentity(request, env);
       if ("response" in auth) return auth.response;
       return getCustomerWallet(env, auth.identity);
+    }
+    if (path === "/api/customer/wallet/debit" && request.method === "POST") {
+      const auth = await requireIdentity(request, env);
+      if ("response" in auth) return auth.response;
+      return debitCustomerWallet(request, env, auth.identity);
     }
     if (path === "/api/customer/addresses" && request.method === "GET") {
       const auth = await requireIdentity(request, env);

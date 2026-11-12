@@ -511,6 +511,8 @@ export const customersApi = {
   updateProfile: (body: UpdateCustomerProfileInput) =>
     patch<CustomerProfile>("/api/customer/profile", body),
   wallet: () => get<CustomerWallet>("/api/customer/wallet"),
+  walletDebit: (body: { amount_minor: number; reference: string; description?: string }) =>
+    post<{ debitedMinor: number; balanceMinor: number }>("/api/customer/wallet/debit", body),
   addresses: () => get<CustomerAddress[]>("/api/customer/addresses"),
   createAddress: (body: CreateCustomerAddressInput) =>
     post<{ created: boolean; address: CustomerAddress | null }>("/api/customer/addresses", body),

@@ -29,11 +29,18 @@ export const Route = createFileRoute("/payment")({
 
 function PaymentPage() {
   const { status, tx_ref: reference, transaction_id: transactionId } = Route.useSearch();
+  const isWallet = reference === "wallet";
   const [paymentState, setPaymentState] = useState<PaymentState>("processing");
 
   useEffect(() => {
     if (status?.toLowerCase() === "cancelled") {
       setPaymentState("cancelled");
+      return;
+    }
+    if (status?.toLowerCase() === "success" && !reference && !transactionId) {
+      // Wallet-only payment: no Flutterwave transaction involved.
+      app.clearCart();
+      setPaymentState("success");
       return;
     }
     if (!reference || !transactionId) {
@@ -79,7 +86,9 @@ function PaymentPage() {
       icon: <CheckCircle2 className="size-8 text-success" />,
       tone: "bg-success/12",
       title: "Payment verified",
-      body: "Flutterwave confirmed your payment and the order has been recorded.",
+      body: isWallet
+        ? "Your order has been paid using your Peniel Wallet."
+        : "Flutterwave confirmed your payment and the order has been recorded.",
     },
     failed: {
       icon: <XCircle className="size-8 text-destructive" />,
@@ -108,8 +117,8 @@ function PaymentPage() {
 
           <dl className="mt-7 space-y-3 rounded-2xl border border-border bg-muted/40 p-5 text-left text-sm">
             {[
-              ["Reference", reference ?? "Unavailable"],
-              ["Payment provider", "Flutterwave"],
+              ["Reference", isWallet ? "Wallet" : (reference ?? "Unavailable")],
+              ["Payment provider", isWallet ? "Peniel Wallet" : "Flutterwave"],
               ["Status", paymentState],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between gap-3">
