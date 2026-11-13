@@ -12,9 +12,7 @@ import { MARKETPLACE_LOCATIONS } from "@/lib/location";
 import { useState } from "react";
 
 function locationName(location: string) {
-  return location === "Federal Capital Territory"
-    ? "Abuja"
-    : location.replace(/ State$/, "");
+  return location === "Federal Capital Territory" ? "Abuja" : location.replace(/ State$/, "");
 }
 
 export function LocationPicker({
@@ -67,10 +65,7 @@ export function LocationPicker({
               Find businesses and services across Nigeria
             </p>
           </div>
-          <CommandInput
-            placeholder="Search a city or state..."
-            className="h-11"
-          />
+          <CommandInput placeholder="Search a city or state..." className="h-11" />
           <CommandList className="max-h-72 p-1.5">
             <CommandEmpty className="py-8 text-sm text-muted-foreground">
               No matching city or state.
@@ -91,9 +86,7 @@ export function LocationPicker({
                   <span className="text-xs text-muted-foreground">
                     {location === "Federal Capital Territory" ? "FCT" : "State"}
                   </span>
-                  {value === location && (
-                    <Check className="ml-auto size-4 text-primary" />
-                  )}
+                  {value === location && <Check className="ml-auto size-4 text-primary" />}
                 </CommandItem>
               ))}
             </CommandGroup>

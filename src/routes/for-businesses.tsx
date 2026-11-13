@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -40,8 +39,7 @@ export const Route = createFileRoute("/for-businesses")({
       { property: "og:title", content: "Sell online with Peniel" },
       {
         property: "og:description",
-        content:
-          "Storefront, orders, payments, payouts and analytics - no developer needed.",
+        content: "Storefront, orders, payments, payouts and analytics - no developer needed.",
       },
     ],
   }),
@@ -95,8 +93,7 @@ const modules = [
   {
     icon: Store,
     title: "Storefront builder",
-    description:
-      "Create a branded, mobile-friendly storefront without writing code.",
+    description: "Create a branded, mobile-friendly storefront without writing code.",
     tag: "Your online presence",
   },
   {
@@ -109,29 +106,25 @@ const modules = [
   {
     icon: BarChart3,
     title: "Business dashboard",
-    description:
-      "Keep track of revenue, orders, performance and popular products.",
+    description: "Keep track of revenue, orders, performance and popular products.",
     tag: "Insights",
   },
   {
     icon: Boxes,
     title: "Inventory management",
-    description:
-      "Manage stock levels, product variants and low-stock notifications.",
+    description: "Manage stock levels, product variants and low-stock notifications.",
     tag: "Operations",
   },
   {
     icon: CalendarClock,
     title: "Bookings and scheduling",
-    description:
-      "Manage reservations, available slots, staff schedules and appointments.",
+    description: "Manage reservations, available slots, staff schedules and appointments.",
     tag: "Appointments",
   },
   {
     icon: Users,
     title: "Customer management",
-    description:
-      "Understand your customers with order histories and customer records.",
+    description: "Understand your customers with order histories and customer records.",
     tag: "Relationships",
   },
 ];
@@ -155,9 +148,7 @@ function SectionHeading({
         {title}
       </h2>
 
-      <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-[15px]">
-        {description}
-      </p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-[15px]">{description}</p>
     </div>
   );
 }
@@ -175,9 +166,7 @@ function BusinessPreview() {
             </div>
             <div>
               <p className="text-xs font-semibold">Business overview</p>
-              <p className="text-[10px] text-muted-foreground">
-                Your Peniel workspace
-              </p>
+              <p className="text-[10px] text-muted-foreground">Your Peniel workspace</p>
             </div>
           </div>
 
@@ -189,39 +178,27 @@ function BusinessPreview() {
 
         <div className="space-y-4 p-4 sm:p-5">
           <div>
-            <p className="text-xs text-muted-foreground">
-              Welcome to your business
-            </p>
-            <h3 className="mt-1 text-lg font-semibold tracking-tight">
-              Everything in one place.
-            </h3>
+            <p className="text-xs text-muted-foreground">Welcome to your business</p>
+            <h3 className="mt-1 text-lg font-semibold tracking-tight">Everything in one place.</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-border/70 bg-background p-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">
-                  Orders
-                </span>
+                <span className="text-[10px] text-muted-foreground">Orders</span>
                 <ShoppingBag className="size-3.5 text-primary" />
               </div>
               <p className="mt-2 text-xl font-semibold">Manage</p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">
-                All your customer orders
-              </p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">All your customer orders</p>
             </div>
 
             <div className="rounded-xl border border-border/70 bg-background p-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">
-                  Payments
-                </span>
+                <span className="text-[10px] text-muted-foreground">Payments</span>
                 <CreditCard className="size-3.5 text-primary" />
               </div>
               <p className="mt-2 text-xl font-semibold">Integrated</p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">
-                Secure payment processing
-              </p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">Secure payment processing</p>
             </div>
           </div>
 
@@ -251,9 +228,7 @@ function BusinessPreview() {
               <Zap className="size-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold">
-                Your business, better organised.
-              </p>
+              <p className="text-xs font-semibold">Your business, better organised.</p>
               <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
                 Manage your operations from one workspace.
               </p>
@@ -293,9 +268,8 @@ function ForBusinesses() {
               </h1>
 
               <p className="mx-auto mt-5 max-w-lg text-sm leading-7 text-muted-foreground sm:text-base lg:mx-0">
-                Build your online storefront, manage customers, receive
-                payments and run your operations without juggling multiple
-                platforms.
+                Build your online storefront, manage customers, receive payments and run your
+                operations without juggling multiple platforms.
               </p>
 
               <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
@@ -348,9 +322,7 @@ function ForBusinesses() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold">Built for businesses</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    One connected platform
-                  </p>
+                  <p className="text-[10px] text-muted-foreground">One connected platform</p>
                 </div>
               </div>
             </div>
@@ -389,13 +361,9 @@ function ForBusinesses() {
                     </span>
                   </div>
 
-                  <h3 className="mt-5 text-sm font-semibold tracking-tight">
-                    {title}
-                  </h3>
+                  <h3 className="mt-5 text-sm font-semibold tracking-tight">{title}</h3>
 
-                  <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-                    {description}
-                  </p>
+                  <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{description}</p>
                 </article>
               ))}
             </div>
@@ -434,13 +402,9 @@ function ForBusinesses() {
                     </span>
                   </div>
 
-                  <h3 className="mt-5 text-sm font-semibold tracking-tight">
-                    {title}
-                  </h3>
+                  <h3 className="mt-5 text-sm font-semibold tracking-tight">{title}</h3>
 
-                  <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                    {description}
-                  </p>
+                  <p className="mt-2 text-xs leading-6 text-muted-foreground">{description}</p>
 
                   <div className="mt-4 flex items-center gap-1.5 text-[11px] font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
                     Part of your workspace
@@ -473,12 +437,10 @@ function ForBusinesses() {
                 </h2>
 
                 <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                  Premium plans give you better tools, but they never buy you
-                  a verification badge. Successfully serve at least five
-                  different customers, maintain a healthy satisfaction score
-                  and resolve complaints. Once eligible, you can apply for
-                  verification. Our team reviews your business before
-                  approval.
+                  Premium plans give you better tools, but they never buy you a verification badge.
+                  Successfully serve at least five different customers, maintain a healthy
+                  satisfaction score and resolve complaints. Once eligible, you can apply for
+                  verification. Our team reviews your business before approval.
                 </p>
 
                 <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2">
@@ -540,8 +502,7 @@ function ForBusinesses() {
             </h2>
 
             <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
-              Create your storefront, connect with customers and manage your
-              business with Peniel.
+              Create your storefront, connect with customers and manage your business with Peniel.
             </p>
 
             <Button

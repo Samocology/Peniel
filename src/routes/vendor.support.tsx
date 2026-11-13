@@ -40,10 +40,7 @@ function VendorSupport() {
 
   const tickets = (state.supportTickets ?? [])
     .filter((ticket) => ticket.vendorSlug === vendor.slug)
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const topics = [
     "Payments & payouts",
@@ -68,11 +65,7 @@ function VendorSupport() {
     },
     {
       title: `Writing ${
-        vendor.type === "beauty"
-          ? "service"
-          : vendor.type === "hotel"
-            ? "room"
-            : "product"
+        vendor.type === "beauty" ? "service" : vendor.type === "hotel" ? "room" : "product"
       } descriptions that sell`,
       description: "Make your storefront more compelling.",
     },
@@ -108,9 +101,8 @@ function VendorSupport() {
               <div className="min-w-0">
                 <p className="text-sm font-semibold">We're here to help.</p>
                 <p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">
-                  Whether you're having trouble with an order, a payout or your
-                  storefront, send us a message and we'll help you work through
-                  it.
+                  Whether you're having trouble with an order, a payout or your storefront, send us
+                  a message and we'll help you work through it.
                 </p>
               </div>
             </div>
@@ -121,12 +113,8 @@ function VendorSupport() {
               </div>
               <div>
                 <p className="text-xs font-semibold">Response time</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Within 2 hours on weekdays
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  9am – 7pm WAT
-                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Within 2 hours on weekdays</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">9am – 7pm WAT</p>
               </div>
             </div>
           </div>
@@ -149,16 +137,12 @@ function VendorSupport() {
                   const created = app.submitSupportTicket(topic, message);
 
                   if (!created) {
-                    toast.error(
-                      "Choose a topic and add a message before submitting.",
-                    );
+                    toast.error("Choose a topic and add a message before submitting.");
                     return;
                   }
 
                   event.currentTarget.reset();
-                  toast.success(
-                    "Support request sent. It is now in your ticket list.",
-                  );
+                  toast.success("Support request sent. It is now in your ticket list.");
                 }}
               >
                 <div className="grid gap-5 sm:grid-cols-2">
@@ -190,10 +174,7 @@ function VendorSupport() {
                       <CheckCircle2 className="size-4 shrink-0 text-primary" />
                       <p className="text-xs leading-5 text-muted-foreground">
                         Your request will be attached to{" "}
-                        <span className="font-medium text-foreground">
-                          {vendor.name}
-                        </span>
-                        .
+                        <span className="font-medium text-foreground">{vendor.name}</span>.
                       </p>
                     </div>
                   </div>
@@ -218,8 +199,7 @@ function VendorSupport() {
                   />
 
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    Please avoid including passwords or sensitive account
-                    credentials.
+                    Please avoid including passwords or sensitive account credentials.
                   </p>
                 </div>
 
@@ -238,8 +218,8 @@ function VendorSupport() {
                 </div>
 
                 <p className="text-[11px] leading-5 text-muted-foreground">
-                  Support requests are currently saved in this browser
-                  prototype and visible only in this business console.
+                  Support requests are currently saved in this browser prototype and visible only in
+                  this business console.
                 </p>
               </form>
             </Panel>
@@ -261,13 +241,10 @@ function VendorSupport() {
                     <Ticket className="size-5" />
                   </div>
 
-                  <p className="mt-4 text-sm font-semibold">
-                    No support requests yet
-                  </p>
+                  <p className="mt-4 text-sm font-semibold">No support requests yet</p>
 
                   <p className="mt-1 max-w-xs text-xs leading-5 text-muted-foreground">
-                    When you submit a support request, you'll be able to find
-                    it here.
+                    When you submit a support request, you'll be able to find it here.
                   </p>
                 </div>
               ) : (
@@ -279,22 +256,17 @@ function VendorSupport() {
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                          <p className="break-words text-sm font-semibold">
-                            {ticket.topic}
-                          </p>
+                          <p className="break-words text-sm font-semibold">{ticket.topic}</p>
 
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                             <span>{ticket.id}</span>
                             <span aria-hidden="true">·</span>
                             <span>
-                              {new Date(ticket.createdAt).toLocaleDateString(
-                                "en-NG",
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                },
-                              )}
+                              {new Date(ticket.createdAt).toLocaleDateString("en-NG", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
                             </span>
                           </div>
                         </div>
@@ -326,12 +298,8 @@ function VendorSupport() {
                   </div>
 
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold">
-                      WhatsApp business line
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      +234 700 PENIEL
-                    </p>
+                    <p className="text-xs font-semibold">WhatsApp business line</p>
+                    <p className="mt-1 text-sm text-muted-foreground">+234 700 PENIEL</p>
                   </div>
                 </div>
 
@@ -342,16 +310,13 @@ function VendorSupport() {
 
                   <div className="min-w-0">
                     <p className="text-xs font-semibold">Call us</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      +234 1 888 0000
-                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">+234 1 888 0000</p>
                   </div>
                 </div>
               </div>
 
               <p className="mt-4 text-[11px] leading-5 text-muted-foreground">
-                For detailed issues, submitting a support ticket helps keep
-                your request organised.
+                For detailed issues, submitting a support ticket helps keep your request organised.
               </p>
             </Panel>
 
@@ -359,18 +324,13 @@ function VendorSupport() {
             <Panel title="Helpful guides">
               <div className="space-y-1">
                 {guides.map((guide, index) => (
-                  <div
-                    key={guide.title}
-                    className="flex items-start gap-3 rounded-xl px-2 py-3"
-                  >
+                  <div key={guide.title} className="flex items-start gap-3 rounded-xl px-2 py-3">
                     <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                       <BookOpen className="size-4" />
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold leading-5">
-                        {guide.title}
-                      </p>
+                      <p className="text-xs font-semibold leading-5">{guide.title}</p>
                       <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
                         {guide.description}
                       </p>
@@ -388,8 +348,8 @@ function VendorSupport() {
               </div>
 
               <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Include relevant order references and a clear description of
-                the issue so the team can understand your request.
+                Include relevant order references and a clear description of the issue so the team
+                can understand your request.
               </p>
 
               <div className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-primary">

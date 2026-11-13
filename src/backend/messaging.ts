@@ -5,7 +5,12 @@ import { sanitizeChat } from "../lib/chat-guard.ts";
 
 type Identity = NonNullable<Awaited<ReturnType<typeof getRequestIdentity>>>;
 
-async function db(env: BackendEnv, path: string, token: string, init: RequestInit = {}): Promise<Response> {
+async function db(
+  env: BackendEnv,
+  path: string,
+  token: string,
+  init: RequestInit = {},
+): Promise<Response> {
   const url = env.SUPABASE_URL?.replace(/\/+$/, "");
   const key = env.SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Supabase not configured.");
@@ -24,15 +29,25 @@ async function db(env: BackendEnv, path: string, token: string, init: RequestIni
 async function payload(r: Response): Promise<unknown> {
   const t = await r.text();
   if (!t) return null;
-  try { return JSON.parse(t); } catch { return null; }
+  try {
+    return JSON.parse(t);
+  } catch {
+    return null;
+  }
 }
 
 function dbErr(status: number, body: unknown): Response {
-  const code = body !== null && typeof body === "object" && "code" in body ? String((body as Record<string,unknown>)["code"]) : "";
+  const code =
+    body !== null && typeof body === "object" && "code" in body
+      ? String((body as Record<string, unknown>)["code"])
+      : "";
   if (status === 401) return json({ ok: false, error: "Authentication required." }, 401);
-  if (status === 403 || code === "42501") return json({ ok: false, error: "Permission denied." }, 403);
-  if (status === 404 || code === "P0002") return json({ ok: false, error: "Record not found." }, 404);
-  if (status === 409 || code === "23505") return json({ ok: false, error: "Conflict with existing record." }, 409);
+  if (status === 403 || code === "42501")
+    return json({ ok: false, error: "Permission denied." }, 403);
+  if (status === 404 || code === "P0002")
+    return json({ ok: false, error: "Record not found." }, 404);
+  if (status === 409 || code === "23505")
+    return json({ ok: false, error: "Conflict with existing record." }, 409);
   return json({ ok: false, error: "Data service temporarily unavailable." }, 502);
 }
 
@@ -41,7 +56,8 @@ async function listConversations(request: Request, env: BackendEnv, identity: Id
   const url = new URL(request.url);
   const vendorId = url.searchParams.get("vendor_id");
   const q = new URLSearchParams({
-    select: "id,vendor_id,customer_id,created_at,vendors(name,slug),profiles!conversations_customer_id_fkey(full_name)",
+    select:
+      "id,vendor_id,customer_id,created_at,vendors(name,slug),profiles!conversations_customer_id_fkey(full_name)",
     order: "created_at.desc",
     limit: "100",
   });
@@ -74,7 +90,12 @@ async function openConversation(request: Request, env: BackendEnv, identity: Ide
 }
 
 // GET /api/messages/conversations/:id/messages
-async function getMessages(request: Request, env: BackendEnv, identity: Identity, conversationId: string) {
+async function getMessages(
+  request: Request,
+  env: BackendEnv,
+  identity: Identity,
+  conversationId: string,
+) {
   const url = new URL(request.url);
   const q = new URLSearchParams({
     select: "id,sender_id,body,created_at,read_at,profiles!messages_sender_id_fkey(full_name)",
@@ -89,7 +110,12 @@ async function getMessages(request: Request, env: BackendEnv, identity: Identity
 }
 
 // POST /api/messages/conversations/:id/messages
-async function sendMessage(request: Request, env: BackendEnv, identity: Identity, conversationId: string) {
+async function sendMessage(
+  request: Request,
+  env: BackendEnv,
+  identity: Identity,
+  conversationId: string,
+) {
   const input = await readJsonObject(request, 8192);
   const rawBody = typeof input?.["body"] === "string" ? input["body"] : "";
   if (!rawBody.trim()) return json({ ok: false, error: "Message body is required." }, 400);
@@ -106,39 +132,60 @@ async function sendMessage(request: Request, env: BackendEnv, identity: Identity
   const p = await payload(r);
   if (!r.ok) return dbErr(r.status, p);
   const msg = Array.isArray(p) ? p[0] : p;
-  return json({ ok: true, data: { ...(msg as Record<string,unknown>), blocked } }, 201);
+  return json({ ok: true, data: { ...(msg as Record<string, unknown>), blocked } }, 201);
 }
 
 // PATCH /api/messages/conversations/:id/read
-async function markRead(request: Request, env: BackendEnv, identity: Identity, conversationId: string) {
+async function markRead(
+  request: Request,
+  env: BackendEnv,
+  identity: Identity,
+  conversationId: string,
+) {
   const now = new Date().toISOString();
-  const r = await db(env, `messages?conversation_id=eq.${conversationId}&sender_id=neq.${identity.id}&read_at=is.null`, identity.accessToken, {
-    method: "PATCH",
-    body: JSON.stringify({ read_at: now }),
-  });
+  const r = await db(
+    env,
+    `messages?conversation_id=eq.${conversationId}&sender_id=neq.${identity.id}&read_at=is.null`,
+    identity.accessToken,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ read_at: now }),
+    },
+  );
   const p = await payload(r);
   if (!r.ok) return dbErr(r.status, p);
   return json({ ok: true, data: { markedRead: true } });
 }
 
-export async function handleMessagingRequest(request: Request, env: BackendEnv): Promise<Response | null> {
+export async function handleMessagingRequest(
+  request: Request,
+  env: BackendEnv,
+): Promise<Response | null> {
   const { pathname } = new URL(request.url);
   if (!pathname.startsWith("/api/messages/")) return null;
 
   try {
-    if (!isSameOriginMutation(request)) return json({ ok: false, error: "Cross-origin mutation rejected." }, 403);
+    if (!isSameOriginMutation(request))
+      return json({ ok: false, error: "Cross-origin mutation rejected." }, 403);
     const identity = await getRequestIdentity(request, env);
     if (!identity) return json({ ok: false, error: "Authentication required." }, 401);
 
-    if (pathname === "/api/messages/conversations" && request.method === "GET") return listConversations(request, env, identity);
-    if (pathname === "/api/messages/conversations" && request.method === "POST") return openConversation(request, env, identity);
+    if (pathname === "/api/messages/conversations" && request.method === "GET")
+      return listConversations(request, env, identity);
+    if (pathname === "/api/messages/conversations" && request.method === "POST")
+      return openConversation(request, env, identity);
 
-    const convMatch = pathname.match(/^\/api\/messages\/conversations\/([0-9a-f-]{36})\/messages$/i);
-    if (convMatch && request.method === "GET") return getMessages(request, env, identity, convMatch[1]!);
-    if (convMatch && request.method === "POST") return sendMessage(request, env, identity, convMatch[1]!);
+    const convMatch = pathname.match(
+      /^\/api\/messages\/conversations\/([0-9a-f-]{36})\/messages$/i,
+    );
+    if (convMatch && request.method === "GET")
+      return getMessages(request, env, identity, convMatch[1]!);
+    if (convMatch && request.method === "POST")
+      return sendMessage(request, env, identity, convMatch[1]!);
 
     const readMatch = pathname.match(/^\/api\/messages\/conversations\/([0-9a-f-]{36})\/read$/i);
-    if (readMatch && request.method === "PATCH") return markRead(request, env, identity, readMatch[1]!);
+    if (readMatch && request.method === "PATCH")
+      return markRead(request, env, identity, readMatch[1]!);
 
     return null;
   } catch (error) {

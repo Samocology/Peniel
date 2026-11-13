@@ -1,5 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { CalendarCheck, CalendarPlus, Clock, MapPin, MessageCircle, ShieldCheck, User, XCircle } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarPlus,
+  Clock,
+  MapPin,
+  MessageCircle,
+  ShieldCheck,
+  User,
+  XCircle,
+} from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { StatusPill } from "@/components/site/bits";
@@ -13,15 +22,23 @@ export const Route = createFileRoute("/bookings/$id")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Booking unavailable - Peniel" }, { name: "robots", content: "noindex" }] };
+      return {
+        meta: [{ title: "Booking unavailable - Peniel" }, { name: "robots", content: "noindex" }],
+      };
     }
     const b = loaderData.booking;
     return {
       meta: [
         { title: `Booking ${b.id} - ${b.vendor} on Peniel` },
-        { name: "description", content: `Your ${b.vendor} appointment is ${b.status.toLowerCase()}. View time, specialist and location.` },
+        {
+          name: "description",
+          content: `Your ${b.vendor} appointment is ${b.status.toLowerCase()}. View time, specialist and location.`,
+        },
         { property: "og:title", content: `Booking confirmed - ${b.vendor}` },
-        { property: "og:description", content: `Appointment details and reminders for your ${b.vendor} booking.` },
+        {
+          property: "og:description",
+          content: `Appointment details and reminders for your ${b.vendor} booking.`,
+        },
       ],
     };
   },
@@ -98,7 +115,8 @@ function BookingPage() {
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
-              <ShieldCheck className="size-3.5 text-success" /> Free reschedule up to 12 hours before
+              <ShieldCheck className="size-3.5 text-success" /> Free reschedule up to 12 hours
+              before
             </span>
             <button className="inline-flex items-center gap-1.5 text-destructive">
               <XCircle className="size-3.5" /> Cancel booking
@@ -111,7 +129,11 @@ function BookingPage() {
             ← All bookings
           </Link>
           {vendor && (
-            <Link to="/store/$slug" params={{ slug: vendor.slug }} className="font-semibold text-primary">
+            <Link
+              to="/store/$slug"
+              params={{ slug: vendor.slug }}
+              className="font-semibold text-primary"
+            >
               Visit {vendor.name}
             </Link>
           )}

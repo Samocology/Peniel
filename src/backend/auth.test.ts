@@ -295,10 +295,7 @@ test("logout revokes the Supabase session and clears both cookies", async () => 
 });
 
 test("Google OAuth starts PKCE and exchanges its callback code server-side", async () => {
-  const startResponse = await handleAuthRequest(
-    request("/api/auth/oauth/google", "GET"),
-    env,
-  );
+  const startResponse = await handleAuthRequest(request("/api/auth/oauth/google", "GET"), env);
   assert.equal(startResponse.status, 302);
 
   const authorizeUrl = new URL(startResponse.headers.get("location") ?? "");

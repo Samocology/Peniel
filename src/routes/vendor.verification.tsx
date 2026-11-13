@@ -74,9 +74,7 @@ function VerificationPage() {
             <ShieldCheck className="size-6" />
           </div>
 
-          <h1 className="mt-4 text-lg font-semibold">
-            Sign in to view verification
-          </h1>
+          <h1 className="mt-4 text-lg font-semibold">Sign in to view verification</h1>
 
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             We're taking you to sign in or create your business account.
@@ -101,10 +99,7 @@ function VerificationPage() {
 
   const servedCustomers = new Set(
     state.orders
-      .filter(
-        (order) =>
-          order.vendorSlug === vendor.slug && order.status === "Delivered",
-      )
+      .filter((order) => order.vendorSlug === vendor.slug && order.status === "Delivered")
       .map((order) => order.customer),
   ).size;
 
@@ -113,22 +108,13 @@ function VerificationPage() {
   const stage =
     account.verification === "applied"
       ? "review"
-      : !eligible &&
-          (requestedStage === "eligible" || requestedStage === "apply")
+      : !eligible && (requestedStage === "eligible" || requestedStage === "apply")
         ? "progress"
         : requestedStage;
 
   const eligibility = [
-    [
-      "Serve 5 different customers",
-      `${servedCustomers} of 5 completed`,
-      servedCustomers >= 5,
-    ],
-    [
-      "Customer satisfaction above 4.0",
-      `${vendor.rating.toFixed(1)} average`,
-      vendor.rating >= 4,
-    ],
+    ["Serve 5 different customers", `${servedCustomers} of 5 completed`, servedCustomers >= 5],
+    ["Customer satisfaction above 4.0", `${vendor.rating.toFixed(1)} average`, vendor.rating >= 4],
     ["No unresolved serious complaints", "Requires platform review", false],
     ["No confirmed fraud", "Requires platform review", false],
     ["Identity & business information", "Provide business documents", false],
@@ -136,21 +122,9 @@ function VerificationPage() {
   ] as const;
 
   const documents =
-    vendor.type === "restaurant" ||
-    vendor.type === "bakery" ||
-    vendor.type === "fresh-food"
-      ? [
-          "Government ID",
-          "Business registration",
-          "Proof of address",
-          "Food safety certificate",
-        ]
-      : [
-          "Government ID",
-          "Business registration",
-          "Proof of address",
-          "Business-specific license",
-        ];
+    vendor.type === "restaurant" || vendor.type === "bakery" || vendor.type === "fresh-food"
+      ? ["Government ID", "Business registration", "Proof of address", "Food safety certificate"]
+      : ["Government ID", "Business registration", "Proof of address", "Business-specific license"];
 
   const progress = Math.min(100, (servedCustomers / 5) * 100);
 
@@ -197,12 +171,10 @@ function VerificationPage() {
               </div>
 
               <div className="min-w-0">
-                <p className="text-sm font-semibold">
-                  Earn your verified business badge
-                </p>
+                <p className="text-sm font-semibold">Earn your verified business badge</p>
                 <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  Verification helps customers recognise businesses that have
-                  demonstrated genuine service, reliability and compliance.
+                  Verification helps customers recognise businesses that have demonstrated genuine
+                  service, reliability and compliance.
                 </p>
               </div>
             </div>
@@ -232,8 +204,8 @@ function VerificationPage() {
                     </h2>
 
                     <p className="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground">
-                      Serve five different customers successfully to unlock
-                      your verification application.
+                      Serve five different customers successfully to unlock your verification
+                      application.
                     </p>
                   </div>
 
@@ -247,9 +219,7 @@ function VerificationPage() {
                     <span className="font-medium text-muted-foreground">
                       Customer service progress
                     </span>
-                    <span className="font-semibold tabular-nums">
-                      {Math.round(progress)}%
-                    </span>
+                    <span className="font-semibold tabular-nums">{Math.round(progress)}%</span>
                   </div>
 
                   <div className="h-2.5 overflow-hidden rounded-full bg-muted">
@@ -262,10 +232,7 @@ function VerificationPage() {
 
                 <div className="mt-5 flex items-center justify-between gap-2">
                   {[1, 2, 3, 4, 5].map((number) => (
-                    <div
-                      key={number}
-                      className="flex flex-1 flex-col items-center gap-2"
-                    >
+                    <div key={number} className="flex flex-1 flex-col items-center gap-2">
                       <span
                         className={`flex size-9 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                           number <= servedCustomers
@@ -273,15 +240,9 @@ function VerificationPage() {
                             : "border border-dashed border-border bg-background text-muted-foreground"
                         }`}
                       >
-                        {number <= servedCustomers ? (
-                          <Check className="size-4" />
-                        ) : (
-                          number
-                        )}
+                        {number <= servedCustomers ? <Check className="size-4" /> : number}
                       </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        Customer {number}
-                      </span>
+                      <span className="text-[10px] text-muted-foreground">Customer {number}</span>
                     </div>
                   ))}
                 </div>
@@ -292,9 +253,7 @@ function VerificationPage() {
                       {servedCustomers >= 5
                         ? "Customer requirement completed"
                         : `${Math.max(0, 5 - servedCustomers)} more ${
-                            5 - servedCustomers === 1
-                              ? "customer"
-                              : "customers"
+                            5 - servedCustomers === 1 ? "customer" : "customers"
                           } to go`}
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
@@ -308,9 +267,7 @@ function VerificationPage() {
                       search={{ stage: "apply" }}
                       className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
                     >
-                      {isPaid(account.plan)
-                        ? "Apply for verification"
-                        : "Upgrade to apply"}
+                      {isPaid(account.plan) ? "Apply for verification" : "Upgrade to apply"}
                       <ArrowRight className="size-3.5" />
                     </Link>
                   ) : (
@@ -341,9 +298,9 @@ function VerificationPage() {
                     </h2>
 
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      You've served {servedCustomers} different customers
-                      with a {vendor.rating.toFixed(1)} rating. Eligibility
-                      unlocks the application; it does not guarantee approval.
+                      You've served {servedCustomers} different customers with a{" "}
+                      {vendor.rating.toFixed(1)} rating. Eligibility unlocks the application; it
+                      does not guarantee approval.
                     </p>
 
                     <Link
@@ -351,9 +308,7 @@ function VerificationPage() {
                       search={{ stage: "apply" }}
                       className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
                     >
-                      {isPaid(account.plan)
-                        ? "Start application"
-                        : "Upgrade to apply"}
+                      {isPaid(account.plan) ? "Start application" : "Upgrade to apply"}
                       <ArrowRight className="size-4" />
                     </Link>
                   </div>
@@ -369,12 +324,10 @@ function VerificationPage() {
                     <div className="flex items-start gap-2.5">
                       <FileCheck className="mt-0.5 size-4 shrink-0 text-primary" />
                       <div>
-                        <p className="text-sm font-semibold">
-                          Business information and documents
-                        </p>
+                        <p className="text-sm font-semibold">Business information and documents</p>
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                          Provide accurate details and select the requested
-                          supporting documents for review.
+                          Provide accurate details and select the requested supporting documents for
+                          review.
                         </p>
                       </div>
                     </div>
@@ -400,9 +353,7 @@ function VerificationPage() {
 
                     <div className="border-t border-border pt-5">
                       <div className="mb-3">
-                        <p className="text-sm font-semibold">
-                          Supporting documents
-                        </p>
+                        <p className="text-sm font-semibold">Supporting documents</p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           Select a PDF or image for each required document.
                         </p>
@@ -427,8 +378,7 @@ function VerificationPage() {
                                 {document}
                               </span>
                               <span className="mt-1 block truncate text-[10px] text-muted-foreground">
-                                {documentFiles[document] ??
-                                  "Choose a PDF or image"}
+                                {documentFiles[document] ?? "Choose a PDF or image"}
                               </span>
                             </span>
 
@@ -453,8 +403,8 @@ function VerificationPage() {
                       </div>
 
                       <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-                        Documents are selected locally in this prototype.
-                        They are not uploaded to a server.
+                        Documents are selected locally in this prototype. They are not uploaded to a
+                        server.
                       </p>
                     </div>
 
@@ -466,8 +416,8 @@ function VerificationPage() {
                           className="mt-0.5 size-4 shrink-0 accent-primary"
                         />
                         <span className="text-xs leading-relaxed text-muted-foreground">
-                          I confirm that this information is accurate and I
-                          accept Peniel's verification policy.
+                          I confirm that this information is accurate and I accept Peniel's
+                          verification policy.
                         </span>
                       </label>
                     </div>
@@ -499,14 +449,11 @@ function VerificationPage() {
                       Under review
                     </span>
 
-                    <h2 className="mt-3 text-lg font-semibold">
-                      Verification submitted
-                    </h2>
+                    <h2 className="mt-3 text-lg font-semibold">Verification submitted</h2>
 
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      Our team is reviewing your application. Most reviews
-                      finish within 3 business days. You'll be notified by
-                      email and in your dashboard.
+                      Our team is reviewing your application. Most reviews finish within 3 business
+                      days. You'll be notified by email and in your dashboard.
                     </p>
                   </div>
                 </div>
@@ -526,14 +473,11 @@ function VerificationPage() {
                       Verified business
                     </span>
 
-                    <h2 className="mt-3 text-lg font-semibold">
-                      Your business is verified
-                    </h2>
+                    <h2 className="mt-3 text-lg font-semibold">Your business is verified</h2>
 
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      Your badge is now visible on your storefront and in the
-                      marketplace. It can be suspended if serious issues are
-                      confirmed.
+                      Your badge is now visible on your storefront and in the marketplace. It can be
+                      suspended if serious issues are confirmed.
                     </p>
                   </div>
                 </div>
@@ -558,17 +502,15 @@ function VerificationPage() {
                     </h2>
 
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                      Reason: the business name on your CAC certificate does
-                      not match your storefront name.
+                      Reason: the business name on your CAC certificate does not match your
+                      storefront name.
                     </p>
 
                     <div className="mt-4 rounded-xl border border-destructive/15 bg-background/70 p-3.5">
                       <p className="text-xs leading-relaxed text-muted-foreground">
                         You can reapply after{" "}
-                        <span className="font-semibold text-foreground">
-                          30 days
-                        </span>{" "}
-                        or once the document is corrected.
+                        <span className="font-semibold text-foreground">30 days</span> or once the
+                        document is corrected.
                       </p>
                     </div>
                   </div>
@@ -592,16 +534,10 @@ function VerificationPage() {
                   >
                     <div
                       className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg ${
-                        done
-                          ? "bg-success/10 text-success"
-                          : "bg-muted text-muted-foreground"
+                        done ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {done ? (
-                        <Check className="size-4" />
-                      ) : (
-                        <AlertCircle className="size-4" />
-                      )}
+                      {done ? <Check className="size-4" /> : <AlertCircle className="size-4" />}
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -623,8 +559,8 @@ function VerificationPage() {
               </div>
 
               <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
-                Some requirements, including complaints, fraud and policy
-                compliance, can only be confirmed through platform review.
+                Some requirements, including complaints, fraud and policy compliance, can only be
+                confirmed through platform review.
               </p>
             </Panel>
           </div>
@@ -633,8 +569,8 @@ function VerificationPage() {
           <aside className="space-y-5">
             <Panel title="Reputation levels">
               <p className="mb-5 text-xs leading-relaxed text-muted-foreground">
-                Your business progresses through reputation milestones as you
-                build a track record on Peniel.
+                Your business progresses through reputation milestones as you build a track record
+                on Peniel.
               </p>
 
               <ol className="relative space-y-5 before:absolute before:bottom-3 before:left-[13px] before:top-3 before:w-px before:bg-border">
@@ -649,10 +585,7 @@ function VerificationPage() {
                           : false;
 
                   return (
-                    <li
-                      key={item.title}
-                      className="relative flex items-start gap-3"
-                    >
+                    <li key={item.title} className="relative flex items-start gap-3">
                       <span
                         className={`relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full border-2 ${
                           item.complete
@@ -665,18 +598,14 @@ function VerificationPage() {
                         {item.complete ? (
                           <Check className="size-3.5" />
                         ) : (
-                          <span className="text-[10px] font-semibold">
-                            {index + 1}
-                          </span>
+                          <span className="text-[10px] font-semibold">{index + 1}</span>
                         )}
                       </span>
 
                       <div className="min-w-0 flex-1 pt-0.5">
                         <p
                           className={`text-xs font-semibold ${
-                            item.complete || current
-                              ? "text-foreground"
-                              : "text-muted-foreground"
+                            item.complete || current ? "text-foreground" : "text-muted-foreground"
                           }`}
                         >
                           {item.title}
@@ -696,15 +625,12 @@ function VerificationPage() {
                 <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <ShieldCheck className="size-4.5" />
                 </div>
-                <p className="text-sm font-semibold">
-                  Trust is earned here
-                </p>
+                <p className="text-sm font-semibold">Trust is earned here</p>
               </div>
 
               <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                Premium plans provide better business tools. Only genuine
-                customer service and a successful review can earn your
-                verification badge.
+                Premium plans provide better business tools. Only genuine customer service and a
+                successful review can earn your verification badge.
               </p>
 
               <div className="mt-4 flex items-center gap-2 border-t border-border pt-3 text-[11px] font-medium text-primary">

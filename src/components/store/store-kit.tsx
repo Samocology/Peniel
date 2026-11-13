@@ -25,8 +25,6 @@ import bakeryItem2 from "@/assets/items/bakery-2.jpg";
 import hotelItem from "@/assets/items/hotel-1.jpg";
 import coverTech from "@/assets/cover-tech.jpg";
 
-
-
 /* ───────────────────────── Store Top Bar ───────────────────────── */
 
 export function StoreTopBar({ vendor }: { vendor: Vendor }) {

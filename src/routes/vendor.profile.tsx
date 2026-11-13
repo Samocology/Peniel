@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowUpRight,
@@ -23,8 +22,7 @@ export const Route = createFileRoute("/vendor/profile")({
       { title: "Business profile - Peniel business console" },
       {
         name: "description",
-        content:
-          "Your business account, plan and storefront link on Peniel.",
+        content: "Your business account, plan and storefront link on Peniel.",
       },
       { property: "og:title", content: "Business profile - Peniel" },
       {
@@ -52,19 +50,13 @@ function VendorProfile() {
           {/* Business identity */}
           <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
             <div className="relative h-32 overflow-hidden bg-muted sm:h-40">
-              <img
-                src={vendor.cover}
-                alt=""
-                className="size-full object-cover"
-              />
+              <img src={vendor.cover} alt="" className="size-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
 
               <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur-md">
                   <Crown className="size-3.5 text-gold" />
-                  {account.plan === "starter"
-                    ? "Free plan"
-                    : `${account.plan} plan`}
+                  {account.plan === "starter" ? "Free plan" : `${account.plan} plan`}
                 </span>
               </div>
             </div>
@@ -134,13 +126,9 @@ function VendorProfile() {
                 <div className="min-w-0 rounded-xl bg-muted/50 p-3.5">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Store className="size-3.5" />
-                    <p className="text-[10px] font-medium uppercase tracking-wide">
-                      Storefront
-                    </p>
+                    <p className="text-[10px] font-medium uppercase tracking-wide">Storefront</p>
                   </div>
-                  <p className="mt-2 truncate text-sm font-semibold">
-                    /{vendor.slug}
-                  </p>
+                  <p className="mt-2 truncate text-sm font-semibold">/{vendor.slug}</p>
                   <Link
                     to="/store/$slug"
                     params={{ slug: vendor.slug }}
@@ -159,9 +147,7 @@ function VendorProfile() {
                   </div>
                   <p className="mt-2 text-sm font-semibold tabular-nums">
                     {vendor.rating.toFixed(1)}
-                    <span className="ml-1 font-normal text-muted-foreground">
-                      / 5.0
-                    </span>
+                    <span className="ml-1 font-normal text-muted-foreground">/ 5.0</span>
                   </p>
                   <p className="mt-1 text-[10px] text-muted-foreground">
                     {vendor.reviews.toLocaleString("en-NG")} reviews
@@ -171,9 +157,7 @@ function VendorProfile() {
                 <div className="rounded-xl bg-muted/50 p-3.5">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Crown className="size-3.5" />
-                    <p className="text-[10px] font-medium uppercase tracking-wide">
-                      Current plan
-                    </p>
+                    <p className="text-[10px] font-medium uppercase tracking-wide">Current plan</p>
                   </div>
                   <p className="mt-2 text-sm font-semibold capitalize">
                     {account.plan === "starter" ? "Free" : account.plan}
@@ -196,17 +180,13 @@ function VendorProfile() {
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Business description
                 </p>
-                <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
-                  {vendor.about}
-                </p>
+                <p className="mt-2 text-[13px] leading-6 text-muted-foreground">{vendor.about}</p>
               </div>
 
               <div className="rounded-xl border border-border bg-muted/30 p-4">
                 <div className="flex items-center gap-2">
                   <Store className="size-4 text-primary" />
-                  <p className="text-xs font-semibold">
-                    Service and delivery
-                  </p>
+                  <p className="text-xs font-semibold">Service and delivery</p>
                 </div>
                 <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
                   {vendor.delivery}
@@ -216,9 +196,7 @@ function VendorProfile() {
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="size-4 text-primary" />
-                  <span className="text-xs text-muted-foreground">
-                    Public business information
-                  </span>
+                  <span className="text-xs text-muted-foreground">Public business information</span>
                 </div>
                 <Link
                   to="/vendor/settings"
@@ -236,8 +214,8 @@ function VendorProfile() {
           <Panel title="Your businesses">
             <div className="mb-4">
               <p className="text-xs leading-5 text-muted-foreground">
-                Switch between demo business accounts. Each account keeps its
-                own plan, profile and settings.
+                Switch between demo business accounts. Each account keeps its own plan, profile and
+                settings.
               </p>
             </div>
 
@@ -274,9 +252,7 @@ function VendorProfile() {
                       </span>
 
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-semibold">
-                          {v.name}
-                        </span>
+                        <span className="block truncate text-xs font-semibold">{v.name}</span>
                         <span className="mt-1 block truncate text-[10px] text-muted-foreground">
                           {v.categoryLabel}
                         </span>
@@ -299,13 +275,11 @@ function VendorProfile() {
             <div className="mt-4 rounded-xl bg-muted/40 p-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-3.5 text-primary" />
-                <p className="text-[10px] font-semibold">
-                  Business account protection
-                </p>
+                <p className="text-[10px] font-semibold">Business account protection</p>
               </div>
               <p className="mt-1.5 text-[10px] leading-5 text-muted-foreground">
-                Your selected business determines which storefront and
-                dashboard settings you manage.
+                Your selected business determines which storefront and dashboard settings you
+                manage.
               </p>
             </div>
           </Panel>

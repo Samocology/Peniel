@@ -1,11 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Building2,
-  Globe2,
-  HeartHandshake,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight, Building2, Globe2, HeartHandshake, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -80,23 +74,21 @@ function About() {
                 The infrastructure that helps businesses grow with confidence.
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-[15px] sm:leading-7">
-                We are building a better way for African businesses to show up,
-                get paid and build lasting relationships with their customers.
+                We are building a better way for African businesses to show up, get paid and build
+                lasting relationships with their customers.
               </p>
             </div>
 
             <div className="min-w-0 space-y-4 rounded-2xl border border-border/70 bg-card/75 p-5 shadow-sm sm:p-6 lg:border-l-2 lg:border-l-primary/30 lg:rounded-l-none lg:border-y-0 lg:border-r-0 lg:bg-transparent lg:py-2 lg:pl-8 lg:pr-0 lg:shadow-none">
               <p className="text-sm leading-6 text-muted-foreground sm:text-[15px] sm:leading-7">
-                Thousands of African businesses still manage sales through
-                messages, screenshots and scattered conversations. They need
-                more than another marketplace. They need a professional
-                storefront, a reliable way to receive payments and simple tools
-                to manage their operations.
+                Thousands of African businesses still manage sales through messages, screenshots and
+                scattered conversations. They need more than another marketplace. They need a
+                professional storefront, a reliable way to receive payments and simple tools to
+                manage their operations.
               </p>
               <p className="text-sm leading-6 text-muted-foreground sm:text-[15px] sm:leading-7">
-                That is where Peniel comes in. We provide the tools that help
-                vendors run their online business while making it easier for
-                customers to discover and buy from them.
+                That is where Peniel comes in. We provide the tools that help vendors run their
+                online business while making it easier for customers to discover and buy from them.
               </p>
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border/70 pt-4 text-xs font-medium text-foreground/80">
                 <span className="inline-flex items-center gap-2">
@@ -124,8 +116,8 @@ function About() {
               </h2>
             </div>
             <p className="max-w-md text-sm leading-6 text-muted-foreground">
-              We believe commerce works better when businesses have the tools
-              to operate independently and customers have reasons to trust.
+              We believe commerce works better when businesses have the tools to operate
+              independently and customers have reasons to trust.
             </p>
           </div>
 

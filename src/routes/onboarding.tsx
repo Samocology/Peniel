@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
@@ -98,9 +97,7 @@ function Onboarding() {
         <div className="h-14 w-14 rounded-2xl bg-[#214B36] flex items-center justify-center shadow-lg">
           <Loader2 className="h-7 w-7 animate-spin text-white" />
         </div>
-        <p className="text-sm font-medium text-[#647067]">
-          Preparing your experience...
-        </p>
+        <p className="text-sm font-medium text-[#647067]">Preparing your experience...</p>
       </div>
     );
   }
@@ -112,9 +109,7 @@ function Onboarding() {
         <Logo />
 
         <div className="flex items-center gap-3">
-          <span className="hidden sm:block text-xs text-[#89928B]">
-            Already have an account?
-          </span>
+          <span className="hidden sm:block text-xs text-[#89928B]">Already have an account?</span>
 
           <Link
             to="/auth"
@@ -129,11 +124,9 @@ function Onboarding() {
       {/* Main */}
       <section className="min-h-[calc(100svh-88px)] flex items-center justify-center px-5 sm:px-8 lg:px-12 pb-8 lg:pb-12">
         <div className="w-full max-w-[1240px] grid lg:grid-cols-[1.05fr_0.95fr] gap-8 lg:gap-16 xl:gap-24 items-center">
-
           {/* Visual showcase */}
           <div className="hidden lg:flex flex-col">
             <div className="relative min-h-[560px] xl:min-h-[620px] rounded-[28px] overflow-hidden bg-[#214B36] p-10 xl:p-12 flex flex-col justify-between">
-
               {/* Decorative elements */}
               <div className="absolute -top-28 -right-20 h-80 w-80 rounded-full border border-white/[0.09]" />
               <div className="absolute -top-12 -right-4 h-52 w-52 rounded-full border border-white/[0.09]" />
@@ -141,8 +134,7 @@ function Onboarding() {
 
               <div className="relative z-10 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-white/80 text-xs font-medium tracking-wide">
-                  <Sparkles className="h-4 w-4 text-[#C5B58A]" />
-                  A BETTER WAY TO SHOP & SELL
+                  <Sparkles className="h-4 w-4 text-[#C5B58A]" />A BETTER WAY TO SHOP & SELL
                 </div>
                 <span className="text-white/40 text-xs">PENIEL</span>
               </div>
@@ -156,9 +148,7 @@ function Onboarding() {
                         <p className="text-[10px] tracking-widest text-[#89928B] font-semibold">
                           YOUR MARKETPLACE
                         </p>
-                        <p className="text-lg font-bold text-[#214B36] mt-1">
-                          Explore Peniel.
-                        </p>
+                        <p className="text-lg font-bold text-[#214B36] mt-1">Explore Peniel.</p>
                       </div>
                       <div className="h-10 w-10 rounded-full bg-[#E8EEE7] flex items-center justify-center">
                         <ShoppingBag className="h-5 w-5 text-[#214B36]" />
@@ -170,24 +160,16 @@ function Onboarding() {
                         <div className="h-24 rounded-xl bg-[#D4DDD0] flex items-center justify-center">
                           <ShoppingBag className="h-9 w-9 text-[#55775E]" />
                         </div>
-                        <p className="mt-3 text-xs font-bold text-[#27392D]">
-                          Lifestyle
-                        </p>
-                        <p className="text-[10px] text-[#89928B] mt-1">
-                          Discover more
-                        </p>
+                        <p className="mt-3 text-xs font-bold text-[#27392D]">Lifestyle</p>
+                        <p className="text-[10px] text-[#89928B] mt-1">Discover more</p>
                       </div>
 
                       <div className="rounded-2xl bg-[#F0E9DC] p-3">
                         <div className="h-24 rounded-xl bg-[#E5D9C7] flex items-center justify-center">
                           <Heart className="h-9 w-9 text-[#927B5B]" />
                         </div>
-                        <p className="mt-3 text-xs font-bold text-[#27392D]">
-                          Beauty & care
-                        </p>
-                        <p className="text-[10px] text-[#89928B] mt-1">
-                          Find your style
-                        </p>
+                        <p className="mt-3 text-xs font-bold text-[#27392D]">Beauty & care</p>
+                        <p className="text-[10px] text-[#89928B] mt-1">Find your style</p>
                       </div>
                     </div>
 
@@ -196,9 +178,7 @@ function Onboarding() {
                         <Store className="h-5 w-5 text-[#214B36]" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-[#27392D]">
-                          Your own storefront
-                        </p>
+                        <p className="text-xs font-bold text-[#27392D]">Your own storefront</p>
                         <p className="text-[10px] text-[#89928B]">
                           Everything your business needs.
                         </p>
@@ -213,12 +193,8 @@ function Onboarding() {
                       <ShieldCheck className="h-5 w-5 text-[#214B36]" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold text-[#24392B]">
-                        Shop confidently
-                      </p>
-                      <p className="text-[9px] text-[#89928B]">
-                        Secure experience
-                      </p>
+                      <p className="text-[11px] font-bold text-[#24392B]">Shop confidently</p>
+                      <p className="text-[9px] text-[#89928B]">Secure experience</p>
                     </div>
                   </div>
                 </div>
@@ -242,7 +218,6 @@ function Onboarding() {
 
           {/* Onboarding content */}
           <div className="w-full max-w-[480px] mx-auto lg:mx-0 lg:ml-auto flex flex-col">
-
             {/* Mobile visual */}
             <div className="lg:hidden mb-9">
               <div className="relative overflow-hidden rounded-[24px] bg-[#214B36] min-h-[190px] sm:min-h-[220px] flex items-center justify-between p-6 sm:p-8">
@@ -277,9 +252,7 @@ function Onboarding() {
                     onClick={() => setIndex(i)}
                     aria-label={`Go to step ${i + 1}`}
                     className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i === index
-                        ? "w-9 bg-[#214B36]"
-                        : "w-5 bg-[#DCE2DA] hover:bg-[#AAB8AA]"
+                      i === index ? "w-9 bg-[#214B36]" : "w-5 bg-[#DCE2DA] hover:bg-[#AAB8AA]"
                     }`}
                   />
                 ))}
@@ -310,9 +283,7 @@ function Onboarding() {
 
               <div className="mt-7 inline-flex items-center gap-2.5 rounded-full bg-[#EDF2EC] px-4 py-2.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#547A5C]" />
-                <span className="text-xs font-medium text-[#49654F]">
-                  {current.tag}
-                </span>
+                <span className="text-xs font-medium text-[#49654F]">{current.tag}</span>
               </div>
             </div>
 
@@ -355,7 +326,8 @@ function Onboarding() {
             </div>
 
             <p className="text-[10px] text-center text-[#A0A9A0] mt-8 lg:mt-10">
-              By continuing, you're joining a marketplace designed to bring people and businesses together.
+              By continuing, you're joining a marketplace designed to bring people and businesses
+              together.
             </p>
           </div>
         </div>

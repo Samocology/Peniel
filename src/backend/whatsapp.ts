@@ -50,7 +50,7 @@ function naira(minor: number): string {
 
 function buildOrderText(payload: OrderNotificationPayload): string {
   const itemLines = payload.items
-    .map(i => `• ${i.quantity}× ${i.name} — ${naira(i.unitPriceMinor * i.quantity)}`)
+    .map((i) => `• ${i.quantity}× ${i.name} — ${naira(i.unitPriceMinor * i.quantity)}`)
     .join("\n");
   return [
     `🛍️ *New Order — Peniel*`,
@@ -80,29 +80,26 @@ async function sendTextMessage(
   const phoneNumberId = env.WHATSAPP_PHONE_NUMBER_ID;
   if (!token || !phoneNumberId) return { error: "WhatsApp credentials not configured." };
 
-  const response = await fetch(
-    `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${token}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body: text, preview_url: false },
-      }),
+  const response = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body: text, preview_url: false },
+    }),
+  });
 
   if (!response.ok) {
     const body = await response.text();
     return { error: `WhatsApp API error ${response.status}: ${body.slice(0, 200)}` };
   }
 
-  const result = await response.json() as { messages?: { id?: string }[] };
+  const result = (await response.json()) as { messages?: { id?: string }[] };
   const messageId = result.messages?.[0]?.id;
   if (messageId === undefined) return {};
   return { messageId };
@@ -116,14 +113,26 @@ export async function sendOrderNotification(
   const timestamp = new Date().toISOString();
 
   if (mode === "disabled") {
-    return { to: payload.vendorWhatsapp, type: "order_notification", mode, status: "skipped", timestamp };
+    return {
+      to: payload.vendorWhatsapp,
+      type: "order_notification",
+      mode,
+      status: "skipped",
+      timestamp,
+    };
   }
 
   const text = buildOrderText(payload);
 
   if (mode === "test") {
     console.log("[WhatsApp TEST] Would send to", payload.vendorWhatsapp, "\n", text);
-    return { to: payload.vendorWhatsapp, type: "order_notification", mode, status: "queued", timestamp };
+    return {
+      to: payload.vendorWhatsapp,
+      type: "order_notification",
+      mode,
+      status: "queued",
+      timestamp,
+    };
   }
 
   // production
@@ -131,17 +140,44 @@ export async function sendOrderNotification(
     const result = await sendTextMessage(env, payload.vendorWhatsapp, text);
     if (result.error) {
       console.error("[WhatsApp] Order notification failed:", result.error);
-      return { to: payload.vendorWhatsapp, type: "order_notification", mode, status: "failed", error: result.error, timestamp };
+      return {
+        to: payload.vendorWhatsapp,
+        type: "order_notification",
+        mode,
+        status: "failed",
+        error: result.error,
+        timestamp,
+      };
     }
     if (result.messageId !== undefined) {
-      return { to: payload.vendorWhatsapp, type: "order_notification", mode, status: "sent", providerMessageId: result.messageId, timestamp };
+      return {
+        to: payload.vendorWhatsapp,
+        type: "order_notification",
+        mode,
+        status: "sent",
+        providerMessageId: result.messageId,
+        timestamp,
+      };
     }
-    return { to: payload.vendorWhatsapp, type: "order_notification", mode, status: "sent", timestamp };
+    return {
+      to: payload.vendorWhatsapp,
+      type: "order_notification",
+      mode,
+      status: "sent",
+      timestamp,
+    };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     console.error("[WhatsApp] Order notification exception:", msg);
     // WhatsApp failure MUST NOT affect order/payment state
-    return { to: payload.vendorWhatsapp, type: "order_notification", mode, status: "failed", error: msg, timestamp };
+    return {
+      to: payload.vendorWhatsapp,
+      type: "order_notification",
+      mode,
+      status: "failed",
+      error: msg,
+      timestamp,
+    };
   }
 }
 
@@ -177,10 +213,24 @@ export async function sendPaymentConfirmation(
   try {
     const result = await sendTextMessage(env, to, text);
     if (result.error) {
-      return { to, type: "payment_confirmation", mode, status: "failed", error: result.error, timestamp };
+      return {
+        to,
+        type: "payment_confirmation",
+        mode,
+        status: "failed",
+        error: result.error,
+        timestamp,
+      };
     }
     if (result.messageId !== undefined) {
-      return { to, type: "payment_confirmation", mode, status: "sent", providerMessageId: result.messageId, timestamp };
+      return {
+        to,
+        type: "payment_confirmation",
+        mode,
+        status: "sent",
+        providerMessageId: result.messageId,
+        timestamp,
+      };
     }
     return { to, type: "payment_confirmation", mode, status: "sent", timestamp };
   } catch (error) {

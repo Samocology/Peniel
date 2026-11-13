@@ -2,82 +2,82 @@
 
 ## Architecture
 
-| Layer | Technology |
-|---|---|
-| Frontend | React + TypeScript + TanStack Start (Cloudflare Workers SSR) |
-| Backend API | Cloudflare Workers Free — `src/server.ts` entry point |
-| Authentication | Supabase Auth (email/password, HttpOnly cookies) |
-| Database | Supabase PostgreSQL Free (PostgREST REST API) |
-| Database security | PostgreSQL RLS + security-definer RPCs |
-| File storage | Cloudflare R2 (presigned PUT URLs, never exposes credentials) |
-| Payment provider | Flutterwave ONLY — no Paystack anywhere |
-| WhatsApp | Official WhatsApp Business Cloud API (disabled by default) |
-| Background jobs | Cloudflare Queues — not yet wired (async notifications deferred) |
+| Layer             | Technology                                                       |
+| ----------------- | ---------------------------------------------------------------- |
+| Frontend          | React + TypeScript + TanStack Start (Cloudflare Workers SSR)     |
+| Backend API       | Cloudflare Workers Free — `src/server.ts` entry point            |
+| Authentication    | Supabase Auth (email/password, HttpOnly cookies)                 |
+| Database          | Supabase PostgreSQL Free (PostgREST REST API)                    |
+| Database security | PostgreSQL RLS + security-definer RPCs                           |
+| File storage      | Cloudflare R2 (presigned PUT URLs, never exposes credentials)    |
+| Payment provider  | Flutterwave ONLY — no Paystack anywhere                          |
+| WhatsApp          | Official WhatsApp Business Cloud API (disabled by default)       |
+| Background jobs   | Cloudflare Queues — not yet wired (async notifications deferred) |
 
 ---
 
 ## Implementation status
 
-| Area | Status |
-|---|---|
-| Cloudflare Worker API entry point (`src/server.ts`) | ✅ Complete |
-| Supabase email/password signup and login | ✅ Complete |
-| HttpOnly cookies, session restoration, token rotation | ✅ Complete |
-| Password recovery request | ✅ Complete |
-| PostgreSQL schema, RLS, triggers, RPCs | ✅ Draft migrations ready — apply to Supabase |
-| Bookings schema + double-booking RPC | ✅ Complete (migration 2) |
-| Payouts schema | ✅ Complete (migration 2) |
-| Promotions schema | ✅ Complete (migration 2) |
-| Public vendor/product reads | ✅ Complete |
-| Vendor creation (onboarding) | ✅ Complete |
-| Product creation, update, archive | ✅ Complete |
-| Vendor order management (list, status update) | ✅ Complete |
-| Vendor analytics (revenue, orders, commissions) | ✅ Complete |
-| Vendor ledger/transactions | ✅ Complete |
-| Vendor storefront configuration | ✅ Complete |
-| Vendor profile update | ✅ Complete |
-| Vendor reviews (list + customer submit) | ✅ Complete |
-| Vendor customers list | ✅ Complete |
-| Vendor bookings (list, create, status update, availability) | ✅ Complete |
-| Vendor payout balance calculation | ✅ Complete |
-| Vendor payout history | ✅ Complete |
-| Vendor payout request | ✅ Complete |
-| Vendor promo code management (list, create, update) | ✅ Complete |
-| Promo code validation (customer checkout) | ✅ Complete |
-| Admin vendor management (list, status) | ✅ Complete |
-| Admin customer/order/transaction lists | ✅ Complete |
-| Admin verification review (approve/reject) | ✅ Complete |
-| Admin review moderation | ✅ Complete |
-| Admin disputes management | ✅ Complete |
-| Admin promotions list | ✅ Complete |
-| Admin payouts management | ✅ Complete |
-| Admin platform analytics | ✅ Complete |
-| Admin platform settings | ✅ Complete |
-| Admin audit logging | ✅ Complete |
-| Messaging/chat (persistent, chat-guard applied) | ✅ Complete |
-| R2 presigned upload URLs (public + private buckets) | ✅ Complete |
-| Flutterwave payment initialization | ✅ Complete |
-| Flutterwave payment verification (return redirect) | ✅ Complete |
-| Flutterwave webhook (signature check, idempotency) | ✅ Complete |
-| Multi-vendor checkout with suborders (DB RPC) | ✅ Complete |
-| Inventory reservation (atomic, oversell prevention) | ✅ Complete |
-| Commission calculation and ledger (DB RPC) | ✅ Complete |
-| PDF receipt generation (minimal PDF, no paid service) | ✅ Complete |
-| In-app notifications API (list, mark read, mark all read) | ✅ Complete |
-| WhatsApp order notification (disabled/test/production) | ✅ Complete |
-| WhatsApp payment confirmation | ✅ Complete |
-| WhatsApp webhook challenge verification | ✅ Complete |
-| Centralized error types (`src/backend/errors.ts`) | ✅ Complete |
-| Shared validation helpers (`src/backend/validation.ts`) | ✅ Complete |
-| Frontend auth (signup, login, logout, session restore) | ✅ Wired |
-| Frontend checkout → Flutterwave redirect | ✅ Wired |
-| Frontend payment return → server verification | ✅ Wired |
-| Frontend vendor onboarding → POST /api/vendors | ✅ Wired |
-| Frontend marketplace → fetchBackendVendors (live + seed fallback) | ✅ Wired |
-| Frontend vendor dashboard (orders, analytics, etc.) | ⚠️ Partial — uses demo fixtures; API exists but not connected |
-| Cloudflare Queues for async WhatsApp delivery | ❌ Not implemented |
-| Frontend dashboard full API integration | ❌ Not implemented |
-| End-to-end staging test with real Flutterwave credentials | ❌ Pending credentials |
+| Area                                                              | Status                                                        |
+| ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| Cloudflare Worker API entry point (`src/server.ts`)               | ✅ Complete                                                   |
+| Supabase email/password signup and login                          | ✅ Complete                                                   |
+| HttpOnly cookies, session restoration, token rotation             | ✅ Complete                                                   |
+| Password recovery request                                         | ✅ Complete                                                   |
+| PostgreSQL schema, RLS, triggers, RPCs                            | ✅ Draft migrations ready — apply to Supabase                 |
+| Bookings schema + double-booking RPC                              | ✅ Complete (migration 2)                                     |
+| Payouts schema                                                    | ✅ Complete (migration 2)                                     |
+| Promotions schema                                                 | ✅ Complete (migration 2)                                     |
+| Public vendor/product reads                                       | ✅ Complete                                                   |
+| Vendor creation (onboarding)                                      | ✅ Complete                                                   |
+| Product creation, update, archive                                 | ✅ Complete                                                   |
+| Vendor order management (list, status update)                     | ✅ Complete                                                   |
+| Vendor analytics (revenue, orders, commissions)                   | ✅ Complete                                                   |
+| Vendor ledger/transactions                                        | ✅ Complete                                                   |
+| Vendor storefront configuration                                   | ✅ Complete                                                   |
+| Vendor profile update                                             | ✅ Complete                                                   |
+| Vendor reviews (list + customer submit)                           | ✅ Complete                                                   |
+| Vendor customers list                                             | ✅ Complete                                                   |
+| Vendor bookings (list, create, status update, availability)       | ✅ Complete                                                   |
+| Vendor payout balance calculation                                 | ✅ Complete                                                   |
+| Vendor payout history                                             | ✅ Complete                                                   |
+| Vendor payout request                                             | ✅ Complete                                                   |
+| Vendor promo code management (list, create, update)               | ✅ Complete                                                   |
+| Promo code validation (customer checkout)                         | ✅ Complete                                                   |
+| Admin vendor management (list, status)                            | ✅ Complete                                                   |
+| Admin customer/order/transaction lists                            | ✅ Complete                                                   |
+| Admin verification review (approve/reject)                        | ✅ Complete                                                   |
+| Admin review moderation                                           | ✅ Complete                                                   |
+| Admin disputes management                                         | ✅ Complete                                                   |
+| Admin promotions list                                             | ✅ Complete                                                   |
+| Admin payouts management                                          | ✅ Complete                                                   |
+| Admin platform analytics                                          | ✅ Complete                                                   |
+| Admin platform settings                                           | ✅ Complete                                                   |
+| Admin audit logging                                               | ✅ Complete                                                   |
+| Messaging/chat (persistent, chat-guard applied)                   | ✅ Complete                                                   |
+| R2 presigned upload URLs (public + private buckets)               | ✅ Complete                                                   |
+| Flutterwave payment initialization                                | ✅ Complete                                                   |
+| Flutterwave payment verification (return redirect)                | ✅ Complete                                                   |
+| Flutterwave webhook (signature check, idempotency)                | ✅ Complete                                                   |
+| Multi-vendor checkout with suborders (DB RPC)                     | ✅ Complete                                                   |
+| Inventory reservation (atomic, oversell prevention)               | ✅ Complete                                                   |
+| Commission calculation and ledger (DB RPC)                        | ✅ Complete                                                   |
+| PDF receipt generation (minimal PDF, no paid service)             | ✅ Complete                                                   |
+| In-app notifications API (list, mark read, mark all read)         | ✅ Complete                                                   |
+| WhatsApp order notification (disabled/test/production)            | ✅ Complete                                                   |
+| WhatsApp payment confirmation                                     | ✅ Complete                                                   |
+| WhatsApp webhook challenge verification                           | ✅ Complete                                                   |
+| Centralized error types (`src/backend/errors.ts`)                 | ✅ Complete                                                   |
+| Shared validation helpers (`src/backend/validation.ts`)           | ✅ Complete                                                   |
+| Frontend auth (signup, login, logout, session restore)            | ✅ Wired                                                      |
+| Frontend checkout → Flutterwave redirect                          | ✅ Wired                                                      |
+| Frontend payment return → server verification                     | ✅ Wired                                                      |
+| Frontend vendor onboarding → POST /api/vendors                    | ✅ Wired                                                      |
+| Frontend marketplace → fetchBackendVendors (live + seed fallback) | ✅ Wired                                                      |
+| Frontend vendor dashboard (orders, analytics, etc.)               | ⚠️ Partial — uses demo fixtures; API exists but not connected |
+| Cloudflare Queues for async WhatsApp delivery                     | ❌ Not implemented                                            |
+| Frontend dashboard full API integration                           | ❌ Not implemented                                            |
+| End-to-end staging test with real Flutterwave credentials         | ❌ Pending credentials                                        |
 
 ---
 
@@ -86,115 +86,126 @@
 All responses: `{ ok: boolean, data?: ..., error?: string }`. Same-origin mutations only.
 
 ### Authentication
-| Method | Path | Access |
-|---|---|---|
-| GET | /api/health | Public |
-| POST | /api/auth/signup | Public, same-origin |
-| POST | /api/auth/login | Public, same-origin |
-| GET | /api/auth/session | Public |
-| POST | /api/auth/logout | Same-origin |
-| POST | /api/auth/password/reset | Public, same-origin |
+
+| Method | Path                     | Access              |
+| ------ | ------------------------ | ------------------- |
+| GET    | /api/health              | Public              |
+| POST   | /api/auth/signup         | Public, same-origin |
+| POST   | /api/auth/login          | Public, same-origin |
+| GET    | /api/auth/session        | Public              |
+| POST   | /api/auth/logout         | Same-origin         |
+| POST   | /api/auth/password/reset | Public, same-origin |
 
 ### Commerce
-| Method | Path | Access |
-|---|---|---|
-| GET | /api/vendors | Public |
-| POST | /api/vendors | Authenticated |
-| GET | /api/vendors/mine | Authenticated |
-| GET | /api/products?vendor_id= | Public/authenticated |
-| POST | /api/products | Authenticated vendor |
-| POST | /api/checkout | Authenticated customer |
-| GET | /api/orders | Authenticated customer |
-| POST | /api/payments/verify | Authenticated customer |
-| POST | /api/webhooks/flutterwave | Provider signature (verif-hash) |
+
+| Method | Path                      | Access                          |
+| ------ | ------------------------- | ------------------------------- |
+| GET    | /api/vendors              | Public                          |
+| POST   | /api/vendors              | Authenticated                   |
+| GET    | /api/vendors/mine         | Authenticated                   |
+| GET    | /api/products?vendor_id=  | Public/authenticated            |
+| POST   | /api/products             | Authenticated vendor            |
+| POST   | /api/checkout             | Authenticated customer          |
+| GET    | /api/orders               | Authenticated customer          |
+| POST   | /api/payments/verify      | Authenticated customer          |
+| POST   | /api/webhooks/flutterwave | Provider signature (verif-hash) |
 
 ### Vendor dashboard
-| Method | Path | Access |
-|---|---|---|
-| GET | /api/vendor/orders?vendor_id= | Authenticated vendor |
-| PATCH | /api/vendor/orders/:id/status | Authenticated vendor |
-| PATCH | /api/vendor/products/:id | Authenticated vendor |
-| DELETE | /api/vendor/products/:id | Authenticated vendor (soft archive) |
-| GET | /api/vendor/analytics?vendor_id= | Authenticated vendor |
-| GET | /api/vendor/ledger?vendor_id= | Authenticated vendor |
-| PATCH | /api/vendor/storefront?vendor_id= | Authenticated vendor |
-| PATCH | /api/vendor/profile?vendor_id= | Authenticated vendor |
-| GET | /api/vendor/reviews?vendor_id= | Authenticated vendor |
-| POST | /api/vendor/reviews | Authenticated customer |
-| GET | /api/vendor/customers?vendor_id= | Authenticated vendor |
-| GET | /api/vendor/bookings?vendor_id= | Authenticated vendor |
-| GET | /api/vendor/availability?vendor_id=&date= | Authenticated |
-| GET | /api/vendor/payouts/balance?vendor_id= | Authenticated vendor |
-| GET | /api/vendor/payouts?vendor_id= | Authenticated vendor |
-| POST | /api/vendor/payouts | Authenticated vendor |
-| GET | /api/vendor/promos?vendor_id= | Authenticated vendor |
-| POST | /api/vendor/promos | Authenticated vendor |
-| PATCH | /api/vendor/promos/:id | Authenticated vendor |
+
+| Method | Path                                      | Access                              |
+| ------ | ----------------------------------------- | ----------------------------------- |
+| GET    | /api/vendor/orders?vendor_id=             | Authenticated vendor                |
+| PATCH  | /api/vendor/orders/:id/status             | Authenticated vendor                |
+| PATCH  | /api/vendor/products/:id                  | Authenticated vendor                |
+| DELETE | /api/vendor/products/:id                  | Authenticated vendor (soft archive) |
+| GET    | /api/vendor/analytics?vendor_id=          | Authenticated vendor                |
+| GET    | /api/vendor/ledger?vendor_id=             | Authenticated vendor                |
+| PATCH  | /api/vendor/storefront?vendor_id=         | Authenticated vendor                |
+| PATCH  | /api/vendor/profile?vendor_id=            | Authenticated vendor                |
+| GET    | /api/vendor/reviews?vendor_id=            | Authenticated vendor                |
+| POST   | /api/vendor/reviews                       | Authenticated customer              |
+| GET    | /api/vendor/customers?vendor_id=          | Authenticated vendor                |
+| GET    | /api/vendor/bookings?vendor_id=           | Authenticated vendor                |
+| GET    | /api/vendor/availability?vendor_id=&date= | Authenticated                       |
+| GET    | /api/vendor/payouts/balance?vendor_id=    | Authenticated vendor                |
+| GET    | /api/vendor/payouts?vendor_id=            | Authenticated vendor                |
+| POST   | /api/vendor/payouts                       | Authenticated vendor                |
+| GET    | /api/vendor/promos?vendor_id=             | Authenticated vendor                |
+| POST   | /api/vendor/promos                        | Authenticated vendor                |
+| PATCH  | /api/vendor/promos/:id                    | Authenticated vendor                |
 
 ### Bookings
-| Method | Path | Access |
-|---|---|---|
-| POST | /api/bookings | Authenticated customer |
-| GET | /api/bookings | Authenticated customer |
-| PATCH | /api/bookings/:id/status | Authenticated (vendor or customer) |
+
+| Method | Path                     | Access                             |
+| ------ | ------------------------ | ---------------------------------- |
+| POST   | /api/bookings            | Authenticated customer             |
+| GET    | /api/bookings            | Authenticated customer             |
+| PATCH  | /api/bookings/:id/status | Authenticated (vendor or customer) |
 
 ### Promos
-| Method | Path | Access |
-|---|---|---|
-| POST | /api/promos/validate | Authenticated |
+
+| Method | Path                 | Access        |
+| ------ | -------------------- | ------------- |
+| POST   | /api/promos/validate | Authenticated |
 
 ### Notifications
-| Method | Path | Access |
-|---|---|---|
-| GET | /api/notifications | Authenticated |
-| PATCH | /api/notifications/:id/read | Authenticated |
-| PATCH | /api/notifications/read-all | Authenticated |
+
+| Method | Path                        | Access        |
+| ------ | --------------------------- | ------------- |
+| GET    | /api/notifications          | Authenticated |
+| PATCH  | /api/notifications/:id/read | Authenticated |
+| PATCH  | /api/notifications/read-all | Authenticated |
 
 ### Receipts
-| Method | Path | Access |
-|---|---|---|
-| GET | /api/receipts/:orderReference | Authenticated customer |
+
+| Method | Path                          | Access                 |
+| ------ | ----------------------------- | ---------------------- |
+| GET    | /api/receipts/:orderReference | Authenticated customer |
 
 ### Admin
-| Method | Path | Access |
-|---|---|---|
-| GET | /api/admin/vendors | Admin |
-| PATCH | /api/admin/vendors/:id/status | Admin |
-| GET | /api/admin/customers | Admin |
-| GET | /api/admin/orders | Admin |
-| GET | /api/admin/transactions | Admin |
-| GET | /api/admin/verification | Admin |
-| PATCH | /api/admin/verification/:id | Admin |
-| GET | /api/admin/reviews | Admin |
-| PATCH | /api/admin/reviews/:id | Admin |
-| GET | /api/admin/categories | Admin |
-| GET | /api/admin/analytics | Admin |
-| GET | /api/admin/settings | Admin |
-| PATCH | /api/admin/settings/:key | Admin |
-| GET | /api/admin/disputes | Admin |
-| PATCH | /api/admin/disputes/:id | Admin |
-| GET | /api/admin/promotions | Admin |
-| GET | /api/admin/payouts | Admin |
-| PATCH | /api/admin/payouts/:id | Admin |
+
+| Method | Path                          | Access |
+| ------ | ----------------------------- | ------ |
+| GET    | /api/admin/vendors            | Admin  |
+| PATCH  | /api/admin/vendors/:id/status | Admin  |
+| GET    | /api/admin/customers          | Admin  |
+| GET    | /api/admin/orders             | Admin  |
+| GET    | /api/admin/transactions       | Admin  |
+| GET    | /api/admin/verification       | Admin  |
+| PATCH  | /api/admin/verification/:id   | Admin  |
+| GET    | /api/admin/reviews            | Admin  |
+| PATCH  | /api/admin/reviews/:id        | Admin  |
+| GET    | /api/admin/categories         | Admin  |
+| GET    | /api/admin/analytics          | Admin  |
+| GET    | /api/admin/settings           | Admin  |
+| PATCH  | /api/admin/settings/:key      | Admin  |
+| GET    | /api/admin/disputes           | Admin  |
+| PATCH  | /api/admin/disputes/:id       | Admin  |
+| GET    | /api/admin/promotions         | Admin  |
+| GET    | /api/admin/payouts            | Admin  |
+| PATCH  | /api/admin/payouts/:id        | Admin  |
 
 ### Messaging
-| Method | Path | Access |
-|---|---|---|
-| GET | /api/messages/conversations | Authenticated |
-| POST | /api/messages/conversations | Authenticated customer |
-| GET | /api/messages/conversations/:id/messages | Authenticated member |
-| POST | /api/messages/conversations/:id/messages | Authenticated member |
-| PATCH | /api/messages/conversations/:id/read | Authenticated member |
+
+| Method | Path                                     | Access                 |
+| ------ | ---------------------------------------- | ---------------------- |
+| GET    | /api/messages/conversations              | Authenticated          |
+| POST   | /api/messages/conversations              | Authenticated customer |
+| GET    | /api/messages/conversations/:id/messages | Authenticated member   |
+| POST   | /api/messages/conversations/:id/messages | Authenticated member   |
+| PATCH  | /api/messages/conversations/:id/read     | Authenticated member   |
 
 ### Storage
-| Method | Path | Access |
-|---|---|---|
-| POST | /api/storage/upload-url | Authenticated |
+
+| Method | Path                    | Access        |
+| ------ | ----------------------- | ------------- |
+| POST   | /api/storage/upload-url | Authenticated |
 
 ### WhatsApp
-| Method | Path | Access |
-|---|---|---|
-| GET | /api/webhooks/whatsapp | Provider challenge |
+
+| Method | Path                   | Access             |
+| ------ | ---------------------- | ------------------ |
+| GET    | /api/webhooks/whatsapp | Provider challenge |
 
 ---
 
@@ -203,26 +214,26 @@ All responses: `{ ok: boolean, data?: ..., error?: string }`. Same-origin mutati
 Configure via `wrangler secret put <NAME>` for deployed Workers.
 For local development copy `.env.example` to `.dev.vars` (never commit that file).
 
-| Name | Type | Required | Notes |
-|---|---|---|---|
-| SUPABASE_URL | var | Yes | Supabase project endpoint |
-| SUPABASE_ANON_KEY | var | Yes | Publishable key only |
-| SUPABASE_SERVICE_ROLE_KEY | secret | Yes (webhook) | Webhook RPC only; never expose to browser |
-| APP_BASE_URL | var | Yes | Canonical app URL for Flutterwave redirect |
-| FLUTTERWAVE_SECRET_KEY | secret | Yes (payments) | Payment init and verification |
-| FLUTTERWAVE_WEBHOOK_SECRET_HASH | secret | Yes (webhook) | Webhook signature verification |
-| R2_ACCOUNT_ID | secret | R2 only | R2 presigned URL generation |
-| R2_BUCKET_PUBLIC | var | R2 only | Public media bucket name |
-| R2_BUCKET_PRIVATE | var | R2 only | Private documents bucket name |
-| R2_ACCESS_KEY_ID | secret | R2 only | R2 API credentials |
-| R2_SECRET_ACCESS_KEY | secret | R2 only | R2 API credentials |
-| R2_PUBLIC_MEDIA_URL | var | R2 only | Public CDN or r2.dev URL |
-| WHATSAPP_MODE | var | No | disabled/test/production (default: disabled) |
-| WHATSAPP_ACCESS_TOKEN | secret | Production WA | Meta Graph API token |
-| WHATSAPP_PHONE_NUMBER_ID | secret | Production WA | WhatsApp phone number ID |
-| WHATSAPP_BUSINESS_ACCOUNT_ID | var | Production WA | WABA ID |
-| WHATSAPP_WEBHOOK_VERIFY_TOKEN | secret | Production WA | Webhook challenge token |
-| WHATSAPP_APP_SECRET | secret | Production WA | App secret for webhook verification |
+| Name                            | Type   | Required       | Notes                                        |
+| ------------------------------- | ------ | -------------- | -------------------------------------------- |
+| SUPABASE_URL                    | var    | Yes            | Supabase project endpoint                    |
+| SUPABASE_ANON_KEY               | var    | Yes            | Publishable key only                         |
+| SUPABASE_SERVICE_ROLE_KEY       | secret | Yes (webhook)  | Webhook RPC only; never expose to browser    |
+| APP_BASE_URL                    | var    | Yes            | Canonical app URL for Flutterwave redirect   |
+| FLUTTERWAVE_SECRET_KEY          | secret | Yes (payments) | Payment init and verification                |
+| FLUTTERWAVE_WEBHOOK_SECRET_HASH | secret | Yes (webhook)  | Webhook signature verification               |
+| R2_ACCOUNT_ID                   | secret | R2 only        | R2 presigned URL generation                  |
+| R2_BUCKET_PUBLIC                | var    | R2 only        | Public media bucket name                     |
+| R2_BUCKET_PRIVATE               | var    | R2 only        | Private documents bucket name                |
+| R2_ACCESS_KEY_ID                | secret | R2 only        | R2 API credentials                           |
+| R2_SECRET_ACCESS_KEY            | secret | R2 only        | R2 API credentials                           |
+| R2_PUBLIC_MEDIA_URL             | var    | R2 only        | Public CDN or r2.dev URL                     |
+| WHATSAPP_MODE                   | var    | No             | disabled/test/production (default: disabled) |
+| WHATSAPP_ACCESS_TOKEN           | secret | Production WA  | Meta Graph API token                         |
+| WHATSAPP_PHONE_NUMBER_ID        | secret | Production WA  | WhatsApp phone number ID                     |
+| WHATSAPP_BUSINESS_ACCOUNT_ID    | var    | Production WA  | WABA ID                                      |
+| WHATSAPP_WEBHOOK_VERIFY_TOKEN   | secret | Production WA  | Webhook challenge token                      |
+| WHATSAPP_APP_SECRET             | secret | Production WA  | App secret for webhook verification          |
 
 ---
 
@@ -285,13 +296,13 @@ wrangler secret put R2_SECRET_ACCESS_KEY
 
 ## Free-tier resource limits
 
-| Service | Free allowance | Notes |
-|---|---|---|
-| Supabase | 500 MB DB, 2 GB egress/month, 50K MAU | Project pauses after 1 week inactivity |
-| Cloudflare Workers | 100K requests/day, 10ms CPU/request | No automatic upgrade |
-| Cloudflare R2 | 10 GB storage, 1M Class-A ops, 10M Class-B ops/month | No egress fees |
-| Flutterwave | Per-transaction fees only | No subscription required |
-| WhatsApp | Per-message fees in production | Disabled by default — zero cost |
+| Service            | Free allowance                                       | Notes                                  |
+| ------------------ | ---------------------------------------------------- | -------------------------------------- |
+| Supabase           | 500 MB DB, 2 GB egress/month, 50K MAU                | Project pauses after 1 week inactivity |
+| Cloudflare Workers | 100K requests/day, 10ms CPU/request                  | No automatic upgrade                   |
+| Cloudflare R2      | 10 GB storage, 1M Class-A ops, 10M Class-B ops/month | No egress fees                         |
+| Flutterwave        | Per-transaction fees only                            | No subscription required               |
+| WhatsApp           | Per-message fees in production                       | Disabled by default — zero cost        |
 
 ---
 
@@ -375,45 +386,45 @@ tests 35 | pass 35 | fail 0
 
 ## Feature completion table
 
-| Feature | Status |
-|---|---|
-| Authentication (signup, login, logout, session, password reset) | ✅ Complete |
-| Vendor onboarding (POST /api/vendors) | ✅ Complete |
-| Storefront management | ✅ Complete |
-| Product management (create, update, archive, publish) | ✅ Complete |
-| Public marketplace (vendor + product discovery) | ✅ Complete |
-| Cart (local state, productId-aware) | ✅ Complete |
-| Checkout → Flutterwave redirect | ✅ Complete |
-| Payment return verification | ✅ Complete |
-| Flutterwave webhook (idempotent, signature-verified) | ✅ Complete |
-| Multi-vendor orders + suborders | ✅ Complete (DB RPC) |
-| Inventory reservation (atomic) | ✅ Complete (DB RPC) |
-| Commission calculation + ledger | ✅ Complete (DB RPC) |
-| PDF receipt generation | ✅ Complete |
-| Vendor order management | ✅ Complete |
-| Vendor analytics | ✅ Complete |
-| Vendor ledger/transactions | ✅ Complete |
-| Vendor payout request + balance | ✅ Complete |
-| Vendor promo codes | ✅ Complete |
-| Promo code validation | ✅ Complete |
-| Bookings (create, list, status, availability) | ✅ Complete |
-| Messaging/chat (persistent, chat-guard) | ✅ Complete |
-| In-app notifications | ✅ Complete |
-| R2 presigned upload URLs | ✅ Complete |
-| WhatsApp notifications (disabled/test/production) | ✅ Complete |
-| Admin dashboard (all sections) | ✅ Complete |
-| Admin audit logging | ✅ Complete |
-| Reviews (submit + moderation) | ✅ Complete |
-| Centralized error handling | ✅ Complete |
-| Input validation helpers | ✅ Complete |
-| RLS policies | ✅ Complete (in migrations) |
-| Security triggers (role/owner protection) | ✅ Complete (in migrations) |
-| Frontend auth wired | ✅ Complete |
-| Frontend checkout wired | ✅ Complete |
-| Frontend payment return wired | ✅ Complete |
-| Frontend onboarding wired | ✅ Complete |
-| Frontend marketplace wired (live + seed fallback) | ✅ Complete |
-| Frontend vendor dashboard wired to live API | ❌ Not yet — uses demo fixtures |
-| Cloudflare Queues async processing | ❌ Not yet |
-| Image upload in onboarding branding step | ❌ Not yet |
-| End-to-end staging test | ❌ Blocked — needs real credentials |
+| Feature                                                         | Status                              |
+| --------------------------------------------------------------- | ----------------------------------- |
+| Authentication (signup, login, logout, session, password reset) | ✅ Complete                         |
+| Vendor onboarding (POST /api/vendors)                           | ✅ Complete                         |
+| Storefront management                                           | ✅ Complete                         |
+| Product management (create, update, archive, publish)           | ✅ Complete                         |
+| Public marketplace (vendor + product discovery)                 | ✅ Complete                         |
+| Cart (local state, productId-aware)                             | ✅ Complete                         |
+| Checkout → Flutterwave redirect                                 | ✅ Complete                         |
+| Payment return verification                                     | ✅ Complete                         |
+| Flutterwave webhook (idempotent, signature-verified)            | ✅ Complete                         |
+| Multi-vendor orders + suborders                                 | ✅ Complete (DB RPC)                |
+| Inventory reservation (atomic)                                  | ✅ Complete (DB RPC)                |
+| Commission calculation + ledger                                 | ✅ Complete (DB RPC)                |
+| PDF receipt generation                                          | ✅ Complete                         |
+| Vendor order management                                         | ✅ Complete                         |
+| Vendor analytics                                                | ✅ Complete                         |
+| Vendor ledger/transactions                                      | ✅ Complete                         |
+| Vendor payout request + balance                                 | ✅ Complete                         |
+| Vendor promo codes                                              | ✅ Complete                         |
+| Promo code validation                                           | ✅ Complete                         |
+| Bookings (create, list, status, availability)                   | ✅ Complete                         |
+| Messaging/chat (persistent, chat-guard)                         | ✅ Complete                         |
+| In-app notifications                                            | ✅ Complete                         |
+| R2 presigned upload URLs                                        | ✅ Complete                         |
+| WhatsApp notifications (disabled/test/production)               | ✅ Complete                         |
+| Admin dashboard (all sections)                                  | ✅ Complete                         |
+| Admin audit logging                                             | ✅ Complete                         |
+| Reviews (submit + moderation)                                   | ✅ Complete                         |
+| Centralized error handling                                      | ✅ Complete                         |
+| Input validation helpers                                        | ✅ Complete                         |
+| RLS policies                                                    | ✅ Complete (in migrations)         |
+| Security triggers (role/owner protection)                       | ✅ Complete (in migrations)         |
+| Frontend auth wired                                             | ✅ Complete                         |
+| Frontend checkout wired                                         | ✅ Complete                         |
+| Frontend payment return wired                                   | ✅ Complete                         |
+| Frontend onboarding wired                                       | ✅ Complete                         |
+| Frontend marketplace wired (live + seed fallback)               | ✅ Complete                         |
+| Frontend vendor dashboard wired to live API                     | ❌ Not yet — uses demo fixtures     |
+| Cloudflare Queues async processing                              | ❌ Not yet                          |
+| Image upload in onboarding branding step                        | ❌ Not yet                          |
+| End-to-end staging test                                         | ❌ Blocked — needs real credentials |

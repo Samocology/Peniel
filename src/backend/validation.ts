@@ -25,7 +25,10 @@ export function minorToMajor(value: number): string {
 }
 
 export function formatNairaMinor(value: number): string {
-  return "₦" + (value / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (
+    "₦" +
+    (value / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
 }
 
 export function normalizePhone(value: unknown): string | null {
@@ -35,7 +38,8 @@ export function normalizePhone(value: unknown): string | null {
   // Normalize to E.164-ish: ensure leading + for Nigerian numbers
   if (digits.startsWith("234")) return "+" + digits;
   if (digits.startsWith("0")) return "+234" + digits.slice(1);
-  if (digits.startsWith("7") || digits.startsWith("8") || digits.startsWith("9")) return "+234" + digits;
+  if (digits.startsWith("7") || digits.startsWith("8") || digits.startsWith("9"))
+    return "+234" + digits;
   if (digits.startsWith("+")) return "+" + digits.slice(1);
   return "+" + digits;
 }
@@ -77,7 +81,10 @@ export function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-export function pick<T extends object, K extends keyof T>(object: T, keys: readonly K[]): Pick<T, K> {
+export function pick<T extends object, K extends keyof T>(
+  object: T,
+  keys: readonly K[],
+): Pick<T, K> {
   const result = {} as Pick<T, K>;
   for (const key of keys) {
     if (key in object) Object.assign(result, { [key]: object[key] });

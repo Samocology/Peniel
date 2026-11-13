@@ -705,10 +705,7 @@ async function handleGoogleOAuth(
 
   const headers = new Headers();
   headers.set("Location", authorizeUrl.toString());
-  headers.append(
-    "Set-Cookie",
-    cookie(OAUTH_VERIFIER_COOKIE, verifier, request, 600),
-  );
+  headers.append("Set-Cookie", cookie(OAUTH_VERIFIER_COOKIE, verifier, request, 600));
 
   return new Response(null, {
     status: 302,
@@ -743,7 +740,10 @@ async function handleOAuthCallback(
     return response;
   }
   if (!verifier) {
-    const response = json({ ok: false, error: "OAuth verification expired. Please try again." }, 400);
+    const response = json(
+      { ok: false, error: "OAuth verification expired. Please try again." },
+      400,
+    );
     response.headers.append("Set-Cookie", clearVerifierCookie);
     return response;
   }

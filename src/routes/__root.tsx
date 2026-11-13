@@ -18,6 +18,7 @@ import { CustomerBottomNav } from "../components/site/bottom-nav";
 import { Toaster } from "../components/ui/sonner";
 import { useApp, app } from "../lib/peniel-store";
 import { authApi } from "../lib/api-client";
+import "../lib/supabase";
 
 function NotFoundComponent() {
   return (

@@ -56,7 +56,8 @@ export function buildReceiptPdf(data: ReceiptData): Uint8Array {
   lines.push("ITEMS");
   lines.push("-".repeat(50));
   for (const item of data.items) {
-    const line = `${item.quantity}x ${item.name}`.padEnd(36) + naira(item.lineTotalMinor).padStart(14);
+    const line =
+      `${item.quantity}x ${item.name}`.padEnd(36) + naira(item.lineTotalMinor).padStart(14);
     lines.push(line);
     lines.push(`   @ ${naira(item.unitPriceMinor)} each`);
   }
@@ -99,7 +100,7 @@ export function buildReceiptPdf(data: ReceiptData): Uint8Array {
   const fontN = addObj(`<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>`);
 
   // Page content stream
-  const escapedLines = lines.map(l => escPdf(l));
+  const escapedLines = lines.map((l) => escPdf(l));
   let streamContent = "BT\n/F1 9 Tf\n50 780 Td\n12 TL\n";
   for (const l of escapedLines) {
     streamContent += `(${l}) Tj T*\n`;
@@ -109,7 +110,9 @@ export function buildReceiptPdf(data: ReceiptData): Uint8Array {
   const streamN = addObj(`<< /Length ${streamBytes} >>\nstream\n${streamContent}endstream`);
 
   // Page
-  const pageN = addObj(`<< /Type /Page /Parent 4 0 R /MediaBox [0 0 595 842] /Contents ${streamN} 0 R /Resources << /Font << /F1 ${fontN} 0 R >> >> >>`);
+  const pageN = addObj(
+    `<< /Type /Page /Parent 4 0 R /MediaBox [0 0 595 842] /Contents ${streamN} 0 R /Resources << /Font << /F1 ${fontN} 0 R >> >> >>`,
+  );
 
   // Pages (placeholder — will be obj 4)
   const pagesN = addObj(`<< /Type /Pages /Kids [${pageN} 0 R] /Count 1 >>`);
@@ -144,7 +147,10 @@ export function buildReceiptPdf(data: ReceiptData): Uint8Array {
  */
 export function generateReceiptNumber(orderReference: string): string {
   const suffix = Date.now().toString(36).toUpperCase().slice(-6);
-  return `RCP-${orderReference.replace(/[^A-Z0-9]/gi, "").slice(0, 8).toUpperCase()}-${suffix}`;
+  return `RCP-${orderReference
+    .replace(/[^A-Z0-9]/gi, "")
+    .slice(0, 8)
+    .toUpperCase()}-${suffix}`;
 }
 
 /**
@@ -167,10 +173,17 @@ async function db(env: BackendEnv, path: string, token: string): Promise<Respons
 async function p(r: Response): Promise<unknown> {
   const t = await r.text();
   if (!t) return null;
-  try { return JSON.parse(t); } catch { return null; }
+  try {
+    return JSON.parse(t);
+  } catch {
+    return null;
+  }
 }
 
-export async function handleReceiptsRequest(request: Request, env: BackendEnv): Promise<Response | null> {
+export async function handleReceiptsRequest(
+  request: Request,
+  env: BackendEnv,
+): Promise<Response | null> {
   const { pathname } = new URL(request.url);
   const match = pathname.match(/^\/api\/receipts\/([A-Z0-9-]{4,80})$/i);
   if (!match || request.method !== "GET") return null;
@@ -183,7 +196,8 @@ export async function handleReceiptsRequest(request: Request, env: BackendEnv): 
 
     // Fetch order + payment + items — customer must own the order
     const q = new URLSearchParams({
-      select: "id,reference,status,subtotal_minor,delivery_minor,discount_minor,platform_fee_minor,total_minor,customer_snapshot,delivery_snapshot,created_at,vendor_orders(vendor_id,subtotal_minor,order_items(product_snapshot,quantity,unit_price_minor,line_total_minor),vendors(name)),payments(reference,provider_transaction_id,verified_at,status)",
+      select:
+        "id,reference,status,subtotal_minor,delivery_minor,discount_minor,platform_fee_minor,total_minor,customer_snapshot,delivery_snapshot,created_at,vendor_orders(vendor_id,subtotal_minor,order_items(product_snapshot,quantity,unit_price_minor,line_total_minor),vendors(name)),payments(reference,provider_transaction_id,verified_at,status)",
       reference: `eq.${orderRef}`,
       customer_id: `eq.${identity.id}`,
       limit: "1",
@@ -193,32 +207,55 @@ export async function handleReceiptsRequest(request: Request, env: BackendEnv): 
     const result = await p(r);
     if (!r.ok) return json({ ok: false, error: "Could not retrieve order." }, 502);
 
-    const orders = Array.isArray(result) ? result as Record<string, unknown>[] : [];
+    const orders = Array.isArray(result) ? (result as Record<string, unknown>[]) : [];
     const order = orders[0];
     if (!order) return json({ ok: false, error: "Order not found." }, 404);
 
     // Only generate receipt for paid orders
     const status = String(order["status"] ?? "");
-    if (!["paid", "confirmed", "preparing", "ready_for_pickup", "shipped", "out_for_delivery", "delivered", "completed"].includes(status)) {
+    if (
+      ![
+        "paid",
+        "confirmed",
+        "preparing",
+        "ready_for_pickup",
+        "shipped",
+        "out_for_delivery",
+        "delivered",
+        "completed",
+      ].includes(status)
+    ) {
       return json({ ok: false, error: "Receipt is only available for paid orders." }, 409);
     }
 
-    const payments = Array.isArray(order["payments"]) ? order["payments"] as Record<string, unknown>[] : [];
-    const payment = payments.find(p => p["status"] === "successful") ?? payments[0];
-    const flutterwaveRef = payment ? String(payment["provider_transaction_id"] ?? payment["reference"] ?? "") : "";
+    const payments = Array.isArray(order["payments"])
+      ? (order["payments"] as Record<string, unknown>[])
+      : [];
+    const payment = payments.find((p) => p["status"] === "successful") ?? payments[0];
+    const flutterwaveRef = payment
+      ? String(payment["provider_transaction_id"] ?? payment["reference"] ?? "")
+      : "";
 
     const customerSnapshot = (order["customer_snapshot"] ?? {}) as Record<string, unknown>;
     const deliverySnapshot = (order["delivery_snapshot"] ?? {}) as Record<string, unknown>;
 
-    const vendorOrders = Array.isArray(order["vendor_orders"]) ? order["vendor_orders"] as Record<string, unknown>[] : [];
-    const vendorName = vendorOrders.map(vo => {
-      const v = vo["vendors"] as Record<string, unknown> | undefined;
-      return typeof v?.["name"] === "string" ? v["name"] : "";
-    }).filter(Boolean).join(", ") || "Peniel Vendor";
+    const vendorOrders = Array.isArray(order["vendor_orders"])
+      ? (order["vendor_orders"] as Record<string, unknown>[])
+      : [];
+    const vendorName =
+      vendorOrders
+        .map((vo) => {
+          const v = vo["vendors"] as Record<string, unknown> | undefined;
+          return typeof v?.["name"] === "string" ? v["name"] : "";
+        })
+        .filter(Boolean)
+        .join(", ") || "Peniel Vendor";
 
     const allItems: ReceiptData["items"] = [];
     for (const vo of vendorOrders) {
-      const items = Array.isArray(vo["order_items"]) ? vo["order_items"] as Record<string, unknown>[] : [];
+      const items = Array.isArray(vo["order_items"])
+        ? (vo["order_items"] as Record<string, unknown>[])
+        : [];
       for (const item of items) {
         const snap = (item["product_snapshot"] ?? {}) as Record<string, unknown>;
         allItems.push({
@@ -234,10 +271,20 @@ export async function handleReceiptsRequest(request: Request, env: BackendEnv): 
       receiptNumber: generateReceiptNumber(orderRef),
       orderReference: orderRef,
       flutterwaveRef,
-      paymentDate: payment ? String(payment["verified_at"] ?? order["created_at"] ?? "") : String(order["created_at"] ?? ""),
-      customerName: String(customerSnapshot["name"] ?? deliverySnapshot["fullName"] ?? identity.email),
+      paymentDate: payment
+        ? String(payment["verified_at"] ?? order["created_at"] ?? "")
+        : String(order["created_at"] ?? ""),
+      customerName: String(
+        customerSnapshot["name"] ?? deliverySnapshot["fullName"] ?? identity.email,
+      ),
       customerEmail: identity.email,
-      deliveryAddress: [deliverySnapshot["address"], deliverySnapshot["city"], deliverySnapshot["state"]].filter(Boolean).join(", "),
+      deliveryAddress: [
+        deliverySnapshot["address"],
+        deliverySnapshot["city"],
+        deliverySnapshot["state"],
+      ]
+        .filter(Boolean)
+        .join(", "),
       items: allItems,
       subtotalMinor: Number(order["subtotal_minor"] ?? 0),
       deliveryMinor: Number(order["delivery_minor"] ?? 0),

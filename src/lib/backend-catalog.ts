@@ -42,7 +42,14 @@ function firstRelation(value: unknown): JsonRecord | undefined {
 
 function mapProduct(value: unknown): Product | null {
   if (!isRecord(value)) return null;
-  const { id, name, description, group_name: groupName, price_minor: priceMinor, attributes } = value;
+  const {
+    id,
+    name,
+    description,
+    group_name: groupName,
+    price_minor: priceMinor,
+    attributes,
+  } = value;
   if (
     typeof id !== "string" ||
     typeof name !== "string" ||
@@ -54,10 +61,16 @@ function mapProduct(value: unknown): Product | null {
   ) {
     return null;
   }
-  const meta = isRecord(attributes) && typeof attributes["meta"] === "string"
-    ? attributes["meta"]
-    : undefined;
-  return { id, name, desc: description, price: priceMinor / 100, group: groupName, ...(meta ? { meta } : {}) };
+  const meta =
+    isRecord(attributes) && typeof attributes["meta"] === "string" ? attributes["meta"] : undefined;
+  return {
+    id,
+    name,
+    desc: description,
+    price: priceMinor / 100,
+    group: groupName,
+    ...(meta ? { meta } : {}),
+  };
 }
 
 export function mapBackendVendor(value: unknown): Vendor | null {
@@ -73,7 +86,9 @@ export function mapBackendVendor(value: unknown): Vendor | null {
     : fallback.type;
   const fulfilmentValue = value["fulfilment"];
   const fulfilment =
-    fulfilmentValue === "booking" || fulfilmentValue === "reservation" || fulfilmentValue === "order"
+    fulfilmentValue === "booking" ||
+    fulfilmentValue === "reservation" ||
+    fulfilmentValue === "order"
       ? fulfilmentValue
       : fallback.fulfilment;
   const storefront = firstRelation(value["storefronts"]);
@@ -95,7 +110,8 @@ export function mapBackendVendor(value: unknown): Vendor | null {
     about: description || fallback.about,
     type: businessType,
     categorySlug: typeof category?.["slug"] === "string" ? category["slug"] : fallback.categorySlug,
-    categoryLabel: typeof category?.["name"] === "string" ? category["name"] : fallback.categoryLabel,
+    categoryLabel:
+      typeof category?.["name"] === "string" ? category["name"] : fallback.categoryLabel,
     layout,
     verified: false,
     featured: false,
@@ -117,10 +133,16 @@ export async function fetchBackendVendors(search: Record<string, string> = {}): 
     credentials: "same-origin",
   });
   const result: unknown = await response.json();
-  if (!response.ok || !isRecord(result) || result["ok"] !== true || !Array.isArray(result["data"])) {
-    const message = isRecord(result) && typeof result["error"] === "string"
-      ? result["error"]
-      : "Could not load marketplace data.";
+  if (
+    !response.ok ||
+    !isRecord(result) ||
+    result["ok"] !== true ||
+    !Array.isArray(result["data"])
+  ) {
+    const message =
+      isRecord(result) && typeof result["error"] === "string"
+        ? result["error"]
+        : "Could not load marketplace data.";
     throw new Error(message);
   }
   return result["data"].map(mapBackendVendor).filter((vendor): vendor is Vendor => vendor !== null);

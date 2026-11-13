@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowDownToLine,
@@ -58,9 +57,13 @@ const next: Partial<Record<OrderStatus, OrderStatus>> = {
 
 // Map backend status to legacy UI filter labels
 const BACKEND_TO_FILTER: Record<string, (typeof filters)[number]> = {
-  paid: "New", confirmed: "Confirmed", preparing: "Preparing",
-  out_for_delivery: "Out for delivery", delivered: "Delivered",
-  completed: "Delivered", cancelled: "Cancelled",
+  paid: "New",
+  confirmed: "Confirmed",
+  preparing: "Preparing",
+  out_for_delivery: "Out for delivery",
+  delivered: "Delivered",
+  completed: "Delivered",
+  cancelled: "Cancelled",
 };
 
 function VendorOrders() {
@@ -83,18 +86,14 @@ function VendorOrders() {
   // Counts for the filter tabs — works for both live and demo
   const count = (status: OrderStatus) => {
     if (useLive) {
-      return (liveOrders.data ?? []).filter(
-        (o) => BACKEND_TO_FILTER[o.status] === status,
-      ).length;
+      return (liveOrders.data ?? []).filter((o) => BACKEND_TO_FILTER[o.status] === status).length;
     }
     return demoOrders.filter((o) => o.status === status).length;
   };
 
   const liveRows = useMemo(() => {
     if (!useLive) return [];
-    return (liveOrders.data ?? []).filter(
-      (o) => f === "All" || BACKEND_TO_FILTER[o.status] === f,
-    );
+    return (liveOrders.data ?? []).filter((o) => f === "All" || BACKEND_TO_FILTER[o.status] === f);
   }, [liveOrders.data, f, useLive]);
 
   const demoRows = demoOrders.filter((o) => f === "All" || o.status === f);
@@ -105,7 +104,9 @@ function VendorOrders() {
     count("New") + count("Confirmed") + count("Preparing") + count("Out for delivery");
 
   const totalRevenue = useLive
-    ? (liveOrders.data ?? []).filter((o) => o.status !== "cancelled").reduce((t, o) => t + o.subtotal_minor, 0) / 100
+    ? (liveOrders.data ?? [])
+        .filter((o) => o.status !== "cancelled")
+        .reduce((t, o) => t + o.subtotal_minor, 0) / 100
     : demoOrders.filter((o) => o.status !== "Cancelled").reduce((t, o) => t + o.total, 0);
 
   // Demo set (local state)
@@ -122,9 +123,11 @@ function VendorOrders() {
     if (result.ok) {
       toast.success(message);
       // Refresh live orders
-      liveOrders.data && void ordersApi.vendorOrders(vendorId!).then((r) => {
-        if (r.ok) liveOrders.data?.splice(0, liveOrders.data.length, ...r.data);
-      });
+      if (liveOrders.data) {
+        void ordersApi.vendorOrders(vendorId!).then((r) => {
+          if (r.ok) liveOrders.data?.splice(0, liveOrders.data.length, ...r.data);
+        });
+      }
     } else {
       toast.error(result.error);
     }
@@ -151,7 +154,11 @@ function VendorOrders() {
       nav={vendorNav}
       kicker="Business console"
       title={pageTitle}
-      subtitle={liveOrders.loading ? "Loading orders…" : `${openCount} open ${activityLabel} requiring attention`}
+      subtitle={
+        liveOrders.loading
+          ? "Loading orders…"
+          : `${openCount} open ${activityLabel} requiring attention`
+      }
       storeLink={{ label: "View storefront", slug: vendor.slug }}
       actions={
         vendor.fulfilment === "order" ? (
@@ -166,12 +173,14 @@ function VendorOrders() {
       }
     >
       {vendor.fulfilment !== "order" ? (
-        <Panel title={`${activityLabel.charAt(0).toUpperCase()}${activityLabel.slice(1)} management`}>
+        <Panel
+          title={`${activityLabel.charAt(0).toUpperCase()}${activityLabel.slice(1)} management`}
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="max-w-xl text-sm leading-6 text-muted-foreground">
-                Your {activityLabel} are managed in the dedicated bookings
-                workspace for this business type.
+                Your {activityLabel} are managed in the dedicated bookings workspace for this
+                business type.
               </p>
             </div>
             <Link
@@ -213,11 +222,11 @@ function VendorOrders() {
               icon={Check}
               tone="primary"
             />
-          {liveOrders.error && (
-            <div className="col-span-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-              Live orders unavailable: {liveOrders.error}. Showing demo data.
-            </div>
-          )}
+            {liveOrders.error && (
+              <div className="col-span-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                Live orders unavailable: {liveOrders.error}. Showing demo data.
+              </div>
+            )}
           </div>
 
           {/* Revenue summary */}
@@ -236,7 +245,9 @@ function VendorOrders() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              {useLive ? `${totalOrderCount} orders from live data` : "Based on saved orders, excluding cancelled orders"}
+              {useLive
+                ? `${totalOrderCount} orders from live data`
+                : "Based on saved orders, excluding cancelled orders"}
             </p>
           </div>
 
@@ -246,9 +257,7 @@ function VendorOrders() {
               <div className="mb-5 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">
-                      All activity
-                    </p>
+                    <p className="text-sm font-semibold text-foreground">All activity</p>
                     <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
                       Review and update your customer orders
                     </p>
@@ -267,9 +276,7 @@ function VendorOrders() {
                   {filters.map((filter) => {
                     const active = filter === f;
                     const filterCount =
-                      filter === "All"
-                        ? orders.length
-                        : count(filter as OrderStatus);
+                      filter === "All" ? orders.length : count(filter as OrderStatus);
 
                     return (
                       <button
@@ -286,9 +293,7 @@ function VendorOrders() {
                         {filter}
                         <span
                           className={`text-[10px] tabular-nums ${
-                            active
-                              ? "text-primary-foreground/75"
-                              : "text-muted-foreground"
+                            active ? "text-primary-foreground/75" : "text-muted-foreground"
                           }`}
                         >
                           {filterCount}
@@ -305,11 +310,12 @@ function VendorOrders() {
                     <ShoppingBag className="size-5" />
                   </div>
                   <p className="text-sm font-semibold text-foreground">
-                    {liveOrders.loading ? "Loading orders…" : `No ${f === "All" ? "" : f.toLowerCase() + " "}orders yet`}
+                    {liveOrders.loading
+                      ? "Loading orders…"
+                      : `No ${f === "All" ? "" : f.toLowerCase() + " "}orders yet`}
                   </p>
                   <p className="mt-1 max-w-xs text-xs leading-5 text-muted-foreground">
-                    Orders that match this filter will appear here when
-                    customers place them.
+                    Orders that match this filter will appear here when customers place them.
                   </p>
                   {f !== "All" && (
                     <button
@@ -325,92 +331,148 @@ function VendorOrders() {
                   {liveRows.map((order) => {
                     const uiStatus = BACKEND_TO_FILTER[order.status] ?? "New";
                     const ref = order.orders?.reference ?? order.id;
-                    const customer = order.orders?.customer_snapshot?.["fullName"] ?? order.orders?.customer_snapshot?.["email"] ?? "Customer";
+                    const customer =
+                      order.orders?.customer_snapshot?.["fullName"] ??
+                      order.orders?.customer_snapshot?.["email"] ??
+                      "Customer";
                     const itemCount = order.order_items?.reduce((s, i) => s + i.quantity, 0) ?? 0;
                     const isUpdating = updatingId === order.id;
                     return (
-                    <li
-                      key={order.id}
-                      className={`min-w-0 rounded-2xl border border-border border-l-4 bg-background p-3.5 shadow-sm transition-colors sm:p-4 ${
-                        uiStatus === "New" ? "border-l-gold" :
-                        uiStatus === "Out for delivery" ? "border-l-info" :
-                        uiStatus === "Cancelled" ? "border-l-destructive/50" :
-                        uiStatus === "Delivered" ? "border-l-success/60" : "border-l-primary/40"
-                      }`}
-                    >
-                      <div className="flex min-w-0 flex-col gap-3.5">
-                        <div className="flex min-w-0 items-start justify-between gap-3">
-                          <div className="flex min-w-0 items-center gap-2.5">
-                            <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
-                              uiStatus === "New" ? "bg-gold/15 text-gold-foreground" : "bg-muted text-muted-foreground"
-                            }`}>
-                              <ShoppingBag className="size-4" />
+                      <li
+                        key={order.id}
+                        className={`min-w-0 rounded-2xl border border-border border-l-4 bg-background p-3.5 shadow-sm transition-colors sm:p-4 ${
+                          uiStatus === "New"
+                            ? "border-l-gold"
+                            : uiStatus === "Out for delivery"
+                              ? "border-l-info"
+                              : uiStatus === "Cancelled"
+                                ? "border-l-destructive/50"
+                                : uiStatus === "Delivered"
+                                  ? "border-l-success/60"
+                                  : "border-l-primary/40"
+                        }`}
+                      >
+                        <div className="flex min-w-0 flex-col gap-3.5">
+                          <div className="flex min-w-0 items-start justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <div
+                                className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                                  uiStatus === "New"
+                                    ? "bg-gold/15 text-gold-foreground"
+                                    : "bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                <ShoppingBag className="size-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-bold">{customer}</p>
+                                <p className="mt-0.5 truncate font-mono text-[10px] tracking-wide text-muted-foreground">
+                                  {ref}
+                                </p>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-bold">{customer}</p>
-                              <p className="mt-0.5 truncate font-mono text-[10px] tracking-wide text-muted-foreground">{ref}</p>
+                            <div className="shrink-0 text-right">
+                              <p className="text-sm font-bold tabular-nums">
+                                {minorToNaira(order.subtotal_minor + order.delivery_minor)}
+                              </p>
+                              <div className="mt-1.5">
+                                <StatusPill status={uiStatus} />
+                              </div>
                             </div>
                           </div>
-                          <div className="shrink-0 text-right">
-                            <p className="text-sm font-bold tabular-nums">{minorToNaira(order.subtotal_minor + order.delivery_minor)}</p>
-                            <div className="mt-1.5"><StatusPill status={uiStatus} /></div>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 pl-0.5 text-[11px] text-muted-foreground">
-                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-muted/70 px-2.5 py-1.5">
-                            <Package className="size-3.5" />
-                            {itemCount} {itemCount === 1 ? "item" : "items"}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-muted/70 px-2.5 py-1.5">
-                            <Truck className="size-3.5" />
-                            {backendStatusLabel(order.status)}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
-                          {uiStatus === "New" && (
-                            <>
-                              <button type="button" disabled={isUpdating}
-                                onClick={() => void setLive(order.id, "confirmed", "Order accepted")}
-                                className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none">
-                                <Check className="size-3.5" />{isUpdating ? "Updating…" : "Accept order"}
-                              </button>
-                              <button type="button" disabled={isUpdating}
-                                onClick={() => void setLive(order.id, "cancelled", "Order declined")}
-                                className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold text-muted-foreground transition hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive disabled:opacity-50 sm:flex-none">
-                                <X className="size-3.5" />{isUpdating ? "Updating…" : "Decline"}
-                              </button>
-                            </>
-                          )}
-                          {uiStatus === "Confirmed" && (
-                            <button type="button" disabled={isUpdating}
-                              onClick={() => void setLive(order.id, "preparing", "Marked preparing")}
-                              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 sm:w-auto">
-                              <Check className="size-3.5" />{isUpdating ? "Updating…" : "Start preparing"}
-                            </button>
-                          )}
-                          {uiStatus === "Preparing" && (
-                            <button type="button" disabled={isUpdating}
-                              onClick={() => void setLive(order.id, "out_for_delivery", "Marked out for delivery")}
-                              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 sm:w-auto">
-                              <Truck className="size-3.5" />{isUpdating ? "Updating…" : "Mark out for delivery"}
-                            </button>
-                          )}
-                          {uiStatus === "Out for delivery" && (
-                            <button type="button" disabled={isUpdating}
-                              onClick={() => void setLive(order.id, "delivered", "Marked delivered")}
-                              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 sm:w-auto">
-                              <Check className="size-3.5" />{isUpdating ? "Updating…" : "Mark delivered"}
-                            </button>
-                          )}
-                          {(uiStatus === "Delivered" || uiStatus === "Cancelled") && (
-                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                              {uiStatus === "Delivered" ? <Check className="size-3.5" /> : <X className="size-3.5" />}
-                              {uiStatus === "Delivered" ? "Order completed" : "Order cancelled"}
+                          <div className="flex flex-wrap items-center gap-2 pl-0.5 text-[11px] text-muted-foreground">
+                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-muted/70 px-2.5 py-1.5">
+                              <Package className="size-3.5" />
+                              {itemCount} {itemCount === 1 ? "item" : "items"}
                             </span>
-                          )}
+                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-muted/70 px-2.5 py-1.5">
+                              <Truck className="size-3.5" />
+                              {backendStatusLabel(order.status)}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
+                            {uiStatus === "New" && (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={isUpdating}
+                                  onClick={() =>
+                                    void setLive(order.id, "confirmed", "Order accepted")
+                                  }
+                                  className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none"
+                                >
+                                  <Check className="size-3.5" />
+                                  {isUpdating ? "Updating…" : "Accept order"}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isUpdating}
+                                  onClick={() =>
+                                    void setLive(order.id, "cancelled", "Order declined")
+                                  }
+                                  className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold text-muted-foreground transition hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive disabled:opacity-50 sm:flex-none"
+                                >
+                                  <X className="size-3.5" />
+                                  {isUpdating ? "Updating…" : "Decline"}
+                                </button>
+                              </>
+                            )}
+                            {uiStatus === "Confirmed" && (
+                              <button
+                                type="button"
+                                disabled={isUpdating}
+                                onClick={() =>
+                                  void setLive(order.id, "preparing", "Marked preparing")
+                                }
+                                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 sm:w-auto"
+                              >
+                                <Check className="size-3.5" />
+                                {isUpdating ? "Updating…" : "Start preparing"}
+                              </button>
+                            )}
+                            {uiStatus === "Preparing" && (
+                              <button
+                                type="button"
+                                disabled={isUpdating}
+                                onClick={() =>
+                                  void setLive(
+                                    order.id,
+                                    "out_for_delivery",
+                                    "Marked out for delivery",
+                                  )
+                                }
+                                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 sm:w-auto"
+                              >
+                                <Truck className="size-3.5" />
+                                {isUpdating ? "Updating…" : "Mark out for delivery"}
+                              </button>
+                            )}
+                            {uiStatus === "Out for delivery" && (
+                              <button
+                                type="button"
+                                disabled={isUpdating}
+                                onClick={() =>
+                                  void setLive(order.id, "delivered", "Marked delivered")
+                                }
+                                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 sm:w-auto"
+                              >
+                                <Check className="size-3.5" />
+                                {isUpdating ? "Updating…" : "Mark delivered"}
+                              </button>
+                            )}
+                            {(uiStatus === "Delivered" || uiStatus === "Cancelled") && (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                {uiStatus === "Delivered" ? (
+                                  <Check className="size-3.5" />
+                                ) : (
+                                  <X className="size-3.5" />
+                                )}
+                                {uiStatus === "Delivered" ? "Order completed" : "Order cancelled"}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </li>
+                      </li>
                     );
                   })}
                 </ul>
@@ -434,11 +496,13 @@ function VendorOrders() {
                       <div className="flex min-w-0 flex-col gap-3.5">
                         <div className="flex min-w-0 items-start justify-between gap-3">
                           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-                            <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
-                              order.status === "New"
-                                ? "bg-gold/15 text-gold-foreground"
-                                : "bg-muted text-muted-foreground"
-                            }`}>
+                            <div
+                              className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                                order.status === "New"
+                                  ? "bg-gold/15 text-gold-foreground"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
                               <ShoppingBag className="size-4" />
                             </div>
                             <div className="min-w-0">
@@ -480,9 +544,7 @@ function VendorOrders() {
                             <>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  set(order.id, "Preparing", "Order accepted")
-                                }
+                                onClick={() => set(order.id, "Preparing", "Order accepted")}
                                 className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-none"
                               >
                                 <Check className="size-3.5" />
@@ -491,11 +553,7 @@ function VendorOrders() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  set(
-                                    order.id,
-                                    "Cancelled",
-                                    "Order declined - customer refunded",
-                                  )
+                                  set(order.id, "Cancelled", "Order declined - customer refunded")
                                 }
                                 className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold text-muted-foreground transition hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-none"
                               >
@@ -579,21 +637,15 @@ function OverviewCard({
   return (
     <div className="min-w-0 rounded-2xl border border-border bg-card p-3.5 sm:p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="truncate text-xs font-medium text-muted-foreground">
-          {label}
-        </p>
-        <div
-          className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${iconStyle}`}
-        >
+        <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
+        <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${iconStyle}`}>
           <Icon className="size-4" />
         </div>
       </div>
       <p className="mt-3 text-2xl font-bold tracking-tight text-foreground tabular-nums">
         {value.toLocaleString()}
       </p>
-      <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-        {description}
-      </p>
+      <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{description}</p>
     </div>
   );
 }

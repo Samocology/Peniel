@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -99,10 +98,7 @@ function VerifyOtpPage() {
         });
 
         if (!result.ok) {
-          setError(
-            result.error ??
-              "Could not resend verification code. Please try again.",
-          );
+          setError(result.error ?? "Could not resend verification code. Please try again.");
           return;
         }
 
@@ -116,9 +112,7 @@ function VerifyOtpPage() {
       });
 
       if (!result.ok) {
-        setError(
-          result.error ?? "Could not resend reset code. Please try again.",
-        );
+        setError(result.error ?? "Could not resend reset code. Please try again.");
         return;
       }
 
@@ -139,31 +133,22 @@ function VerifyOtpPage() {
     });
 
     if (digit && index < otpLength - 1) {
-      const nextInput = document.getElementById(
-        `otp-${index + 1}`,
-      ) as HTMLInputElement | null;
+      const nextInput = document.getElementById(`otp-${index + 1}`) as HTMLInputElement | null;
 
       nextInput?.focus();
     }
   };
 
-  const handleCodePaste = (
-    event: React.ClipboardEvent<HTMLInputElement>,
-  ) => {
+  const handleCodePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
     event.preventDefault();
 
-    const pastedCode = event.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, otpLength);
+    const pastedCode = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, otpLength);
 
     setCode(pastedCode);
 
     const nextIndex = Math.min(pastedCode.length, otpLength - 1);
 
-    const nextInput = document.getElementById(
-      `otp-${nextIndex}`,
-    ) as HTMLInputElement | null;
+    const nextInput = document.getElementById(`otp-${nextIndex}`) as HTMLInputElement | null;
 
     nextInput?.focus();
   };
@@ -192,16 +177,14 @@ function VerifyOtpPage() {
           <p className="text-sm leading-6 text-[#777F76]">
             {isSignup ? (
               <>
-                An account has been created for{" "}
-                <strong>{email || "your email"}</strong>. An {otpLength}-digit
-                verification code has been sent to your inbox. Enter it below
-                to activate your account.
+                An account has been created for <strong>{email || "your email"}</strong>. An{" "}
+                {otpLength}-digit verification code has been sent to your inbox. Enter it below to
+                activate your account.
               </>
             ) : (
               <>
-                An {otpLength}-digit code was sent to{" "}
-                <strong>{email || "your email"}</strong>. Enter it below to
-                continue.
+                An {otpLength}-digit code was sent to <strong>{email || "your email"}</strong>.
+                Enter it below to continue.
               </>
             )}
           </p>
@@ -228,9 +211,7 @@ function VerifyOtpPage() {
             />
           </div>
 
-          <div
-            className={`grid ${isSignup ? "grid-cols-8" : "grid-cols-6"} gap-1.5 sm:gap-2`}
-          >
+          <div className={`grid ${isSignup ? "grid-cols-8" : "grid-cols-6"} gap-1.5 sm:gap-2`}>
             {Array.from({ length: otpLength }, (_, i) => (
               <Input
                 key={i}
@@ -245,11 +226,7 @@ function VerifyOtpPage() {
                 onChange={(e) => handleCodeChange(i, e.currentTarget.value)}
                 onPaste={handleCodePaste}
                 onKeyDown={(e) => {
-                  if (
-                    e.key === "Backspace" &&
-                    !e.currentTarget.value &&
-                    i > 0
-                  ) {
+                  if (e.key === "Backspace" && !e.currentTarget.value && i > 0) {
                     const previousInput = document.getElementById(
                       `otp-${i - 1}`,
                     ) as HTMLInputElement | null;
@@ -278,11 +255,7 @@ function VerifyOtpPage() {
               disabled={isSubmitting || code.length !== otpLength}
               className="h-12 w-full rounded-xl bg-[#294331] text-[13px] font-semibold text-white shadow-none transition-all hover:bg-[#38563F] sm:h-[50px]"
             >
-              {isSubmitting
-                ? "Verifying..."
-                : isSignup
-                  ? "Verify & activate"
-                  : "Verify code"}
+              {isSubmitting ? "Verifying..." : isSignup ? "Verify & activate" : "Verify code"}
             </Button>
 
             <div className="text-center">

@@ -6,10 +6,10 @@
   "compatibility_flags": ["nodejs_compat"],
   "keep_vars": true,
   "observability": {
-    "enabled": true
+    "enabled": true,
   },
   "vars": {
     "APP_BASE_URL": "https://peniel.godstimesml.workers.dev/",
-    "WHATSAPP_MODE": "disabled"
-  }
+    "WHATSAPP_MODE": "disabled",
+  },
 }

@@ -5,7 +5,8 @@
 const EMAIL = /[A-Z0-9._%+-]+\s*(@|\(at\)|\[at\])\s*[A-Z0-9.-]+\s*(\.|\(dot\)|dot)\s*[A-Z]{2,}/gi;
 // 10+ digits (phone-like), allowing spaces, dashes, dots, brackets and a leading +
 const PHONE = /(?<![₦#\d])\+?\d[\d\s().-]{7,}\d/g;
-const WORD_DIGITS = /\b(zero|one|two|three|four|five|six|seven|eight|nine)(\s*[-,]?\s*(zero|one|two|three|four|five|six|seven|eight|nine)){6,}\b/gi;
+const WORD_DIGITS =
+  /\b(zero|one|two|three|four|five|six|seven|eight|nine)(\s*[-,]?\s*(zero|one|two|three|four|five|six|seven|eight|nine)){6,}\b/gi;
 const HANDLES = /\b(whatsapp|wa\.me|telegram|t\.me|call me|text me|my number|dm me on)\b/gi;
 
 export function sanitizeChat(input: string): { text: string; blocked: boolean } {

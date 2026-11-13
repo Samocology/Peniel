@@ -19,24 +19,35 @@ export type R2Env = BackendEnv & {
 };
 
 const ALLOWED_CONTENT_TYPES = new Set([
-  "image/jpeg", "image/png", "image/webp", "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
   "application/pdf",
 ]);
-const MAX_PUBLIC_BYTES = 5 * 1024 * 1024;   // 5 MB
+const MAX_PUBLIC_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_PRIVATE_BYTES = 10 * 1024 * 1024; // 10 MB
 const URL_EXPIRY_SECONDS = 300; // 5 minutes
 
 function isR2Configured(env: R2Env): boolean {
-  return Boolean(env.R2_ACCOUNT_ID && env.R2_BUCKET_PUBLIC && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY);
+  return Boolean(
+    env.R2_ACCOUNT_ID && env.R2_BUCKET_PUBLIC && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY,
+  );
 }
 
 async function hmacSha256(key: BufferSource, data: string): Promise<ArrayBuffer> {
-  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    key,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
   return crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(data));
 }
 
 function hex(buffer: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buffer), b => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function sha256Hex(data: string): Promise<string> {
@@ -101,17 +112,24 @@ async function buildPresignedUrl(
 }
 
 function safeObjectKey(ownerId: string, purpose: string, filename: string): string {
-  const ext = filename.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "bin";
+  const ext =
+    filename
+      .split(".")
+      .pop()
+      ?.toLowerCase()
+      .replace(/[^a-z0-9]/g, "") ?? "bin";
   const random = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
   return `${purpose}/${ownerId.slice(0, 8)}/${random}.${ext}`;
 }
 
 // POST /api/storage/upload-url
 async function requestUploadUrl(request: Request, env: R2Env): Promise<Response> {
-  if (!isSameOriginMutation(request)) return json({ ok: false, error: "Cross-origin request rejected." }, 403);
+  if (!isSameOriginMutation(request))
+    return json({ ok: false, error: "Cross-origin request rejected." }, 403);
   const identity = await getRequestIdentity(request, env);
   if (!identity) return json({ ok: false, error: "Authentication required." }, 401);
-  if (!isR2Configured(env)) return json({ ok: false, error: "File storage is not configured." }, 503);
+  if (!isR2Configured(env))
+    return json({ ok: false, error: "File storage is not configured." }, 503);
 
   const input = await readJsonObject(request, 4096);
   const purpose = typeof input?.["purpose"] === "string" ? input["purpose"] : "";
@@ -119,20 +137,38 @@ async function requestUploadUrl(request: Request, env: R2Env): Promise<Response>
   const filename = typeof input?.["filename"] === "string" ? input["filename"] : "upload";
   const vendorId = typeof input?.["vendorId"] === "string" ? input["vendorId"] : null;
 
-  const allowedPurposes = ["product-image", "store-logo", "store-cover", "store-banner", "verification-doc", "message-attachment"];
-  if (!allowedPurposes.includes(purpose)) return json({ ok: false, error: "Invalid upload purpose." }, 400);
-  if (!ALLOWED_CONTENT_TYPES.has(contentType)) return json({ ok: false, error: "File type not allowed." }, 400);
+  const allowedPurposes = [
+    "product-image",
+    "store-logo",
+    "store-cover",
+    "store-banner",
+    "verification-doc",
+    "message-attachment",
+  ];
+  if (!allowedPurposes.includes(purpose))
+    return json({ ok: false, error: "Invalid upload purpose." }, 400);
+  if (!ALLOWED_CONTENT_TYPES.has(contentType))
+    return json({ ok: false, error: "File type not allowed." }, 400);
   if (vendorId && !isUuid(vendorId)) return json({ ok: false, error: "Invalid vendorId." }, 400);
 
   const isPrivate = purpose === "verification-doc";
-  const bucket = isPrivate ? (env.R2_BUCKET_PRIVATE ?? env.R2_BUCKET_PUBLIC!) : env.R2_BUCKET_PUBLIC!;
+  const bucket = isPrivate
+    ? (env.R2_BUCKET_PRIVATE ?? env.R2_BUCKET_PUBLIC!)
+    : env.R2_BUCKET_PUBLIC!;
   const maxBytes = isPrivate ? MAX_PRIVATE_BYTES : MAX_PUBLIC_BYTES;
   const objectKey = safeObjectKey(identity.id, purpose, filename);
 
-  const uploadUrl = await buildPresignedUrl(env, bucket, objectKey, contentType, URL_EXPIRY_SECONDS);
-  const publicUrl = !isPrivate && env.R2_PUBLIC_MEDIA_URL
-    ? `${env.R2_PUBLIC_MEDIA_URL.replace(/\/+$/, "")}/${objectKey}`
-    : null;
+  const uploadUrl = await buildPresignedUrl(
+    env,
+    bucket,
+    objectKey,
+    contentType,
+    URL_EXPIRY_SECONDS,
+  );
+  const publicUrl =
+    !isPrivate && env.R2_PUBLIC_MEDIA_URL
+      ? `${env.R2_PUBLIC_MEDIA_URL.replace(/\/+$/, "")}/${objectKey}`
+      : null;
 
   return json({
     ok: true,

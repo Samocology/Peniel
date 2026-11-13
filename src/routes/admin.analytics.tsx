@@ -1,4 +1,3 @@
-
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Bar,
@@ -105,9 +104,7 @@ function ChartTooltip({
 
   return (
     <div className="rounded-xl border border-border bg-card px-3 py-2.5 shadow-lg">
-      <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-        {label}
-      </p>
+      <p className="mb-1.5 text-xs font-medium text-muted-foreground">{label}</p>
       {payload.map((item) => (
         <p key={item.name} className="text-sm font-semibold">
           {money ? naira(Number(item.value)) : Number(item.value).toLocaleString()}
@@ -139,28 +136,10 @@ function AdminAnalytics() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Volume this month"
-          value={naira(1284000000)}
-          hint="+24%"
-          tone="primary"
-        />
-        <StatCard
-          label="New vendors"
-          value="612"
-          hint="+9%"
-        />
-        <StatCard
-          label="Customer retention"
-          value="46%"
-          hint="90-day repeat"
-          tone="gold"
-        />
-        <StatCard
-          label="Take rate"
-          value="2.0%"
-          hint="Platform fee"
-        />
+        <StatCard label="Volume this month" value={naira(1284000000)} hint="+24%" tone="primary" />
+        <StatCard label="New vendors" value="612" hint="+9%" />
+        <StatCard label="Customer retention" value="46%" hint="90-day repeat" tone="gold" />
+        <StatCard label="Take rate" value="2.0%" hint="Platform fee" />
       </div>
 
       <div className="mt-6 grid gap-4 xl:grid-cols-2">
@@ -185,10 +164,7 @@ function AdminAnalytics() {
 
           <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={platformSeries}
-                margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
-              >
+              <LineChart data={platformSeries} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
                 <CartesianGrid
                   stroke="var(--color-border)"
                   vertical={false}
@@ -248,10 +224,7 @@ function AdminAnalytics() {
 
           <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={platformSeries}
-                margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
-              >
+              <BarChart data={platformSeries} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
                 <CartesianGrid
                   stroke="var(--color-border)"
                   vertical={false}
@@ -291,9 +264,7 @@ function AdminAnalytics() {
               </div>
               <div>
                 <h2 className="text-sm font-semibold">Volume by city</h2>
-                <p className="text-xs text-muted-foreground">
-                  Share of marketplace activity
-                </p>
+                <p className="text-xs text-muted-foreground">Share of marketplace activity</p>
               </div>
             </div>
             <span className="text-xs text-muted-foreground">Top locations</span>
@@ -320,8 +291,7 @@ function AdminAnalytics() {
           <div className="mt-5 flex items-start gap-2 border-t border-border pt-3">
             <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
             <p className="text-xs leading-5 text-muted-foreground">
-              Lagos accounts for the largest share of recorded marketplace
-              volume.
+              Lagos accounts for the largest share of recorded marketplace volume.
             </p>
           </div>
         </Panel>
@@ -333,9 +303,7 @@ function AdminAnalytics() {
             </div>
             <div>
               <h2 className="text-sm font-semibold">Platform health</h2>
-              <p className="text-xs text-muted-foreground">
-                Operational performance indicators
-              </p>
+              <p className="text-xs text-muted-foreground">Operational performance indicators</p>
             </div>
           </div>
 
@@ -347,9 +315,7 @@ function AdminAnalytics() {
                 <div
                   key={signal.label}
                   className={`flex items-center justify-between gap-3 py-3 ${
-                    index !== healthSignals.length - 1
-                      ? "border-b border-border"
-                      : ""
+                    index !== healthSignals.length - 1 ? "border-b border-border" : ""
                   }`}
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
@@ -357,12 +323,8 @@ function AdminAnalytics() {
                       <Icon className="size-3.5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-medium">
-                        {signal.label}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {signal.note}
-                      </p>
+                      <p className="truncate text-xs font-medium">{signal.label}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">{signal.note}</p>
                     </div>
                   </div>
                   <span className="shrink-0 text-sm font-semibold tabular-nums">
@@ -383,10 +345,9 @@ function AdminAnalytics() {
           <div>
             <h3 className="text-sm font-semibold">Reading your platform metrics</h3>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Track transaction volume alongside vendor acquisition and
-              customer retention. Strong growth is most meaningful when
-              supported by reliable fulfilment, successful payments and
-              consistently good customer experiences.
+              Track transaction volume alongside vendor acquisition and customer retention. Strong
+              growth is most meaningful when supported by reliable fulfilment, successful payments
+              and consistently good customer experiences.
             </p>
           </div>
         </div>

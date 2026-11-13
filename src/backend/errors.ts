@@ -95,8 +95,14 @@ export function toErrorResponse(error: unknown): { body: Record<string, unknown>
   }
   if (error instanceof Error) {
     console.error("Unhandled backend error", error);
-    return { body: { ok: false, error: "The service is temporarily unavailable.", code: "INTERNAL_ERROR" }, status: 500 };
+    return {
+      body: { ok: false, error: "The service is temporarily unavailable.", code: "INTERNAL_ERROR" },
+      status: 500,
+    };
   }
   console.error("Unhandled non-error thrown", error);
-  return { body: { ok: false, error: "The service is temporarily unavailable.", code: "INTERNAL_ERROR" }, status: 500 };
+  return {
+    body: { ok: false, error: "The service is temporarily unavailable.", code: "INTERNAL_ERROR" },
+    status: 500,
+  };
 }

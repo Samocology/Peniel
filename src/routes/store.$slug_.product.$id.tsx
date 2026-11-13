@@ -77,7 +77,9 @@ function ProductPage() {
       <div className="min-h-screen bg-background px-4 py-24 text-center">
         <h1 className="text-2xl font-bold">{lookupDone ? "Item unavailable" : "Loading item…"}</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          {lookupDone ? "This item is not available in a published storefront." : "Please wait while we load the item."}
+          {lookupDone
+            ? "This item is not available in a published storefront."
+            : "Please wait while we load the item."}
         </p>
       </div>
     );

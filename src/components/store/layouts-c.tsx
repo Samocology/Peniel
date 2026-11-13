@@ -1,4 +1,3 @@
-
 import {
   ArrowRight,
   ArrowUpRight,
@@ -42,18 +41,9 @@ const cta = (v: Vendor) =>
       ? "Book an appointment"
       : "Reserve a room";
 
-function Eyebrow({
-  children,
-  color,
-}: {
-  children: ReactNode;
-  color: string;
-}) {
+function Eyebrow({ children, color }: { children: ReactNode; color: string }) {
   return (
-    <p
-      className="text-[10px] font-bold uppercase tracking-[0.2em]"
-      style={{ color }}
-    >
+    <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color }}>
       {children}
     </p>
   );
@@ -187,11 +177,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
 
           <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
 
-          <Heading
-            vendor={v}
-            tpl={tpl}
-            className="mx-auto mt-5 max-w-4xl text-5xl sm:text-7xl"
-          >
+          <Heading vendor={v} tpl={tpl} className="mx-auto mt-5 max-w-4xl text-5xl sm:text-7xl">
             {v.name}
           </Heading>
 
@@ -207,10 +193,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
             <Button vendor={v}>{cta(v)}</Button>
           </div>
 
-          <div
-            className="group mt-12 overflow-hidden rounded-2xl"
-            style={{ background: th.soft }}
-          >
+          <div className="group mt-12 overflow-hidden rounded-2xl" style={{ background: th.soft }}>
             <div className="aspect-[16/9] max-h-[580px]">{heroImage}</div>
           </div>
         </section>
@@ -232,17 +215,11 @@ function HeroBlock({ vendor: v, tpl }: P) {
             <div className="max-w-2xl">
               <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
 
-              <Heading
-                vendor={v}
-                tpl={tpl}
-                className="mt-6 text-5xl sm:text-7xl"
-              >
+              <Heading vendor={v} tpl={tpl} className="mt-6 text-5xl sm:text-7xl">
                 {v.name}
               </Heading>
 
-              <p className="mt-6 max-w-lg text-sm leading-8 opacity-75 sm:text-base">
-                {v.tagline}
-              </p>
+              <p className="mt-6 max-w-lg text-sm leading-8 opacity-75 sm:text-base">{v.tagline}</p>
 
               <div className="mt-7">
                 <StoreBadges vendor={v} />
@@ -266,17 +243,11 @@ function HeroBlock({ vendor: v, tpl }: P) {
             <div className="flex flex-col justify-center p-7 sm:p-12">
               <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
 
-              <Heading
-                vendor={v}
-                tpl={tpl}
-                className="mt-5 text-5xl sm:text-7xl"
-              >
+              <Heading vendor={v} tpl={tpl} className="mt-5 text-5xl sm:text-7xl">
                 {v.name}
               </Heading>
 
-              <p className="mt-5 max-w-md text-sm leading-8 opacity-65">
-                {v.tagline}
-              </p>
+              <p className="mt-5 max-w-md text-sm leading-8 opacity-65">{v.tagline}</p>
 
               <div className="mt-7">
                 <StoreBadges vendor={v} />
@@ -287,9 +258,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
               </div>
             </div>
 
-            <div className="group min-h-[300px] overflow-hidden md:min-h-[540px]">
-              {heroImage}
-            </div>
+            <div className="group min-h-[300px] overflow-hidden md:min-h-[540px]">{heroImage}</div>
           </div>
         </section>
       );
@@ -303,16 +272,10 @@ function HeroBlock({ vendor: v, tpl }: P) {
           <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
             <div>
               <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
-              <Heading
-                vendor={v}
-                tpl={tpl}
-                className="mt-5 max-w-3xl text-5xl sm:text-7xl"
-              >
+              <Heading vendor={v} tpl={tpl} className="mt-5 max-w-3xl text-5xl sm:text-7xl">
                 {v.name}
               </Heading>
-              <p className="mt-5 max-w-xl text-sm leading-8 opacity-65">
-                {v.about}
-              </p>
+              <p className="mt-5 max-w-xl text-sm leading-8 opacity-65">{v.about}</p>
             </div>
 
             <div className="flex flex-col items-start gap-5 md:items-end">
@@ -339,11 +302,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
             <span>{v.location.split(",")[0]}</span>
           </div>
 
-          <Heading
-            vendor={v}
-            tpl={tpl}
-            className="mt-10 text-center text-5xl sm:text-8xl"
-          >
+          <Heading vendor={v} tpl={tpl} className="mt-10 text-center text-5xl sm:text-8xl">
             {v.name}
           </Heading>
 
@@ -355,10 +314,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
             </div>
 
             <div className="flex flex-col items-start gap-5">
-              <p
-                className="text-2xl leading-tight"
-                style={{ fontFamily: th.heading }}
-              >
+              <p className="text-2xl leading-tight" style={{ fontFamily: th.heading }}>
                 {v.tagline}
               </p>
               <StoreBadges vendor={v} />
@@ -382,8 +338,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
             <div className="whitespace-nowrap text-center text-[9px] font-semibold uppercase tracking-[0.25em]">
               {Array.from({ length: 4 }).map((_, i) => (
                 <span key={i} className="mx-8">
-                  {v.tagline} <span style={{ color: th.accent }}>✦</span>{" "}
-                  {v.categoryLabel}
+                  {v.tagline} <span style={{ color: th.accent }}>✦</span> {v.categoryLabel}
                 </span>
               ))}
             </div>
@@ -392,16 +347,10 @@ function HeroBlock({ vendor: v, tpl }: P) {
           <section className="mx-auto grid max-w-6xl items-center gap-9 px-4 py-14 sm:px-6 sm:py-20 md:grid-cols-[1fr_1.1fr]">
             <div>
               <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
-              <Heading
-                vendor={v}
-                tpl={tpl}
-                className="mt-5 text-5xl sm:text-7xl"
-              >
+              <Heading vendor={v} tpl={tpl} className="mt-5 text-5xl sm:text-7xl">
                 {v.name}
               </Heading>
-              <p className="mt-5 max-w-md text-sm leading-8 opacity-65">
-                {v.tagline}
-              </p>
+              <p className="mt-5 max-w-md text-sm leading-8 opacity-65">{v.tagline}</p>
               <div className="mt-7">
                 <StoreBadges vendor={v} />
               </div>
@@ -424,17 +373,11 @@ function HeroBlock({ vendor: v, tpl }: P) {
           <div className="order-2 md:order-1">
             <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
 
-            <Heading
-              vendor={v}
-              tpl={tpl}
-              className="mt-5 max-w-xl text-[clamp(2.7rem,7vw,5.5rem)]"
-            >
+            <Heading vendor={v} tpl={tpl} className="mt-5 max-w-xl text-[clamp(2.7rem,7vw,5.5rem)]">
               {v.name}
             </Heading>
 
-            <p className="mt-5 max-w-md text-sm leading-8 opacity-65 sm:text-base">
-              {v.tagline}
-            </p>
+            <p className="mt-5 max-w-md text-sm leading-8 opacity-65 sm:text-base">{v.tagline}</p>
 
             <div className="mt-6">
               <StoreBadges vendor={v} />
@@ -479,18 +422,11 @@ function HeroBlock({ vendor: v, tpl }: P) {
                 </div>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((n) => (
-                    <Star
-                      key={n}
-                      className="size-3"
-                      fill={th.accent}
-                      stroke={th.accent}
-                    />
+                    <Star key={n} className="size-3" fill={th.accent} stroke={th.accent} />
                   ))}
                 </div>
               </div>
-              <p className="mt-2 text-[10px] opacity-50">
-                Based on {v.reviews} customer reviews
-              </p>
+              <p className="mt-2 text-[10px] opacity-50">Based on {v.reviews} customer reviews</p>
             </div>
           </div>
         </section>
@@ -574,21 +510,14 @@ function ProductCard({
       </div>
 
       <div className="p-3.5 sm:p-4">
-        <p className="truncate text-sm font-semibold tracking-tight">
-          {p.name}
-        </p>
+        <p className="truncate text-sm font-semibold tracking-tight">{p.name}</p>
 
         {p.desc && !fashion && (
-          <p className="mt-1.5 line-clamp-2 text-xs leading-5 opacity-50">
-            {p.desc}
-          </p>
+          <p className="mt-1.5 line-clamp-2 text-xs leading-5 opacity-50">{p.desc}</p>
         )}
 
         <div className="mt-3 flex items-center justify-between gap-2">
-          <p
-            className="text-sm font-bold tabular-nums"
-            style={{ color: th.accent }}
-          >
+          <p className="text-sm font-bold tabular-nums" style={{ color: th.accent }}>
             {naira(p.price)}
           </p>
           <span className="text-[9px] font-medium uppercase tracking-wider opacity-40">
@@ -660,9 +589,7 @@ function CatalogBlock({ vendor: v, tpl }: P) {
 
                         <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 sm:flex-row sm:items-center">
                           <div className="min-w-0 flex-1">
-                            <h4 className="text-base font-semibold sm:text-lg">
-                              {p.name}
-                            </h4>
+                            <h4 className="text-base font-semibold sm:text-lg">{p.name}</h4>
                             {p.desc && (
                               <p className="mt-1.5 max-w-lg text-xs leading-6 opacity-55 sm:text-sm">
                                 {p.desc}
@@ -706,12 +633,7 @@ function CatalogBlock({ vendor: v, tpl }: P) {
         <div className="columns-2 gap-3 sm:gap-5 md:columns-3 [&>*]:mb-3 [&>*]:break-inside-avoid sm:[&>*]:mb-5">
           {items.map((p, i) => (
             <div key={p.id}>
-              <ProductCard
-                vendor={v}
-                product={p}
-                index={i}
-                tall={i % 3 === 0}
-              />
+              <ProductCard vendor={v} product={p} index={i} tall={i % 3 === 0} />
             </div>
           ))}
         </div>
@@ -782,9 +704,7 @@ function CatalogBlock({ vendor: v, tpl }: P) {
                     >
                       <span className="font-medium">{p.name}</span>
                       <span className="flex-1 border-b border-dotted opacity-30" />
-                      <span className="font-semibold tabular-nums">
-                        {naira(p.price)}
-                      </span>
+                      <span className="font-semibold tabular-nums">{naira(p.price)}</span>
                     </ItemLink>
                   ))}
                 </div>
@@ -824,14 +744,18 @@ function CatalogBlock({ vendor: v, tpl }: P) {
                 {p.name}
               </span>
               {i === 0 && p.desc && (
-                <span className="mt-3 block max-w-xs text-sm leading-6 opacity-70">
-                  {p.desc}
-                </span>
+                <span className="mt-3 block max-w-xs text-sm leading-6 opacity-70">{p.desc}</span>
               )}
               <span className="absolute bottom-5 left-5 text-sm font-bold tabular-nums">
                 {naira(p.price)}
               </span>
-              <span className="absolute bottom-5 right-5 grid size-9 place-items-center rounded-full" style={{ background: i % 2 === 0 ? th.accent : th.bg, color: i % 2 === 0 ? th.accentInk : th.ink }}>
+              <span
+                className="absolute bottom-5 right-5 grid size-9 place-items-center rounded-full"
+                style={{
+                  background: i % 2 === 0 ? th.accent : th.bg,
+                  color: i % 2 === 0 ? th.accentInk : th.ink,
+                }}
+              >
                 <Plus className="size-4" />
               </span>
             </ItemLink>
@@ -854,9 +778,7 @@ function CatalogBlock({ vendor: v, tpl }: P) {
               }}
             >
               <ItemArt vendor={v} seed={i} label={p.name} className="aspect-square rounded-xl" />
-              <p className="mt-3 truncate text-center text-sm font-medium">
-                {p.name}
-              </p>
+              <p className="mt-3 truncate text-center text-sm font-medium">{p.name}</p>
               <p className="mt-1 text-center text-sm font-bold" style={{ color: th.accent }}>
                 {naira(p.price)}
               </p>
@@ -870,13 +792,7 @@ function CatalogBlock({ vendor: v, tpl }: P) {
       return (
         <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-5 sm:gap-y-8 md:grid-cols-3 lg:grid-cols-4">
           {items.map((p, i) => (
-            <ProductCard
-              key={p.id}
-              vendor={v}
-              product={p}
-              index={i}
-              tall={type === "fashion"}
-            />
+            <ProductCard key={p.id} vendor={v} product={p} index={i} tall={type === "fashion"} />
           ))}
         </div>
       );
@@ -937,9 +853,7 @@ function TrustSection({ vendor: v }: { vendor: Vendor }) {
               <span className="block text-[9px] font-bold uppercase tracking-widest opacity-50">
                 {item.title}
               </span>
-              <span className="mt-1 block text-sm font-medium leading-6">
-                {item.detail}
-              </span>
+              <span className="mt-1 block text-sm font-medium leading-6">{item.detail}</span>
             </span>
           </div>
         ))}
@@ -954,11 +868,7 @@ function BrandStory({ vendor: v, tpl }: P) {
   const th = v.theme;
 
   return (
-    <section
-      id="about"
-      className="border-y"
-      style={{ borderColor: th.line, background: th.soft }}
-    >
+    <section id="about" className="border-y" style={{ borderColor: th.line, background: th.soft }}>
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 sm:py-24 md:grid-cols-[1fr_0.7fr] md:items-center md:gap-16">
         <div className="max-w-2xl">
           <Eyebrow color={th.accent}>The story behind the brand</Eyebrow>
@@ -973,9 +883,7 @@ function BrandStory({ vendor: v, tpl }: P) {
             A little about {v.name}
           </h2>
 
-          <p className="mt-5 text-sm leading-8 opacity-65 sm:text-base">
-            {v.about}
-          </p>
+          <p className="mt-5 text-sm leading-8 opacity-65 sm:text-base">{v.about}</p>
 
           <div className="mt-7 flex flex-wrap items-center gap-5 text-xs opacity-65">
             {v.verified && (
@@ -1037,48 +945,48 @@ export function ComposedStore({ vendor, tpl }: P) {
     type === "electronics"
       ? "Tech, thoughtfully selected"
       : type === "fashion"
-      ? "The collection"
-      : type === "beauty"
-        ? "Our treatments & services"
-        : type === "food"
-          ? "Explore our menu"
-          : type === "hospitality"
-            ? "Rooms & experiences"
-            : v.fulfilment === "booking"
-              ? "Explore our services"
-              : v.fulfilment === "order"
-                ? "Explore our collection"
-                : "Explore available options";
+        ? "The collection"
+        : type === "beauty"
+          ? "Our treatments & services"
+          : type === "food"
+            ? "Explore our menu"
+            : type === "hospitality"
+              ? "Rooms & experiences"
+              : v.fulfilment === "booking"
+                ? "Explore our services"
+                : v.fulfilment === "order"
+                  ? "Explore our collection"
+                  : "Explore available options";
 
   const catalogueDescription =
     type === "electronics"
       ? "Explore phones, laptops, audio, accessories and dependable repairs from one trusted store."
       : type === "fashion"
-      ? "Discover thoughtfully designed pieces, carefully selected fabrics and timeless styles."
-      : type === "beauty"
-        ? "Explore our services and find the right experience for you."
-        : type === "food"
-          ? "Explore our selection and find something you will love."
-          : type === "hospitality"
-            ? "Discover comfortable spaces and experiences for your next stay."
-            : v.fulfilment === "booking"
-              ? "Find the service that is right for you and choose your preferred option."
-              : v.fulfilment === "order"
-                ? "Discover what we have prepared for you."
-                : "Explore the options available for your stay.";
+        ? "Discover thoughtfully designed pieces, carefully selected fabrics and timeless styles."
+        : type === "beauty"
+          ? "Explore our services and find the right experience for you."
+          : type === "food"
+            ? "Explore our selection and find something you will love."
+            : type === "hospitality"
+              ? "Discover comfortable spaces and experiences for your next stay."
+              : v.fulfilment === "booking"
+                ? "Find the service that is right for you and choose your preferred option."
+                : v.fulfilment === "order"
+                  ? "Discover what we have prepared for you."
+                  : "Explore the options available for your stay.";
 
   const catalogueLabel =
     type === "electronics"
       ? "Devices & essentials"
       : type === "fashion"
-      ? "Selected pieces"
-      : type === "beauty"
-        ? "Our services"
-        : type === "food"
-          ? "Freshly prepared"
-          : type === "hospitality"
-            ? "Stay with us"
-            : "Our catalogue";
+        ? "Selected pieces"
+        : type === "beauty"
+          ? "Our services"
+          : type === "food"
+            ? "Freshly prepared"
+            : type === "hospitality"
+              ? "Stay with us"
+              : "Our catalogue";
 
   return (
     <div
@@ -1111,9 +1019,7 @@ export function ComposedStore({ vendor, tpl }: P) {
               {catalogueTitle}
             </h2>
 
-            <p className="mt-4 max-w-lg text-sm leading-7 opacity-60">
-              {catalogueDescription}
-            </p>
+            <p className="mt-4 max-w-lg text-sm leading-7 opacity-60">{catalogueDescription}</p>
           </div>
 
           <span
@@ -1123,10 +1029,7 @@ export function ComposedStore({ vendor, tpl }: P) {
               background: th.soft,
             }}
           >
-            <span
-              className="size-1.5 rounded-full"
-              style={{ background: th.accent }}
-            />
+            <span className="size-1.5 rounded-full" style={{ background: th.accent }} />
             {v.products.length} {v.products.length === 1 ? "item" : "items"}
           </span>
         </div>
@@ -1137,9 +1040,7 @@ export function ComposedStore({ vendor, tpl }: P) {
       <BrandStory vendor={v} tpl={tpl} />
 
       {/* Store contact */}
-      <footer
-        className="mx-auto max-w-6xl px-4 pb-10 pt-14 sm:px-6 sm:pb-12 sm:pt-20"
-      >
+      <footer className="mx-auto max-w-6xl px-4 pb-10 pt-14 sm:px-6 sm:pb-12 sm:pt-20">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
           <div>
             <div className="flex items-center gap-3">
@@ -1152,15 +1053,11 @@ export function ComposedStore({ vendor, tpl }: P) {
 
               <div>
                 <p className="text-sm font-bold">{v.name}</p>
-                <p className="mt-0.5 text-[10px] opacity-50">
-                  Official Peniel store
-                </p>
+                <p className="mt-0.5 text-[10px] opacity-50">Official Peniel store</p>
               </div>
             </div>
 
-            <p className="mt-5 max-w-sm text-xs leading-7 opacity-55">
-              {v.about}
-            </p>
+            <p className="mt-5 max-w-sm text-xs leading-7 opacity-55">{v.about}</p>
 
             <div className="mt-4">
               <StoreBadges vendor={v} />
@@ -1206,7 +1103,9 @@ export function ComposedStore({ vendor, tpl }: P) {
           className="mt-12 flex flex-col gap-3 border-t pt-6 text-[10px] opacity-45 sm:flex-row sm:items-center sm:justify-between"
           style={{ borderColor: th.line }}
         >
-          <p>© {new Date().getFullYear()} {v.name}. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} {v.name}. All rights reserved.
+          </p>
           <a href="/" className="font-semibold transition-opacity hover:opacity-100">
             Powered by Peniel · Payments secured by Peniel Pay
           </a>

@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, Eye, Package, Plus, Store } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -29,8 +28,7 @@ export const Route = createFileRoute("/vendor/products/new")({
 const field =
   "w-full rounded-xl border border-border bg-background px-3.5 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/10";
 
-const label =
-  "mb-1.5 block text-xs font-semibold text-foreground";
+const label = "mb-1.5 block text-xs font-semibold text-foreground";
 
 function NewProduct() {
   const { vendor } = useCurrentVendor();
@@ -73,10 +71,7 @@ function NewProduct() {
             : "e.g. size, colour or warranty";
 
   const numericPrice = Number(price);
-  const validPrice =
-    price.trim() !== "" &&
-    Number.isFinite(numericPrice) &&
-    numericPrice > 0;
+  const validPrice = price.trim() !== "" && Number.isFinite(numericPrice) && numericPrice > 0;
 
   const publish = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -111,7 +106,9 @@ function NewProduct() {
       }
       const ownedVendor = vendorResult.data.find((item) => item.slug === vendor.slug);
       if (!ownedVendor) {
-        throw new Error("This demo storefront is not linked to your account. Complete saved vendor onboarding first.");
+        throw new Error(
+          "This demo storefront is not linked to your account. Complete saved vendor onboarding first.",
+        );
       }
 
       const productResponse = await fetch("/api/products", {
@@ -149,7 +146,9 @@ function NewProduct() {
         typeof savedProduct.name !== "string" ||
         typeof savedProduct.price_minor !== "number"
       ) {
-        throw new Error("The product was saved, but its response was incomplete. Refresh your catalogue before retrying.");
+        throw new Error(
+          "The product was saved, but its response was incomplete. Refresh your catalogue before retrying.",
+        );
       }
 
       app.addProduct({
@@ -165,7 +164,9 @@ function NewProduct() {
     } catch (error) {
       console.error("Could not save vendor product", error);
       setPublishing(false);
-      toast.error(error instanceof Error ? error.message : "Unable to save this item. Please try again.");
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save this item. Please try again.",
+      );
     }
   };
 
@@ -255,9 +256,7 @@ function NewProduct() {
                   Price (₦) <span className="text-destructive">*</span>
                 </label>
                 <div className="flex h-11 items-center rounded-xl border border-border bg-background px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
-                  <span className="mr-2 text-sm font-semibold text-muted-foreground">
-                    ₦
-                  </span>
+                  <span className="mr-2 text-sm font-semibold text-muted-foreground">₦</span>
                   <input
                     id="product-price"
                     name="price"
@@ -301,9 +300,7 @@ function NewProduct() {
               <div className="sm:col-span-2">
                 <label htmlFor="product-details" className={label}>
                   Additional details
-                  <span className="ml-1.5 font-normal text-muted-foreground">
-                    (Optional)
-                  </span>
+                  <span className="ml-1.5 font-normal text-muted-foreground">(Optional)</span>
                 </label>
                 <input
                   id="product-details"
@@ -314,8 +311,7 @@ function NewProduct() {
                   onChange={(event) => setDetails(event.target.value)}
                 />
                 <p className="mt-1.5 text-[11px] text-muted-foreground">
-                  Add useful information such as size, duration, quantity or
-                  other specifications.
+                  Add useful information such as size, duration, quantity or other specifications.
                 </p>
               </div>
             </div>
@@ -324,9 +320,7 @@ function NewProduct() {
           {/* Mobile publishing action */}
           <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-foreground">
-                Ready to publish?
-              </p>
+              <p className="text-sm font-semibold text-foreground">Ready to publish?</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Your item will be added to your storefront.
               </p>
@@ -349,9 +343,7 @@ function NewProduct() {
               <div className="relative grid h-36 place-items-center bg-muted/50">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   <Package className="size-8 opacity-50" />
-                  <span className="text-[11px]">
-                    Product image not available
-                  </span>
+                  <span className="text-[11px]">Product image not available</span>
                 </div>
                 <span className="absolute left-3 top-3 rounded-full border border-border bg-card/90 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground backdrop-blur">
                   {group || "General"}
@@ -369,9 +361,7 @@ function NewProduct() {
                   {description.trim() || "Your description will appear here."}
                 </p>
                 {details.trim() && (
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    {details}
-                  </p>
+                  <p className="mt-2 text-[11px] text-muted-foreground">{details}</p>
                 )}
                 <div className="mt-3 border-t border-border pt-3">
                   <p className="text-base font-bold text-primary">
@@ -386,8 +376,8 @@ function NewProduct() {
             <div className="mt-3 flex items-start gap-2 rounded-xl bg-muted/50 p-3">
               <Eye className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               <p className="text-[11px] leading-5 text-muted-foreground">
-                This is a preview of your listing. Your actual storefront
-                appearance may vary depending on its layout.
+                This is a preview of your listing. Your actual storefront appearance may vary
+                depending on its layout.
               </p>
             </div>
           </Panel>
@@ -399,12 +389,8 @@ function NewProduct() {
                   <Store className="size-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-foreground">
-                    Storefront
-                  </p>
-                  <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                    {vendor.name}
-                  </p>
+                  <p className="text-xs font-semibold text-foreground">Storefront</p>
+                  <p className="mt-0.5 break-words text-xs text-muted-foreground">{vendor.name}</p>
                 </div>
               </div>
 
@@ -413,9 +399,7 @@ function NewProduct() {
                   <Package className="size-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-foreground">
-                    Listing status
-                  </p>
+                  <p className="text-xs font-semibold text-foreground">Listing status</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     New items are added to your catalogue when published.
                   </p>
@@ -425,9 +409,7 @@ function NewProduct() {
           </Panel>
 
           <div className="rounded-xl border border-border bg-muted/30 p-3.5">
-            <p className="text-xs font-semibold text-foreground">
-              Before publishing
-            </p>
+            <p className="text-xs font-semibold text-foreground">Before publishing</p>
             <ul className="mt-2 space-y-2 text-xs text-muted-foreground">
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" />

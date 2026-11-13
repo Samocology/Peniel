@@ -38,7 +38,8 @@ const plans = [
     eyebrow: "For getting started",
     price: "Free",
     note: "2.5% platform fee per transaction",
-    description: "Everything you need to launch your online storefront and start serving customers.",
+    description:
+      "Everything you need to launch your online storefront and start serving customers.",
     features: [
       "Branded storefront (choose 1 of 28 designs, once)",
       "Unlimited products or services",
@@ -77,7 +78,8 @@ const plans = [
     price: "₦24,000",
     period: "/ month",
     note: "+ 1.5% platform fee per transaction",
-    description: "Advanced operations and support for businesses managing more people and locations.",
+    description:
+      "Advanced operations and support for businesses managing more people and locations.",
     features: [
       "Everything in Growth",
       "Multiple locations",
@@ -168,9 +170,7 @@ function Pricing() {
                       : "border-border bg-card hover:-translate-y-1 hover:border-primary/25 hover:shadow-lift")
                   }
                 >
-                  {plan.highlight && (
-                    <div className="absolute inset-x-0 top-0 h-1 bg-gold" />
-                  )}
+                  {plan.highlight && <div className="absolute inset-x-0 top-0 h-1 bg-gold" />}
 
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -178,7 +178,9 @@ function Pricing() {
                         <p
                           className={
                             "text-[10px] font-bold tracking-[0.12em] uppercase sm:text-[11px] sm:tracking-[0.16em] " +
-                            (plan.highlight ? "text-primary-foreground/65" : "text-muted-foreground")
+                            (plan.highlight
+                              ? "text-primary-foreground/65"
+                              : "text-muted-foreground")
                           }
                         >
                           {plan.eyebrow}
@@ -235,9 +237,7 @@ function Pricing() {
                     <p
                       className={
                         "mt-2.5 min-h-0 text-[13px] leading-5 sm:text-sm " +
-                        (plan.highlight
-                          ? "text-primary-foreground/75"
-                          : "text-muted-foreground")
+                        (plan.highlight ? "text-primary-foreground/75" : "text-muted-foreground")
                       }
                     >
                       {plan.description}
@@ -248,9 +248,7 @@ function Pricing() {
                     <p
                       className={
                         "mb-3 text-xs font-bold tracking-[0.12em] uppercase " +
-                        (plan.highlight
-                          ? "text-primary-foreground/65"
-                          : "text-muted-foreground")
+                        (plan.highlight ? "text-primary-foreground/65" : "text-muted-foreground")
                       }
                     >
                       What's included
@@ -307,9 +305,7 @@ function Pricing() {
               <Info className="size-4" />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">
-                Understand your platform fees
-              </p>
+              <p className="text-sm font-semibold text-foreground">Understand your platform fees</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-6">
                 The monthly plan price is separate from the platform fee charged per transaction.
                 Your fee rate depends on the plan you choose.

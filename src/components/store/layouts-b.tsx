@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 import {
@@ -15,7 +14,7 @@ import {
   Sparkles,
   Star,
   Heart,
-ShoppingBag,
+  ShoppingBag,
   Users,
   Wifi,
 } from "lucide-react";
@@ -45,8 +44,8 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
           Math.round(
             (new Date(`${checkOut}T12:00:00`).getTime() -
               new Date(`${checkIn}T12:00:00`).getTime()) /
-              86400000
-          )
+              86400000,
+          ),
         )
       : 0;
 
@@ -72,14 +71,12 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
   });
 
   const roomProducts = vendor.products.filter(
-    (p) => !serviceProducts.some((service) => service.id === p.id)
+    (p) => !serviceProducts.some((service) => service.id === p.id),
   );
 
   const handleBooking = () => {
     if (!checkIn || !checkOut) {
-      setBookingMessage(
-        "Please select both your check-in and check-out dates."
-      );
+      setBookingMessage("Please select both your check-in and check-out dates.");
       return;
     }
 
@@ -89,7 +86,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
     }
 
     setBookingMessage(
-      `${nights} night${nights === 1 ? "" : "s"} · ${adults} guest${adults === 1 ? "" : "s"} · ${rooms} room${rooms === 1 ? "" : "s"}. Explore the accommodation options below to continue.`
+      `${nights} night${nights === 1 ? "" : "s"} · ${adults} guest${adults === 1 ? "" : "s"} · ${rooms} room${rooms === 1 ? "" : "s"}. Explore the accommodation options below to continue.`,
     );
 
     document.getElementById("hotel-rooms")?.scrollIntoView({
@@ -137,9 +134,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
 
               <span className="flex items-center gap-1.5 text-xs text-white/85">
                 <Star className="size-3.5 fill-amber-300 text-amber-300" />
-                <strong className="text-white">
-                  {vendor.rating.toFixed(1)}
-                </strong>
+                <strong className="text-white">{vendor.rating.toFixed(1)}</strong>
                 {vendor.reviews} guest reviews
               </span>
             </div>
@@ -151,9 +146,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
             <h1 className="mt-4 max-w-2xl text-[clamp(3.2rem,7vw,6.4rem)] font-medium leading-[0.94] tracking-[-0.065em]">
               Rest well.
               <br />
-              <span className="font-normal text-white/65">
-                Stay beautifully.
-              </span>
+              <span className="font-normal text-white/65">Stay beautifully.</span>
             </h1>
 
             <p className="mt-7 max-w-xl text-sm leading-7 text-white/75 sm:text-base sm:leading-8">
@@ -243,10 +236,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                 background: t.soft,
               }}
             >
-              <ShieldCheck
-                className="size-3.5 sm:size-4"
-                style={{ color: t.accent }}
-              />
+              <ShieldCheck className="size-3.5 sm:size-4" style={{ color: t.accent }} />
               <span className="text-[9px] font-semibold opacity-65 sm:text-[10px]">
                 Secure<span className="hidden sm:inline"> booking enquiry</span>
               </span>
@@ -259,10 +249,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                 htmlFor="hotel-checkin"
                 className="mb-2 flex items-center gap-2 text-[10px] font-bold tracking-[0.1em] uppercase opacity-60"
               >
-                <CalendarDays
-                  className="size-3.5"
-                  style={{ color: t.accent }}
-                />
+                <CalendarDays className="size-3.5" style={{ color: t.accent }} />
                 Check-in
               </label>
               <input
@@ -296,10 +283,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                 htmlFor="hotel-checkout"
                 className="mb-2 flex items-center gap-2 text-[10px] font-bold tracking-[0.1em] uppercase opacity-60"
               >
-                <CalendarDays
-                  className="size-3.5"
-                  style={{ color: t.accent }}
-                />
+                <CalendarDays className="size-3.5" style={{ color: t.accent }} />
                 Check-out
               </label>
               <input
@@ -346,10 +330,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                   <Minus className="size-3.5" />
                 </button>
 
-                <span
-                  aria-live="polite"
-                  className="text-sm font-semibold tabular-nums"
-                >
+                <span aria-live="polite" className="text-sm font-semibold tabular-nums">
                   {adults}
                 </span>
 
@@ -389,10 +370,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                   <Minus className="size-3.5" />
                 </button>
 
-                <span
-                  aria-live="polite"
-                  className="text-sm font-semibold tabular-nums"
-                >
+                <span aria-live="polite" className="text-sm font-semibold tabular-nums">
                   {rooms}
                 </span>
 
@@ -433,10 +411,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                 borderRadius: t.radius,
               }}
             >
-              <Check
-                className="mt-0.5 size-4 shrink-0"
-                style={{ color: t.accent }}
-              />
+              <Check className="mt-0.5 size-4 shrink-0" style={{ color: t.accent }} />
               {bookingMessage}
             </div>
           )}
@@ -456,9 +431,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
               className="inline-flex min-h-8 items-center border px-2.5"
               style={{ borderColor: t.line, borderRadius: t.radius }}
             >
-              {nights > 0
-                ? `${nights} night${nights === 1 ? "" : "s"}`
-                : "Duration not selected"}
+              {nights > 0 ? `${nights} night${nights === 1 ? "" : "s"}` : "Duration not selected"}
             </span>
             <span
               className="inline-flex min-h-8 items-center border px-2.5"
@@ -490,14 +463,11 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
 
         <div className="lg:pl-12">
           <p className="max-w-lg text-sm leading-8 opacity-60">
-            Discover a stay that brings together welcoming service, considered
-            spaces and the little details that make every visit memorable.
+            Discover a stay that brings together welcoming service, considered spaces and the little
+            details that make every visit memorable.
           </p>
 
-          <div
-            className="mt-6 h-px w-full"
-            style={{ background: t.line }}
-          />
+          <div className="mt-6 h-px w-full" style={{ background: t.line }} />
 
           <div className="mt-5 flex items-center gap-3">
             <div
@@ -510,9 +480,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
               <ShieldCheck className="size-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold">
-                A considered guest experience
-              </p>
+              <p className="text-xs font-semibold">A considered guest experience</p>
               <p className="mt-1 text-[10px] opacity-50">
                 Comfort, convenience and attentive service.
               </p>
@@ -567,20 +535,14 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
               </div>
 
               <h3 className="mt-5 text-sm font-semibold">{title}</h3>
-              <p className="mt-1 text-[11px] leading-5 opacity-50">
-                {description}
-              </p>
+              <p className="mt-1 text-[11px] leading-5 opacity-50">{description}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ROOMS */}
-      <section
-        id="hotel-rooms"
-        className="scroll-mt-20"
-        style={{ background: t.soft }}
-      >
+      <section id="hotel-rooms" className="scroll-mt-20" style={{ background: t.soft }}>
         <div className="mx-auto max-w-[1320px] px-5 py-20 sm:px-8 sm:py-24 lg:px-12">
           <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
@@ -595,14 +557,10 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                 Rooms & accommodation
               </h2>
 
-              <p className="mt-3 text-sm opacity-55">
-                A comfortable space for every kind of stay.
-              </p>
+              <p className="mt-3 text-sm opacity-55">A comfortable space for every kind of stay.</p>
             </div>
 
-            <span className="text-xs opacity-50">
-              {roomProducts.length} accommodation options
-            </span>
+            <span className="text-xs opacity-50">{roomProducts.length} accommodation options</span>
           </div>
 
           {roomProducts.length === 0 ? (
@@ -615,12 +573,8 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
               }}
             >
               <BedDouble className="mx-auto size-9 opacity-40" />
-              <p className="mt-4 text-sm font-semibold">
-                Accommodation coming soon
-              </p>
-              <p className="mt-2 text-xs opacity-50">
-                Contact the property for room enquiries.
-              </p>
+              <p className="mt-4 text-sm font-semibold">Accommodation coming soon</p>
+              <p className="mt-2 text-xs opacity-50">Contact the property for room enquiries.</p>
             </div>
           ) : (
             <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -668,32 +622,21 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                   <div className="flex flex-1 flex-col p-5 sm:p-6">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="text-lg font-semibold tracking-tight">
-                          {p.name}
-                        </h3>
-                        <p className="mt-1 text-[11px] opacity-50">
-                          {p.meta || "Accommodation"}
-                        </p>
+                        <h3 className="text-lg font-semibold tracking-tight">{p.name}</h3>
+                        <p className="mt-1 text-[11px] opacity-50">{p.meta || "Accommodation"}</p>
                       </div>
 
-                      <BedDouble
-                        className="mt-1 size-5 shrink-0"
-                        style={{ color: t.accent }}
-                      />
+                      <BedDouble className="mt-1 size-5 shrink-0" style={{ color: t.accent }} />
                     </div>
 
-                    <p className="mt-4 line-clamp-3 text-xs leading-6 opacity-60">
-                      {p.desc}
-                    </p>
+                    <p className="mt-4 line-clamp-3 text-xs leading-6 opacity-60">{p.desc}</p>
 
                     <div
                       className="mt-6 flex items-end justify-between gap-3 border-t pt-5"
                       style={{ borderColor: t.line }}
                     >
                       <div className="min-w-0">
-                        <p className="text-[10px] opacity-45">
-                          Price per night
-                        </p>
+                        <p className="text-[10px] opacity-45">Price per night</p>
                         <div className="mt-1">
                           <Price value={p.price} vendor={vendor} />
                         </div>
@@ -766,9 +709,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                 <div className="flex min-w-0 flex-1 flex-col justify-between p-5">
                   <div>
                     <p className="text-base font-semibold">{p.name}</p>
-                    <p className="mt-2 text-xs leading-6 opacity-55">
-                      {p.desc}
-                    </p>
+                    <p className="mt-2 text-xs leading-6 opacity-55">{p.desc}</p>
                   </div>
 
                   <div className="mt-5 flex items-center justify-between gap-3">
@@ -812,9 +753,8 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
             </h2>
 
             <p className="mt-5 max-w-md text-sm leading-7 opacity-60">
-              Have a question about a room, a special request or your upcoming
-              visit? Get in touch with the property before making your
-              reservation.
+              Have a question about a room, a special request or your upcoming visit? Get in touch
+              with the property before making your reservation.
             </p>
 
             <div className="mt-8 space-y-5">
@@ -822,20 +762,17 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                 {
                   icon: MapPin,
                   title: "Find your way",
-                  description:
-                    "View the property's location and contact information.",
+                  description: "View the property's location and contact information.",
                 },
                 {
                   icon: Clock,
                   title: "Flexible arrangements",
-                  description:
-                    "Confirm check-in and check-out arrangements with the property.",
+                  description: "Confirm check-in and check-out arrangements with the property.",
                 },
                 {
                   icon: ShieldCheck,
                   title: "Book with confidence",
-                  description:
-                    "Confirm reservation terms directly before booking.",
+                  description: "Confirm reservation terms directly before booking.",
                 },
               ].map(({ icon: Icon, title, description }) => (
                 <div key={title} className="flex items-start gap-4">
@@ -852,9 +789,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
 
                   <div>
                     <p className="text-xs font-semibold">{title}</p>
-                    <p className="mt-1 max-w-sm text-[11px] leading-5 opacity-55">
-                      {description}
-                    </p>
+                    <p className="mt-1 max-w-sm text-[11px] leading-5 opacity-55">{description}</p>
                   </div>
                 </div>
               ))}

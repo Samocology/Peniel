@@ -10,7 +10,11 @@ export const Route = createFileRoute("/vendor/upgrade")({
   head: () => ({
     meta: [
       { title: "Upgrade your plan - Peniel business console" },
-      { name: "description", content: "Unlock promotions, verification applications and unlimited storefront design changes." },
+      {
+        name: "description",
+        content:
+          "Unlock promotions, verification applications and unlimited storefront design changes.",
+      },
       { property: "og:title", content: "Upgrade your plan - Peniel" },
       { property: "og:description", content: "Unlock more growth tools for your business." },
     ],
@@ -19,9 +23,29 @@ export const Route = createFileRoute("/vendor/upgrade")({
 });
 
 const plans: { id: Plan; name: string; price: string; perks: string[] }[] = [
-  { id: "starter", name: "Starter", price: "Free", perks: ["1 storefront design choice", "Orders, bookings & chat", "Peniel Pay checkout"] },
-  { id: "growth", name: "Growth", price: "₦9,500/mo", perks: ["Switch storefront designs any time", "Promotions & promo codes", "Apply for verification", "Advanced analytics"] },
-  { id: "business", name: "Business", price: "₦24,000/mo", perks: ["Everything in Growth", "Staff roles", "Faster payouts", "Account manager"] },
+  {
+    id: "starter",
+    name: "Starter",
+    price: "Free",
+    perks: ["1 storefront design choice", "Orders, bookings & chat", "Peniel Pay checkout"],
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    price: "₦9,500/mo",
+    perks: [
+      "Switch storefront designs any time",
+      "Promotions & promo codes",
+      "Apply for verification",
+      "Advanced analytics",
+    ],
+  },
+  {
+    id: "business",
+    name: "Business",
+    price: "₦24,000/mo",
+    perks: ["Everything in Growth", "Staff roles", "Faster payouts", "Account manager"],
+  },
 ];
 
 function Upgrade() {
@@ -45,7 +69,12 @@ function Upgrade() {
   };
 
   return (
-    <DashShell nav={vendorNav} kicker="Business console" title="Plans" subtitle={`Current plan: ${account.plan === "starter" ? "Starter (free)" : account.plan}`}>
+    <DashShell
+      nav={vendorNav}
+      kicker="Business console"
+      title="Plans"
+      subtitle={`Current plan: ${account.plan === "starter" ? "Starter (free)" : account.plan}`}
+    >
       <div className="grid gap-4 md:grid-cols-3">
         {plans.map((p) => {
           const current = p.id === account.plan;
@@ -55,7 +84,9 @@ function Upgrade() {
               <p className="mt-1 font-display text-2xl font-bold text-primary">{p.price}</p>
               <ul className="mt-4 space-y-2 text-sm">
                 {p.perks.map((x) => (
-                  <li key={x} className="flex gap-2"><Check className="size-4 shrink-0 text-primary" /> {x}</li>
+                  <li key={x} className="flex gap-2">
+                    <Check className="size-4 shrink-0 text-primary" /> {x}
+                  </li>
                 ))}
               </ul>
               <button
@@ -64,14 +95,21 @@ function Upgrade() {
                 className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
               >
                 {paying === p.id && <Loader2 className="size-4 animate-spin" />}
-                {current ? "Current plan" : paying === p.id ? "Processing payment…" : p.id === "starter" ? "Downgrade" : `Pay & upgrade`}
+                {current
+                  ? "Current plan"
+                  : paying === p.id
+                    ? "Processing payment…"
+                    : p.id === "starter"
+                      ? "Downgrade"
+                      : `Pay & upgrade`}
               </button>
             </Panel>
           );
         })}
       </div>
       <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-        <ShieldCheck className="size-4 text-primary" /> Charged through Peniel Pay. Plans never buy verification.
+        <ShieldCheck className="size-4 text-primary" /> Charged through Peniel Pay. Plans never buy
+        verification.
       </p>
     </DashShell>
   );

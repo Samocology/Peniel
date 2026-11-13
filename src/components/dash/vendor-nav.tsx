@@ -41,7 +41,12 @@ export const vendorNav: NavItem[] = [
   { label: "Verification", to: "/vendor/verification", icon: <BadgeCheck className={i} /> },
   { label: "Store settings", to: "/vendor/settings", icon: <Settings className={i} /> },
   { label: "Support", to: "/vendor/support", icon: <LifeBuoy className={i} /> },
-  { label: "Profile", to: "/vendor/profile", icon: <CircleUserRound className={i} />, primary: true },
+  {
+    label: "Profile",
+    to: "/vendor/profile",
+    icon: <CircleUserRound className={i} />,
+    primary: true,
+  },
 ];
 
 export function vendorNavFor(vendor: Vendor): NavItem[] {
@@ -53,10 +58,7 @@ export function vendorNavFor(vendor: Vendor): NavItem[] {
         : vendor.type === "hotel"
           ? "Rooms"
           : "Products";
-  const bookingLabel =
-    vendor.fulfilment === "reservation"
-      ? "Reservations"
-      : "Appointments";
+  const bookingLabel = vendor.fulfilment === "reservation" ? "Reservations" : "Appointments";
 
   return vendorNav
     .filter((item) => {
@@ -80,11 +82,22 @@ export const adminNav: NavItem[] = [
   { label: "Orders", to: "/admin/orders", icon: <ShoppingBag className={i} />, primary: true },
   { label: "Transactions", to: "/admin/transactions", icon: <Receipt className={i} /> },
   { label: "Payouts", to: "/admin/payouts", icon: <Wallet className={i} /> },
-  { label: "Verification", to: "/admin/verification", icon: <BadgeCheck className={i} />, primary: true, badge: "12" },
+  {
+    label: "Verification",
+    to: "/admin/verification",
+    icon: <BadgeCheck className={i} />,
+    primary: true,
+    badge: "12",
+  },
   { label: "Disputes", to: "/admin/disputes", icon: <LifeBuoy className={i} />, badge: "4" },
   { label: "Categories", to: "/admin/categories", icon: <Boxes className={i} /> },
   { label: "Reviews", to: "/admin/reviews", icon: <Star className={i} /> },
   { label: "Promotions", to: "/admin/promotions", icon: <Megaphone className={i} /> },
   { label: "Analytics", to: "/admin/analytics", icon: <BarChart3 className={i} /> },
-  { label: "Platform settings", to: "/admin/settings", icon: <Settings className={i} />, primary: true },
+  {
+    label: "Platform settings",
+    to: "/admin/settings",
+    icon: <Settings className={i} />,
+    primary: true,
+  },
 ];

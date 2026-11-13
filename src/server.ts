@@ -47,7 +47,10 @@ async function handleApiRequest(request: Request, env: BackendEnv): Promise<Resp
 
   // WhatsApp webhook challenge (GET, no auth required)
   if (pathname === "/api/webhooks/whatsapp" && request.method === "GET") {
-    const challenge = verifyWebhookChallenge(request, env as BackendEnv & { WHATSAPP_WEBHOOK_VERIFY_TOKEN?: string });
+    const challenge = verifyWebhookChallenge(
+      request,
+      env as BackendEnv & { WHATSAPP_WEBHOOK_VERIFY_TOKEN?: string },
+    );
     if (challenge) return new Response(challenge, { status: 200 });
     return json({ ok: false, error: "Webhook verification failed." }, 403);
   }
@@ -76,7 +79,17 @@ async function handleApiRequest(request: Request, env: BackendEnv): Promise<Resp
   const messagingResponse = await handleMessagingRequest(request, env as BackendEnv);
   if (messagingResponse) return messagingResponse;
 
-  const storageResponse = await handleStorageRequest(request, env as BackendEnv & { R2_ACCOUNT_ID?: string; R2_BUCKET_PUBLIC?: string; R2_BUCKET_PRIVATE?: string; R2_ACCESS_KEY_ID?: string; R2_SECRET_ACCESS_KEY?: string; R2_PUBLIC_MEDIA_URL?: string });
+  const storageResponse = await handleStorageRequest(
+    request,
+    env as BackendEnv & {
+      R2_ACCOUNT_ID?: string;
+      R2_BUCKET_PUBLIC?: string;
+      R2_BUCKET_PRIVATE?: string;
+      R2_ACCESS_KEY_ID?: string;
+      R2_SECRET_ACCESS_KEY?: string;
+      R2_PUBLIC_MEDIA_URL?: string;
+    },
+  );
   if (storageResponse) return storageResponse;
 
   return handleCommerceRequest(request, env as BackendEnv);

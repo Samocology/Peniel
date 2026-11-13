@@ -66,8 +66,10 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --shadow-card: 0 1px 2px oklch(0.25 0.05 155 / 0.06), 0 8px 24px -12px oklch(0.25 0.05 155 / 0.12);
-  --shadow-lift: 0 2px 4px oklch(0.25 0.05 155 / 0.06), 0 18px 40px -18px oklch(0.25 0.05 155 / 0.22);
+  --shadow-card:
+    0 1px 2px oklch(0.25 0.05 155 / 0.06), 0 8px 24px -12px oklch(0.25 0.05 155 / 0.12);
+  --shadow-lift:
+    0 2px 4px oklch(0.25 0.05 155 / 0.06), 0 18px 40px -18px oklch(0.25 0.05 155 / 0.22);
 }
 
 :root {
@@ -184,6 +186,10 @@
 }
 
 @keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }

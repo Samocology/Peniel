@@ -3,28 +3,50 @@ import { isSameOriginMutation, json, readJsonObject } from "./http.ts";
 
 type Identity = NonNullable<Awaited<ReturnType<typeof getRequestIdentity>>>;
 
-async function db(env: BackendEnv, path: string, token: string, init: RequestInit = {}, serviceRole = false): Promise<Response> {
+async function db(
+  env: BackendEnv,
+  path: string,
+  token: string,
+  init: RequestInit = {},
+  serviceRole = false,
+): Promise<Response> {
   const url = env.SUPABASE_URL?.replace(/\/+$/, "");
   const anonKey = env.SUPABASE_ANON_KEY;
   if (!url || !anonKey) throw new Error("Supabase not configured.");
-  const key = serviceRole && env.SUPABASE_SERVICE_ROLE_KEY ? env.SUPABASE_SERVICE_ROLE_KEY : anonKey;
-  const authKey = serviceRole && env.SUPABASE_SERVICE_ROLE_KEY ? env.SUPABASE_SERVICE_ROLE_KEY : token;
+  const key =
+    serviceRole && env.SUPABASE_SERVICE_ROLE_KEY ? env.SUPABASE_SERVICE_ROLE_KEY : anonKey;
+  const authKey =
+    serviceRole && env.SUPABASE_SERVICE_ROLE_KEY ? env.SUPABASE_SERVICE_ROLE_KEY : token;
   return fetch(`${url}/rest/v1/${path}`, {
     ...init,
-    headers: { apikey: key, authorization: `Bearer ${authKey}`, "content-type": "application/json", prefer: "return=representation", ...(init.headers ?? {}) },
+    headers: {
+      apikey: key,
+      authorization: `Bearer ${authKey}`,
+      "content-type": "application/json",
+      prefer: "return=representation",
+      ...(init.headers ?? {}),
+    },
   });
 }
 
 async function p(r: Response): Promise<unknown> {
   const t = await r.text();
   if (!t) return null;
-  try { return JSON.parse(t); } catch { return null; }
+  try {
+    return JSON.parse(t);
+  } catch {
+    return null;
+  }
 }
 
 function dbErr(status: number, body: unknown): Response {
-  const code = body !== null && typeof body === "object" && "code" in body ? String((body as Record<string, unknown>)["code"]) : "";
+  const code =
+    body !== null && typeof body === "object" && "code" in body
+      ? String((body as Record<string, unknown>)["code"])
+      : "";
   if (status === 401) return json({ ok: false, error: "Authentication required." }, 401);
-  if (status === 403 || code === "42501") return json({ ok: false, error: "Permission denied." }, 403);
+  if (status === 403 || code === "42501")
+    return json({ ok: false, error: "Permission denied." }, 403);
   return json({ ok: false, error: "Notification service temporarily unavailable." }, 502);
 }
 
@@ -43,17 +65,22 @@ async function listNotifications(request: Request, env: BackendEnv, identity: Id
   if (!r.ok) return dbErr(r.status, result);
 
   // Count unread
-  const list = Array.isArray(result) ? result as Record<string, unknown>[] : [];
-  const unreadCount = list.filter(n => !n["read_at"]).length;
+  const list = Array.isArray(result) ? (result as Record<string, unknown>[]) : [];
+  const unreadCount = list.filter((n) => !n["read_at"]).length;
   return json({ ok: true, data: { notifications: list, unreadCount } });
 }
 
 // PATCH /api/notifications/:id/read
 async function markNotificationRead(env: BackendEnv, identity: Identity, notificationId: string) {
-  const r = await db(env, `notifications?id=eq.${notificationId}&recipient_id=eq.${identity.id}`, identity.accessToken, {
-    method: "PATCH",
-    body: JSON.stringify({ read_at: new Date().toISOString() }),
-  });
+  const r = await db(
+    env,
+    `notifications?id=eq.${notificationId}&recipient_id=eq.${identity.id}`,
+    identity.accessToken,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ read_at: new Date().toISOString() }),
+    },
+  );
   const result = await p(r);
   if (!r.ok) return dbErr(r.status, result);
   return json({ ok: true, data: { read: true } });
@@ -61,10 +88,15 @@ async function markNotificationRead(env: BackendEnv, identity: Identity, notific
 
 // PATCH /api/notifications/read-all
 async function markAllRead(env: BackendEnv, identity: Identity) {
-  const r = await db(env, `notifications?recipient_id=eq.${identity.id}&read_at=is.null`, identity.accessToken, {
-    method: "PATCH",
-    body: JSON.stringify({ read_at: new Date().toISOString() }),
-  });
+  const r = await db(
+    env,
+    `notifications?recipient_id=eq.${identity.id}&read_at=is.null`,
+    identity.accessToken,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ read_at: new Date().toISOString() }),
+    },
+  );
   const result = await p(r);
   if (!r.ok) return dbErr(r.status, result);
   return json({ ok: true, data: { markedAll: true } });
@@ -94,7 +126,12 @@ export async function createNotification(
         "content-type": "application/json",
         prefer: "resolution=ignore-duplicates",
       },
-      body: JSON.stringify({ recipient_id: recipientId, event_type: eventType, payload, dedupe_key: dedupeKey }),
+      body: JSON.stringify({
+        recipient_id: recipientId,
+        event_type: eventType,
+        payload,
+        dedupe_key: dedupeKey,
+      }),
     });
   } catch (error) {
     // Notification failure must never block the calling operation
@@ -102,20 +139,27 @@ export async function createNotification(
   }
 }
 
-export async function handleNotificationsRequest(request: Request, env: BackendEnv): Promise<Response | null> {
+export async function handleNotificationsRequest(
+  request: Request,
+  env: BackendEnv,
+): Promise<Response | null> {
   const { pathname } = new URL(request.url);
   if (!pathname.startsWith("/api/notifications")) return null;
 
   try {
-    if (!isSameOriginMutation(request)) return json({ ok: false, error: "Cross-origin mutation rejected." }, 403);
+    if (!isSameOriginMutation(request))
+      return json({ ok: false, error: "Cross-origin mutation rejected." }, 403);
     const identity = await getRequestIdentity(request, env);
     if (!identity) return json({ ok: false, error: "Authentication required." }, 401);
 
-    if (pathname === "/api/notifications" && request.method === "GET") return listNotifications(request, env, identity);
-    if (pathname === "/api/notifications/read-all" && request.method === "PATCH") return markAllRead(env, identity);
+    if (pathname === "/api/notifications" && request.method === "GET")
+      return listNotifications(request, env, identity);
+    if (pathname === "/api/notifications/read-all" && request.method === "PATCH")
+      return markAllRead(env, identity);
 
     const readMatch = pathname.match(/^\/api\/notifications\/([0-9a-f-]{36})\/read$/i);
-    if (readMatch && request.method === "PATCH") return markNotificationRead(env, identity, readMatch[1]!);
+    if (readMatch && request.method === "PATCH")
+      return markNotificationRead(env, identity, readMatch[1]!);
 
     return null;
   } catch (error) {

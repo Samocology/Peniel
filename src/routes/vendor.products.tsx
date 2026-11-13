@@ -1,4 +1,3 @@
-
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
   ArrowUpRight,
@@ -58,9 +57,7 @@ function VendorProducts() {
     desc: product.description,
     price: product.price_minor / 100,
     group: product.group_name,
-    ...(typeof product.attributes["meta"] === "string"
-      ? { meta: product.attributes["meta"] }
-      : {}),
+    ...(typeof product.attributes["meta"] === "string" ? { meta: product.attributes["meta"] } : {}),
   }));
 
   const vendor = {
@@ -102,26 +99,18 @@ function VendorProducts() {
 
   const hiddenIds = useBackend
     ? (liveProducts.data ?? []).filter((product) => !product.published).map((product) => product.id)
-    : account.hidden ?? [];
+    : (account.hidden ?? []);
 
-  const liveCount = vendor.products.filter(
-    (product) => !hiddenIds.includes(product.id),
-  ).length;
+  const liveCount = vendor.products.filter((product) => !hiddenIds.includes(product.id)).length;
 
   const hiddenCount = vendor.products.length - liveCount;
 
   const filteredProducts = useMemo(
     () =>
       vendor.products.filter((product) => {
-        const matchesCategory =
-          category === "All" || product.group === category;
+        const matchesCategory = category === "All" || product.group === category;
 
-        const matchesSearch = [
-          product.name,
-          product.desc,
-          product.group,
-          product.meta ?? "",
-        ]
+        const matchesSearch = [product.name, product.desc, product.group, product.meta ?? ""]
           .join(" ")
           .toLowerCase()
           .includes(query.trim().toLowerCase());
@@ -138,10 +127,7 @@ function VendorProducts() {
     [vendor.products, category, query, visibility, hiddenIds],
   );
 
-  const hasActiveFilters =
-    query.trim().length > 0 ||
-    category !== "All" ||
-    visibility !== "All";
+  const hasActiveFilters = query.trim().length > 0 || category !== "All" || visibility !== "All";
 
   const resetFilters = () => {
     setQuery("");
@@ -222,17 +208,9 @@ function VendorProducts() {
           icon={Package}
           active
         />
-        <SummaryCard
-          label="Live on storefront"
-          value={liveCount}
-          icon={Eye}
-        />
+        <SummaryCard label="Live on storefront" value={liveCount} icon={Eye} />
         <div className="col-span-2 sm:col-span-1">
-          <SummaryCard
-            label="Hidden"
-            value={hiddenCount}
-            icon={EyeOff}
-          />
+          <SummaryCard label="Hidden" value={hiddenCount} icon={EyeOff} />
         </div>
       </div>
 
@@ -310,9 +288,7 @@ function VendorProducts() {
               <div>
                 <div className="mb-2 flex items-center gap-2">
                   <SlidersHorizontal className="size-3.5 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Categories
-                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">Categories</span>
                 </div>
                 <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 hide-scrollbar">
                   {["All", ...vendor.groups].map((group) => {
@@ -360,10 +336,8 @@ function VendorProducts() {
 
               <p className="text-xs text-muted-foreground">
                 Showing{" "}
-                <span className="font-semibold text-foreground">
-                  {filteredProducts.length}
-                </span>{" "}
-                of {vendor.products.length}
+                <span className="font-semibold text-foreground">{filteredProducts.length}</span> of{" "}
+                {vendor.products.length}
               </p>
             </div>
           </div>
@@ -376,9 +350,7 @@ function VendorProducts() {
                   <Search className="size-5" />
                 </div>
                 <h3 className="text-sm font-semibold text-foreground">
-                  {vendor.products.length === 0
-                    ? `No ${itemLabel} yet`
-                    : "No matching items"}
+                  {vendor.products.length === 0 ? `No ${itemLabel} yet` : "No matching items"}
                 </h3>
                 <p className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
                   {vendor.products.length === 0
@@ -408,9 +380,7 @@ function VendorProducts() {
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {filteredProducts.map((product) => {
                   const isHidden = hiddenIds.includes(product.id);
-                  const originalIndex = vendor.products.findIndex(
-                    (item) => item.id === product.id,
-                  );
+                  const originalIndex = vendor.products.findIndex((item) => item.id === product.id);
 
                   return (
                     <article
@@ -460,9 +430,7 @@ function VendorProducts() {
                         <button
                           type="button"
                           disabled={updatingId === product.id}
-                          onClick={() =>
-                            toggleVisibility(product.id, product.name)
-                          }
+                          onClick={() => toggleVisibility(product.id, product.name)}
                           className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-wait disabled:opacity-50"
                         >
                           {isHidden ? (
@@ -492,9 +460,7 @@ function VendorProducts() {
                       <th className="px-3 py-3 font-medium">Price</th>
                       <th className="px-3 py-3 font-medium">Details</th>
                       <th className="px-3 py-3 font-medium">Status</th>
-                      <th className="px-3 py-3 text-right font-medium">
-                        Action
-                      </th>
+                      <th className="px-3 py-3 text-right font-medium">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -505,10 +471,7 @@ function VendorProducts() {
                       );
 
                       return (
-                        <tr
-                          key={product.id}
-                          className="transition hover:bg-muted/30"
-                        >
+                        <tr key={product.id} className="transition hover:bg-muted/30">
                           <td className="px-3 py-3">
                             <div className="flex min-w-0 items-center gap-3">
                               <ItemArt
@@ -551,9 +514,7 @@ function VendorProducts() {
                             <button
                               type="button"
                               disabled={updatingId === product.id}
-                              onClick={() =>
-                                toggleVisibility(product.id, product.name)
-                              }
+                              onClick={() => toggleVisibility(product.id, product.name)}
                               className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-wait disabled:opacity-50"
                             >
                               {isHidden ? (
@@ -601,14 +562,10 @@ function SummaryCard({
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="truncate text-xs font-medium text-muted-foreground">
-          {label}
-        </p>
+        <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
         <div
           className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${
-            active
-              ? "bg-primary/10 text-primary"
-              : "bg-muted text-muted-foreground"
+            active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
           }`}
         >
           <Icon className="size-4" />

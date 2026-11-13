@@ -79,7 +79,11 @@ export function VendorCard({ vendor, compact = false }: { vendor: Vendor; compac
         {!compact && (
           <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
             <span className="rounded-md bg-muted px-2 py-1">
-              {vendor.fulfilment === "order" ? "Accepts orders" : vendor.fulfilment === "booking" ? "Book appointment" : "Reserve room"}
+              {vendor.fulfilment === "order"
+                ? "Accepts orders"
+                : vendor.fulfilment === "booking"
+                  ? "Book appointment"
+                  : "Reserve room"}
             </span>
             <span className="rounded-md bg-muted px-2 py-1">{vendor.reviews} reviews</span>
           </div>
@@ -143,7 +147,12 @@ export function StatusPill({ status }: { status: string }) {
     Failed: "bg-destructive/10 text-destructive",
   };
   return (
-    <span className={cn("inline-flex rounded-full px-2.5 py-1 text-xs font-semibold", map[status] ?? "bg-muted text-muted-foreground")}>
+    <span
+      className={cn(
+        "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+        map[status] ?? "bg-muted text-muted-foreground",
+      )}
+    >
       {status}
     </span>
   );

@@ -17,7 +17,9 @@ export const Route = createFileRoute("/store/$slug")({
   },
   head: ({ loaderData }) => {
     if (!loaderData?.vendor) {
-      return { meta: [{ title: "Store unavailable - Peniel" }, { name: "robots", content: "noindex" }] };
+      return {
+        meta: [{ title: "Store unavailable - Peniel" }, { name: "robots", content: "noindex" }],
+      };
     }
     const v = loaderData.vendor;
     return {
@@ -65,9 +67,13 @@ function StorePage() {
     return (
       <div className="min-h-screen bg-background">
         <main className="mx-auto max-w-2xl px-4 py-24 text-center">
-          <h1 className="text-2xl font-bold">{remoteLookupDone ? "Store not found" : "Loading storefront…"}</h1>
+          <h1 className="text-2xl font-bold">
+            {remoteLookupDone ? "Store not found" : "Loading storefront…"}
+          </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            {remoteLookupDone ? "This storefront is unavailable or has not been published." : "Please wait while we load the store."}
+            {remoteLookupDone
+              ? "This storefront is unavailable or has not been published."
+              : "Please wait while we load the store."}
           </p>
         </main>
       </div>
@@ -85,15 +91,25 @@ function StorePage() {
 
   const L = tpl.layout;
   const body =
-    tpl.kind === "composed" ? <ComposedStore vendor={vendor} tpl={tpl} />
-    : L === "cinematic" ? <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "banner", catalog: "cards" }} />
-    : L === "builder" ? <BuilderStore vendor={vendor} />
-    : L === "editorial" ? <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "centered", catalog: "list" }} />
-    : L === "gallery" ? <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "magazine", catalog: "masonry" }} />
-    : L === "playful" ? <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "centered", catalog: "polaroid" }} />
-    : L === "reservation" ? <ReservationStore vendor={vendor} />
-    : L === "grid" ? <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "poster", catalog: "cards" }} />
-    : <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "poster", catalog: "bento" }} />;
+    tpl.kind === "composed" ? (
+      <ComposedStore vendor={vendor} tpl={tpl} />
+    ) : L === "cinematic" ? (
+      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "banner", catalog: "cards" }} />
+    ) : L === "builder" ? (
+      <BuilderStore vendor={vendor} />
+    ) : L === "editorial" ? (
+      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "centered", catalog: "list" }} />
+    ) : L === "gallery" ? (
+      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "magazine", catalog: "masonry" }} />
+    ) : L === "playful" ? (
+      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "centered", catalog: "polaroid" }} />
+    ) : L === "reservation" ? (
+      <ReservationStore vendor={vendor} />
+    ) : L === "grid" ? (
+      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "poster", catalog: "cards" }} />
+    ) : (
+      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "poster", catalog: "bento" }} />
+    );
 
   return (
     <div className="min-h-screen" style={{ background: vendor.theme.bg, color: vendor.theme.ink }}>
@@ -112,7 +128,10 @@ function StorePage() {
         <>
           {(paused || !acceptingActivity) && (
             <div className="mx-auto mt-20 max-w-6xl px-4 sm:px-6">
-              <p className="rounded-xl border px-4 py-3 text-center text-sm font-medium" style={{ borderColor: vendor.theme.line, background: vendor.theme.soft }}>
+              <p
+                className="rounded-xl border px-4 py-3 text-center text-sm font-medium"
+                style={{ borderColor: vendor.theme.line, background: vendor.theme.soft }}
+              >
                 {paused
                   ? `${vendor.name} has temporarily paused this storefront.`
                   : `${vendor.name} is not currently accepting ${vendor.fulfilment === "order" ? "orders" : vendor.fulfilment === "booking" ? "appointments" : "reservations"}.`}

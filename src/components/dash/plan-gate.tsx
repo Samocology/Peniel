@@ -14,9 +14,13 @@ export function PlanGate({ feature, children }: { feature: string; children: Rea
       </span>
       <p className="mt-4 font-display text-xl font-bold">{feature} needs a paid plan</p>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-        You're on the free Starter plan. Upgrade to Growth or Business to unlock {feature.toLowerCase()}.
+        You're on the free Starter plan. Upgrade to Growth or Business to unlock{" "}
+        {feature.toLowerCase()}.
       </p>
-      <Link to="/vendor/upgrade" className="mt-5 inline-block rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground">
+      <Link
+        to="/vendor/upgrade"
+        className="mt-5 inline-block rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground"
+      >
         See upgrade options
       </Link>
     </div>

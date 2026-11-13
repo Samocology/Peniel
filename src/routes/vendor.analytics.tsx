@@ -1,14 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Activity, ArrowUpRight, BarChart3, Package } from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
@@ -23,8 +15,7 @@ export const Route = createFileRoute("/vendor/analytics")({
       { title: "Analytics - Peniel business console" },
       {
         name: "description",
-        content:
-          "Review sales, fulfilment and catalog activity recorded for your account.",
+        content: "Review sales, fulfilment and catalog activity recorded for your account.",
       },
       { property: "og:title", content: "Analytics - Peniel business console" },
       {
@@ -56,16 +47,24 @@ function VendorAnalytics() {
 
   const demoOrders = state.orders.filter((o) => o.vendorSlug === vendor.slug);
   const demoCompleted = demoOrders.filter((o) => o.status === "Delivered");
-  const demoRevenue = demoOrders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
-  const demoAverage = demoCompleted.length ? Math.round(demoCompleted.reduce((s, o) => s + o.total, 0) / demoCompleted.length) : 0;
+  const demoRevenue = demoOrders
+    .filter((o) => o.status !== "Cancelled")
+    .reduce((s, o) => s + o.total, 0);
+  const demoAverage = demoCompleted.length
+    ? Math.round(demoCompleted.reduce((s, o) => s + o.total, 0) / demoCompleted.length)
+    : 0;
 
   const orders = demoOrders;
   const completed = demoCompleted;
 
   const revenue = useLive ? liveAnalytics.data!.totalRevenue / 100 : demoRevenue;
-  const completedRevenue = useLive ? liveAnalytics.data!.netRevenue / 100 : demoCompleted.reduce((s, o) => s + o.total, 0);
+  const completedRevenue = useLive
+    ? liveAnalytics.data!.netRevenue / 100
+    : demoCompleted.reduce((s, o) => s + o.total, 0);
   const average = useLive
-    ? (liveAnalytics.data!.completedOrders > 0 ? Math.round((liveAnalytics.data!.netRevenue / 100) / liveAnalytics.data!.completedOrders) : 0)
+    ? liveAnalytics.data!.completedOrders > 0
+      ? Math.round(liveAnalytics.data!.netRevenue / 100 / liveAnalytics.data!.completedOrders)
+      : 0
     : demoAverage;
 
   const statusCounts: OrderStatus[] = [
@@ -80,10 +79,7 @@ function VendorAnalytics() {
   const modeCounts = new Map<string, number>();
 
   for (const order of orders) {
-    modeCounts.set(
-      order.mode,
-      (modeCounts.get(order.mode) ?? 0) + 1,
-    );
+    modeCounts.set(order.mode, (modeCounts.get(order.mode) ?? 0) + 1);
   }
 
   const activity =
@@ -98,18 +94,17 @@ function VendorAnalytics() {
     amount: order.total,
   }));
 
-  const maxOrderValue = Math.max(
-    ...chartRows.map((item) => item.amount),
-    0,
-  );
+  const maxOrderValue = Math.max(...chartRows.map((item) => item.amount), 0);
 
   const deliveredPercentage =
-    orders.length > 0
-      ? Math.round((completed.length / orders.length) * 100)
-      : 0;
+    orders.length > 0 ? Math.round((completed.length / orders.length) * 100) : 0;
 
   const cancelledCount = useLive
-    ? (liveAnalytics.data ? liveAnalytics.data.totalOrders - liveAnalytics.data.completedOrders - liveAnalytics.data.pendingOrders : 0)
+    ? liveAnalytics.data
+      ? liveAnalytics.data.totalOrders -
+        liveAnalytics.data.completedOrders -
+        liveAnalytics.data.pendingOrders
+      : 0
     : orders.filter((o) => o.status === "Cancelled").length;
 
   return (
@@ -175,9 +170,7 @@ function VendorAnalytics() {
           <Panel title="Recorded order values">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-xs text-muted-foreground">
-                  Individual recorded order totals
-                </p>
+                <p className="text-xs text-muted-foreground">Individual recorded order totals</p>
               </div>
               {chartRows.length > 0 && (
                 <span className="rounded-lg bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
@@ -191,21 +184,15 @@ function VendorAnalytics() {
                 <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <BarChart3 className="size-5" />
                 </div>
-                <p className="mt-3 text-sm font-semibold">
-                  No order data yet
-                </p>
+                <p className="mt-3 text-sm font-semibold">No order data yet</p>
                 <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground">
-                  Order-value analytics will appear when this account has
-                  recorded activity.
+                  Order-value analytics will appear when this account has recorded activity.
                 </p>
               </div>
             ) : (
               <div className="h-64 min-w-0 sm:h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartRows}
-                    margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
-                  >
+                  <BarChart data={chartRows} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                     <CartesianGrid
                       stroke="var(--color-border)"
                       vertical={false}
@@ -220,16 +207,10 @@ function VendorAnalytics() {
                       interval="preserveStartEnd"
                       minTickGap={24}
                     />
-                    <YAxis
-                      hide
-                      domain={[0, maxOrderValue * 1.15 || 100]}
-                    />
+                    <YAxis hide domain={[0, maxOrderValue * 1.15 || 100]} />
                     <Tooltip
                       cursor={{ fill: "var(--color-muted)", opacity: 0.35 }}
-                      formatter={(value) => [
-                        naira(Number(value)),
-                        "Order value",
-                      ]}
+                      formatter={(value) => [naira(Number(value)), "Order value"]}
                       labelFormatter={(label) => `Order #${label}`}
                       contentStyle={{
                         background: "var(--color-card)",
@@ -254,12 +235,8 @@ function VendorAnalytics() {
           <Panel title="Order fulfilment">
             <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/20 p-3.5">
               <div>
-                <p className="text-xs text-muted-foreground">
-                  Delivery completion
-                </p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">
-                  {deliveredPercentage}%
-                </p>
+                <p className="text-xs text-muted-foreground">Delivery completion</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums">{deliveredPercentage}%</p>
               </div>
               <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
                 <ArrowUpRight className="size-5" />
@@ -280,25 +257,18 @@ function VendorAnalytics() {
 
             <div className="mt-5 space-y-3">
               {statusCounts.map((status) => {
-                const count = orders.filter(
-                  (order) => order.status === status,
-                ).length;
+                const count = orders.filter((order) => order.status === status).length;
 
-                const percentage =
-                  orders.length > 0 ? (count / orders.length) * 100 : 0;
+                const percentage = orders.length > 0 ? (count / orders.length) * 100 : 0;
 
                 return (
                   <div key={status}>
                     <div className="mb-1.5 flex items-center justify-between gap-3">
                       <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-                        <span
-                          className={`size-2 shrink-0 rounded-full ${statusStyles[status]}`}
-                        />
+                        <span className={`size-2 shrink-0 rounded-full ${statusStyles[status]}`} />
                         <span className="truncate">{status}</span>
                       </span>
-                      <span className="text-xs font-semibold tabular-nums">
-                        {count}
-                      </span>
+                      <span className="text-xs font-semibold tabular-nums">{count}</span>
                     </div>
 
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -342,9 +312,7 @@ function VendorAnalytics() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {product.name}
-                      </p>
+                      <p className="truncate text-sm font-medium">{product.name}</p>
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">
                         {product.group}
                       </p>
@@ -359,9 +327,7 @@ function VendorAnalytics() {
             ) : (
               <div className="py-8 text-center">
                 <Package className="mx-auto size-7 text-muted-foreground" />
-                <p className="mt-2 text-sm font-medium">
-                  No listings yet
-                </p>
+                <p className="mt-2 text-sm font-medium">No listings yet</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Your catalog will appear here once products are added.
                 </p>
@@ -380,16 +346,12 @@ function VendorAnalytics() {
                   .sort((a, b) => b[1] - a[1])
                   .map(([mode, count]) => {
                     const percentage =
-                      orders.length > 0
-                        ? Math.round((count / orders.length) * 100)
-                        : 0;
+                      orders.length > 0 ? Math.round((count / orders.length) * 100) : 0;
 
                     return (
                       <div key={mode}>
                         <div className="mb-2 flex items-center justify-between gap-3">
-                          <span className="truncate text-sm font-medium">
-                            {mode}
-                          </span>
+                          <span className="truncate text-sm font-medium">{mode}</span>
                           <span className="shrink-0 text-xs font-semibold tabular-nums">
                             {count}
                           </span>
@@ -412,9 +374,7 @@ function VendorAnalytics() {
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <Package className="size-7 text-muted-foreground" />
-                <p className="mt-2 text-sm font-medium">
-                  No fulfilment activity
-                </p>
+                <p className="mt-2 text-sm font-medium">No fulfilment activity</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Fulfilment breakdowns will appear when orders are recorded.
                 </p>
@@ -430,28 +390,20 @@ function VendorAnalytics() {
               <Activity className="size-4" />
             </div>
             <div>
-              <p className="text-sm font-semibold">
-                Your account activity at a glance
-              </p>
+              <p className="text-sm font-semibold">Your account activity at a glance</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                These figures are calculated from saved account records. They
-                are not external payment settlements or live visitor analytics.
+                These figures are calculated from saved account records. They are not external
+                payment settlements or live visitor analytics.
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 flex-wrap gap-3 text-xs text-muted-foreground">
             <span>
-              <span className="font-semibold text-foreground">
-                {cancelledCount}
-              </span>{" "}
-              cancelled
+              <span className="font-semibold text-foreground">{cancelledCount}</span> cancelled
             </span>
             <span>
-              <span className="font-semibold text-foreground">
-                {completed.length}
-              </span>{" "}
-              delivered
+              <span className="font-semibold text-foreground">{completed.length}</span> delivered
             </span>
           </div>
         </div>

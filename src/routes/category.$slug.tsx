@@ -15,13 +15,18 @@ export const Route = createFileRoute("/category/$slug")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Category not found - Peniel" }, { name: "robots", content: "noindex" }] };
+      return {
+        meta: [{ title: "Category not found - Peniel" }, { name: "robots", content: "noindex" }],
+      };
     }
     const { category } = loaderData;
     return {
       meta: [
         { title: `${category.name} in Lagos - Peniel` },
-        { name: "description", content: `${category.blurb}. Browse ${category.count}+ ${category.name.toLowerCase()} businesses on Peniel and order or book securely.` },
+        {
+          name: "description",
+          content: `${category.blurb}. Browse ${category.count}+ ${category.name.toLowerCase()} businesses on Peniel and order or book securely.`,
+        },
         { property: "og:title", content: `${category.name} on Peniel` },
         { property: "og:description", content: category.blurb },
       ],
@@ -41,20 +46,32 @@ function CategoryPage() {
 
       <div className="mx-auto max-w-7xl px-4 pt-5 sm:px-6">
         <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link to="/" className="hover:text-foreground">Home</Link>
+          <Link to="/" className="hover:text-foreground">
+            Home
+          </Link>
           <ChevronRight className="size-3" />
-          <Link to="/marketplace" className="hover:text-foreground">Categories</Link>
+          <Link to="/marketplace" className="hover:text-foreground">
+            Categories
+          </Link>
           <ChevronRight className="size-3" />
           <span className="font-medium text-foreground">{category.name}</span>
         </nav>
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[280px_1fr] lg:items-center">
           <div className="relative h-40 overflow-hidden rounded-2xl">
-            <img src={shown[0]?.cover ?? vendors[0]!.cover} alt={category.name} loading="lazy" className="size-full object-cover" />
+            <img
+              src={shown[0]?.cover ?? vendors[0]!.cover}
+              alt={category.name}
+              loading="lazy"
+              className="size-full object-cover"
+            />
           </div>
           <div>
             <h1 className="font-display text-3xl font-bold sm:text-4xl">{category.name}</h1>
-            <p className="mt-2 max-w-xl text-sm text-muted-foreground">{category.blurb}. Find top-rated businesses in Lagos - from local favourites to premium names.</p>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+              {category.blurb}. Find top-rated businesses in Lagos - from local favourites to
+              premium names.
+            </p>
             <div className="mt-5 grid grid-cols-2 gap-6 sm:grid-cols-4">
               {[
                 [`${category.count}+`, "Businesses"],
@@ -80,7 +97,9 @@ function CategoryPage() {
               {f}
             </Button>
           ))}
-          <span className="ml-auto text-xs text-muted-foreground">Sort by: <b className="text-foreground">Popular</b></span>
+          <span className="ml-auto text-xs text-muted-foreground">
+            Sort by: <b className="text-foreground">Popular</b>
+          </span>
         </div>
       </div>
 
@@ -98,16 +117,28 @@ function CategoryPage() {
                 params={{ slug: v.slug }}
                 className="grid grid-cols-[96px_minmax(0,1fr)] gap-4 p-4 transition-colors hover:bg-muted/50 sm:grid-cols-[140px_minmax(0,1fr)_auto]"
               >
-                <img src={v.cover} alt={v.name} loading="lazy" className="h-24 w-full rounded-xl object-cover" />
+                <img
+                  src={v.cover}
+                  alt={v.name}
+                  loading="lazy"
+                  className="h-24 w-full rounded-xl object-cover"
+                />
                 <div className="min-w-0">
-                  <p className="flex items-center gap-2 truncate font-semibold">{v.name} {v.verified && <Verified />}</p>
+                  <p className="flex items-center gap-2 truncate font-semibold">
+                    {v.name} {v.verified && <Verified />}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">{v.tagline}</p>
                   <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="size-3" /> {v.location}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {v.groups.slice(0, 3).map((g) => (
-                      <span key={g} className="rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{g}</span>
+                      <span
+                        key={g}
+                        className="rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                      >
+                        {g}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -119,7 +150,9 @@ function CategoryPage() {
               </Link>
             ))}
           </div>
-          <Button variant="outline" className="mt-5 w-full">Load more {category.name}</Button>
+          <Button variant="outline" className="mt-5 w-full">
+            Load more {category.name}
+          </Button>
         </div>
 
         <aside className="space-y-5">
@@ -134,12 +167,14 @@ function CategoryPage() {
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-sm font-semibold">Popular in this category</p>
             <div className="mt-3 space-y-2.5">
-              {["Nigerian", "Continental", "Fast service", "Premium", "Budget friendly"].map((t, i) => (
-                <div key={t} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{t}</span>
-                  <span className="text-xs font-medium">{342 - i * 61}</span>
-                </div>
-              ))}
+              {["Nigerian", "Continental", "Fast service", "Premium", "Budget friendly"].map(
+                (t, i) => (
+                  <div key={t} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{t}</span>
+                    <span className="text-xs font-medium">{342 - i * 61}</span>
+                  </div>
+                ),
+              )}
             </div>
           </div>
 
@@ -149,7 +184,11 @@ function CategoryPage() {
             <p className="mt-1 text-sm text-sidebar-foreground/70">
               Get discovered by thousands of customers in this category. Join Peniel today.
             </p>
-            <Button asChild size="sm" className="mt-4 bg-gold text-gold-foreground hover:bg-gold/90">
+            <Button
+              asChild
+              size="sm"
+              className="mt-4 bg-gold text-gold-foreground hover:bg-gold/90"
+            >
               <Link to="/vendor/onboarding">Get started</Link>
             </Button>
           </div>
@@ -161,7 +200,9 @@ function CategoryPage() {
           title="Featured vendors"
           action={
             <Button asChild variant="ghost" size="sm" className="gap-1">
-              <Link to="/marketplace">View all <ArrowRight className="size-4" /></Link>
+              <Link to="/marketplace">
+                View all <ArrowRight className="size-4" />
+              </Link>
             </Button>
           }
         />
