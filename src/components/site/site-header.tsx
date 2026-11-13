@@ -10,6 +10,8 @@ import {
   User,
   LogOut,
   Wallet,
+  Menu,
+  X,
 } from "lucide-react";
 import { useApp, app as storeApi } from "@/lib/peniel-store";
 import { MARKETPLACE_LOCATIONS, normalizeLocationLabel } from "@/lib/location";
@@ -18,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "./logo";
 import { customersApi } from "@/lib/api-client";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const nav = [
   { to: "/marketplace", label: "Marketplace" },
@@ -264,6 +267,91 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
           </Button>
         </form>
       )}
+
+      {/* Mobile Menu Sheet */}
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
+            <Menu className="size-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-72 sm:w-80 p-4">
+          <nav className="flex flex-col gap-2">
+            {!user ? (
+              <>
+                {nav.map((n) => (
+                  <Link
+                    key={n.to}
+                    to={n.to}
+                    onClick={() => navigate({ to: n.to })}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+                  >
+                    <span>{n.label}</span>
+                  </Link>
+                ))}
+                <div className="border-t border-border/50 my-2" />
+                <Link
+                  to="/auth"
+                  onClick={() => navigate({ to: "/auth" })}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-primary hover:bg-primary/10"
+                >
+                  <User className="size-4" />
+                  <span>Sign in</span>
+                </Link>
+                <Link
+                  to="/auth"
+                  search={{ mode: "signup" }}
+                  onClick={() => navigate({ to: "/auth", search: { mode: "signup" } })}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted"
+                >
+                  <User className="size-4" />
+                  <span>Create account</span>
+                </Link>
+              </>
+            ) : user.role === "customer" ? (
+              <>
+                {customerNav.map((n) => (
+                  <Link
+                    key={n.to}
+                    to={n.to}
+                    onClick={() => navigate({ to: n.to })}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+                  >
+                    <span>{n.label}</span>
+                  </Link>
+                ))}
+                <div className="border-t border-border/50 my-2" />
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 w-full text-left"
+                >
+                  <LogOut className="size-4" />
+                  <span>Log out</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/vendor"
+                  onClick={() => navigate({ to: "/vendor" })}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  <LayoutGrid className="size-4" />
+                  <span>Business dashboard</span>
+                </Link>
+                <div className="border-t border-border/50 my-2" />
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 w-full text-left"
+                >
+                  <LogOut className="size-4" />
+                  <span>Log out</span>
+                </button>
+              </>
+            )}
+          </nav>
+        </SheetContent>
+      </Sheet>
     </header>
   );
 }

@@ -6,7 +6,8 @@ import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, PartyPopper, Store } fro
 import { Logo } from "@/components/site/logo";
 import { categories, naira, type BusinessType } from "@/lib/data";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { vendorsApi, storageApi } from "@/lib/api-client";
 
 const steps = [
   "Business name",
@@ -74,6 +75,94 @@ function Onboarding() {
   const [region, setRegion] = useState("");
   const [savingVendor, setSavingVendor] = useState(false);
   const [vendorSubmitted, setVendorSubmitted] = useState(false);
+  const [logoKey, setLogoKey] = useState<string | null>(null);
+  const [coverKey, setCoverKey] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [products, setProducts] = useState<Array<{ id: string; name: string; price: string }>>([
+    { id: "1", name: "", price: "" },
+    { id: "2", name: "", price: "" },
+  ]);
+
+  const addProduct = () => {
+    setProducts((prev) => [...prev, { id: Date.now().toString(), name: "", price: "" }]);
+  };
+
+  const removeProduct = (id: string) => {
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const updateProduct = (id: string, field: "name" | "price", value: string) => {
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+  };
+
+  const uploadImage = useCallback(
+    async (file: File, purpose: "store-logo" | "store-cover"): Promise<string | null> => {
+      if (!vendor) {
+        toast.error("Vendor context not loaded");
+        return null;
+      }
+      const uploadResult = await storageApi.getUploadUrl({
+        purpose,
+        contentType: file.type,
+        filename: file.name,
+        vendorId: vendor.id,
+      });
+      if (!uploadResult.ok || !uploadResult.data) {
+        toast.error(uploadResult.error || "Failed to get upload URL");
+        return null;
+      }
+      const { uploadUrl, objectKey } = uploadResult.data;
+      const putResult = await storageApi.uploadFile(uploadUrl, file);
+      if (!putResult.ok) {
+        toast.error(putResult.error || "Failed to upload image");
+        return null;
+      }
+      return objectKey;
+    },
+    [vendor],
+  );
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    setUploadingLogo(true);
+    try {
+      const objectKey = await uploadImage(file, "store-logo");
+      if (objectKey) {
+        setLogoKey(objectKey);
+        toast.success("Logo uploaded successfully");
+      }
+    } finally {
+      setUploadingLogo(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const objectKey = await uploadImage(file, "store-cover");
+      if (objectKey) {
+        setCoverKey(objectKey);
+        toast.success("Cover image uploaded successfully");
+      }
+    } finally {
+      setUploadingCover(false);
+      e.target.value = "";
+    }
+  };
+
   const pct = Math.round((step / steps.length) * 100);
   const selectedCategory = categories.findIndex((category) => category.slug === categorySlug);
   const submitVendor = async () => {
@@ -89,6 +178,12 @@ function Onboarding() {
       toast.error("Complete your business name, URL, category and location before submitting.");
       return;
     }
+    const validProducts = products
+      .filter((p) => p.name.trim() && p.price.trim())
+      .map((p) => ({
+        name: p.name.trim(),
+        price: Number(p.price),
+      }));
     setSavingVendor(true);
     try {
       const response = await fetch("/api/vendors", {
@@ -106,6 +201,9 @@ function Onboarding() {
           fulfilment: businessFulfilment,
           layout: vendor.layout,
           templateId: vendor.layout,
+          logo_object_key: logoKey,
+          cover_object_key: coverKey,
+          products: validProducts,
         }),
       });
       const result = (await response.json()) as { ok?: boolean; error?: string };
@@ -131,7 +229,16 @@ function Onboarding() {
         rating: 0,
         reviews: 0,
         orders: "New on Peniel",
-        products: [],
+        products: validProducts.map((p, i) => ({
+          id: `temp-${i}`,
+          name: p.name,
+          description: "",
+          group: "General",
+          price: p.price,
+          stock: null,
+          published: true,
+          attributes: {},
+        })),
         groups: [],
       });
       setVendorSubmitted(true);
@@ -313,15 +420,55 @@ function Onboarding() {
 
           {step === 4 && (
             <div className="grid gap-4 sm:grid-cols-2">
-              {["Logo", "Cover image"].map((t) => (
-                <div key={t}>
-                  <span className={label}>{t}</span>
-                  <div className="grid h-40 place-items-center rounded-xl border border-dashed border-border bg-muted/40 text-center">
-                    <div>
-                      <ImagePlus className="mx-auto size-6 text-muted-foreground" />
-                      <p className="mt-2 text-sm font-medium">Upload {t.toLowerCase()}</p>
-                      <p className="text-xs text-muted-foreground">PNG or JPG, up to 5MB</p>
-                    </div>
+              {[
+                {
+                  label: "Logo",
+                  key: "logo",
+                  uploadKey: logoKey,
+                  uploading: uploadingLogo,
+                  onUpload: handleLogoUpload,
+                  purpose: "store-logo" as const,
+                },
+                {
+                  label: "Cover image",
+                  key: "cover",
+                  uploadKey: coverKey,
+                  uploading: uploadingCover,
+                  onUpload: handleCoverUpload,
+                  purpose: "store-cover" as const,
+                },
+              ].map(({ label, key, uploadKey, uploading, onUpload, purpose }) => (
+                <div key={key}>
+                  <span className={label}>{label}</span>
+                  <div className="relative h-40 overflow-hidden rounded-xl border border-dashed border-border bg-muted/30">
+                    {uploadKey ? (
+                      <img
+                        src={`${uploadKey}`}
+                        alt={`${businessName || "Business"} ${label.toLowerCase()}`}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                        <ImagePlus className="size-6" />
+                        <span className="text-[10px]">No {label.toLowerCase()} uploaded</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={onUpload}
+                      disabled={uploading}
+                      className="sr-only"
+                      id={`${key}-upload`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById(`${key}-upload`)?.click()}
+                      disabled={uploading}
+                      className="absolute bottom-2.5 left-2.5 inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-border/60 bg-card/95 px-2 text-[9px] font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50"
+                    >
+                      {uploading ? "Uploading…" : `Upload ${label.toLowerCase()}`}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -358,21 +505,66 @@ function Onboarding() {
               <p className="text-sm text-muted-foreground">
                 Add your first few items. You can add more any time.
               </p>
-              {vendor.products.slice(0, 2).map((product) => (
+              {products.map((product) => (
                 <div
                   key={product.id}
-                  className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_140px]"
+                  className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_140px_40px]"
                 >
-                  <input className={field} defaultValue={product.name} />
-                  <input className={field} defaultValue={String(product.price)} />
+                  <input
+                    className={field}
+                    value={product.name}
+                    onChange={(e) => updateProduct(product.id, "name", e.target.value)}
+                    placeholder="Product or service name"
+                  />
+                  <input
+                    className={field}
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    value={product.price}
+                    onChange={(e) => updateProduct(product.id, "price", e.target.value)}
+                    placeholder="Price (₦)"
+                  />
+                  {products.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeProduct(product.id)}
+                      className="flex items-center justify-center text-muted-foreground hover:text-destructive"
+                      aria-label="Remove item"
+                    >
+                      <svg
+                        className="size-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M3 6h18" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               ))}
-              <Link
-                to="/vendor/products/new"
-                className="inline-block rounded-xl border border-dashed border-border px-4 py-3 text-sm font-semibold text-primary"
+              <button
+                type="button"
+                onClick={addProduct}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/5"
               >
-                + Add another item
-              </Link>
+                <svg
+                  className="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 5v14" />
+                  <path d="M5 12h14" />
+                </svg>
+                Add another item
+              </button>
             </div>
           )}
 
