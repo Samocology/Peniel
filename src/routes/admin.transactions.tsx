@@ -16,6 +16,7 @@ import { adminNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { adminApi, type AdminTransaction } from "@/lib/api-client";
+import { useAdminTransactions } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 
 const methods = ["Card", "Bank transfer", "USSD", "Peniel wallet"];
@@ -37,26 +38,8 @@ export const Route = createFileRoute("/admin/transactions")({
 });
 
 function AdminTransactions() {
-  const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.transactions().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setTransactions(result.data);
-      } else {
-        setError(result.error || "Failed to load transactions.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: transactions = [], loading, error } = useAdminTransactions();
 
   const visibleRows = useMemo(
     () =>

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { app, useCurrentVendor } from "@/lib/peniel-store";
+import { productsApi, storageApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/vendor/products/new")({
   head: () => ({
@@ -40,6 +41,44 @@ function NewProduct() {
   const [details, setDetails] = useState("");
   const [group, setGroup] = useState(vendor.groups[0] ?? "General");
   const [publishing, setPublishing] = useState(false);
+  const [imageObjectKey, setImageObjectKey] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const uploadResult = await storageApi.getUploadUrl({
+      purpose: "product-image",
+      contentType: file.type,
+      filename: file.name,
+      vendorId: vendor.id,
+    });
+    if (!uploadResult.ok || !uploadResult.data) {
+      toast.error(uploadResult.error || "Failed to get upload URL");
+      return null;
+    }
+    const { uploadUrl, objectKey } = uploadResult.data;
+    const putResult = await storageApi.uploadFile(uploadUrl, file);
+    if (!putResult.ok) {
+      toast.error(putResult.error || "Failed to upload image");
+      return null;
+    }
+    return objectKey;
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    const objectKey = await uploadImage(file);
+    if (objectKey) {
+      setImageObjectKey(objectKey);
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+      toast.success("Image uploaded successfully");
+    }
+  };
 
   const itemLabel =
     vendor.type === "restaurant" || vendor.type === "bakery"
@@ -122,7 +161,10 @@ function NewProduct() {
           price: numericPrice,
           group: group.trim() || "General",
           published: true,
-          attributes: details.trim() ? { meta: details.trim() } : {},
+          attributes: {
+            ...(details.trim() ? { meta: details.trim() } : {}),
+            ...(imageObjectKey ? { image_object_key: imageObjectKey } : {}),
+          },
         }),
       });
       const productResult = (await productResponse.json()) as {
@@ -341,14 +383,38 @@ function NewProduct() {
           <Panel title="Live preview">
             <div className="overflow-hidden rounded-xl border border-border bg-background">
               <div className="relative grid h-36 place-items-center bg-muted/50">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <Package className="size-8 opacity-50" />
-                  <span className="text-[11px]">Product image not available</span>
-                </div>
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt={name.trim() || "Product preview"}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Package className="size-8 opacity-50" />
+                    <span className="text-[11px]">Product image not available</span>
+                  </div>
+                )}
                 <span className="absolute left-3 top-3 rounded-full border border-border bg-card/90 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground backdrop-blur">
                   {group || "General"}
                 </span>
               </div>
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="sr-only"
+                id="product-image-upload"
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById("product-image-upload")?.click()}
+                className="w-full mt-3 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground transition hover:bg-muted"
+              >
+                <Package className="size-3.5" />
+                Upload product image
+              </button>
 
               <div className="p-3.5">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

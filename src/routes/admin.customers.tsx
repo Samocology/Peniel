@@ -4,6 +4,7 @@ import { Search, Users, UserCheck, MapPin, ArrowUpRight, X, Building2 } from "lu
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { adminApi, type AdminCustomer } from "@/lib/api-client";
+import { useAdminCustomers } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/customers")({
@@ -33,25 +34,7 @@ function getInitials(name: string) {
 
 function AdminCustomers() {
   const [query, setQuery] = useState("");
-  const [customers, setCustomers] = useState<AdminCustomer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.customers().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setCustomers(result.data);
-      } else {
-        setError(result.error || "Failed to load customers.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: customers = [], loading, error } = useAdminCustomers();
 
   const visibleCustomers = useMemo(() => {
     const search = query.trim().toLowerCase();

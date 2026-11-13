@@ -16,6 +16,7 @@ import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { adminApi, type AdminVerification } from "@/lib/api-client";
+import { useAdminVerification } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/verification")({
@@ -35,26 +36,8 @@ export const Route = createFileRoute("/admin/verification")({
 });
 
 function AdminVerification() {
-  const [applications, setApplications] = useState<AdminVerification[]>([]);
   const [filter, setFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.verification().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setApplications(result.data);
-      } else {
-        setError(result.error || "Failed to load verification applications.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: applications = [], loading, error } = useAdminVerification();
 
   const visibleApplications = useMemo(
     () =>
@@ -74,11 +57,6 @@ function AdminVerification() {
       toast.error(result.error || "Failed to record verification decision.");
       return;
     }
-    setApplications((current) =>
-      current.map((a) =>
-        a.id === appId ? { ...a, status: decision === "approved" ? "approved" : "rejected" } : a,
-      ),
-    );
     toast.success(`Application ${decision}.`);
   };
 

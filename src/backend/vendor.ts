@@ -253,6 +253,10 @@ async function updateStorefront(request: Request, env: BackendEnv, identity: Ide
   if (input["seo"] !== null && typeof input["seo"] === "object") patch["seo"] = input["seo"];
   if (input["publish"] === true) patch["published_at"] = new Date().toISOString();
   if (input["publish"] === false) patch["published_at"] = null;
+  if (typeof input["logo_object_key"] === "string")
+    patch["logo_object_key"] = input["logo_object_key"].slice(0, 200);
+  if (typeof input["cover_object_key"] === "string")
+    patch["cover_object_key"] = input["cover_object_key"].slice(0, 200);
   const r = await db(env, `storefronts?vendor_id=eq.${vendorId}`, identity.accessToken, {
     method: "PATCH",
     body: JSON.stringify(patch),
@@ -286,6 +290,10 @@ async function updateVendorProfile(request: Request, env: BackendEnv, identity: 
     const normalized = normalizePhone(input["whatsappNumber"]);
     if (normalized) patch["whatsapp_number"] = normalized;
   }
+  if (typeof input["logo_object_key"] === "string")
+    patch["logo_object_key"] = input["logo_object_key"].slice(0, 200);
+  if (typeof input["cover_object_key"] === "string")
+    patch["cover_object_key"] = input["cover_object_key"].slice(0, 200);
   const r = await db(env, `vendors?id=eq.${vendorId}`, identity.accessToken, {
     method: "PATCH",
     body: JSON.stringify(patch),

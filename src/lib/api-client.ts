@@ -353,6 +353,8 @@ export const vendorsApi = {
       address: string;
       phone: string;
       whatsappNumber: string;
+      logo_object_key: string;
+      cover_object_key: string;
     }>,
   ) => patch<VendorRecord[]>(`/api/vendor/profile?vendor_id=${vendorId}`, body),
   updateStorefront: (
@@ -365,6 +367,8 @@ export const vendorsApi = {
       deliverySettings: Record<string, unknown>;
       seo: Record<string, string>;
       publish: boolean;
+      logo_object_key: string;
+      cover_object_key: string;
     }>,
   ) => patch<unknown[]>(`/api/vendor/storefront?vendor_id=${vendorId}`, body),
 };

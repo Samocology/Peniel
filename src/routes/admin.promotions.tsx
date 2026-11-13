@@ -18,6 +18,7 @@ import { adminNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { adminApi, type AdminPromotion } from "@/lib/api-client";
+import { useAdminPromotions } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -46,29 +47,11 @@ export const Route = createFileRoute("/admin/promotions")({
 type FeaturedSlot = { id: string; name: string; slug: string };
 
 function AdminPromotions() {
-  const [promotions, setPromotions] = useState<AdminPromotion[]>([]);
   const [featuredSlugs, setFeaturedSlugs] = useState<string[]>([]);
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [vendorSearch, setVendorSearch] = useState("");
   const [campaignSearch, setCampaignSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.promotions().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setPromotions(result.data);
-      } else {
-        setError(result.error || "Failed to load promotions.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: promotions = [], loading, error } = useAdminPromotions();
 
   const activeCount = promotions.filter((c) => c.active).length;
   const scheduledCount = promotions.filter((c) => !c.active).length;

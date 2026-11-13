@@ -18,6 +18,7 @@ import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { naira } from "@/lib/data";
 import { adminApi, type AdminVendor } from "@/lib/api-client";
+import { useAdminVendors } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/vendors")({
@@ -79,25 +80,7 @@ function VendorMetric({
 function AdminVendors() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
-  const [vendors, setVendors] = useState<AdminVendor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.vendors().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setVendors(result.data);
-      } else {
-        setError(result.error || "Failed to load vendors.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: vendors = [], loading, error } = useAdminVendors();
 
   const visibleVendors = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -120,7 +103,6 @@ function AdminVendors() {
       toast.error(result.error || "Failed to update vendor status.");
       return;
     }
-    setVendors((current) => current.map((v) => (v.id === vendorId ? { ...v, status } : v)));
     toast.success(`Vendor status updated to ${status}.`);
   };
 

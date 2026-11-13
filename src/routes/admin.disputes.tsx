@@ -16,6 +16,7 @@ import { adminNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { adminApi, type AdminDispute } from "@/lib/api-client";
+import { useAdminDisputes } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -42,26 +43,8 @@ export const Route = createFileRoute("/admin/disputes")({
 });
 
 function AdminDisputes() {
-  const [disputes, setDisputes] = useState<AdminDispute[]>([]);
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.disputes().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setDisputes(result.data);
-      } else {
-        setError(result.error || "Failed to load disputes.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: disputes = [], loading, error } = useAdminDisputes();
 
   const openCases = disputes.filter((d) => d.status !== "resolved" && d.status !== "closed");
   const heldValue = openCases.reduce((total, item) => total + 0, 0);
@@ -75,7 +58,6 @@ function AdminDisputes() {
       toast.error(result.error || "Failed to record dispute resolution.");
       return;
     }
-    setDisputes((current) => current.map((d) => (d.id === disputeId ? { ...d, status } : d)));
     setSelectedCase(null);
     toast.success(`Dispute marked as ${status}.`);
   };

@@ -15,6 +15,7 @@ import {
 import { DashShell, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { adminApi, type AdminCategory } from "@/lib/api-client";
+import { useAdminCategories } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -43,27 +44,9 @@ export const Route = createFileRoute("/admin/categories")({
 const upcomingCategories = ["Automotive", "Fitness & Gyms", "Education & Tutors", "Photography"];
 
 function AdminCategories() {
-  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: categories = [], loading, error } = useAdminCategories();
   const [addOpen, setAddOpen] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.categories().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setCategories(result.data);
-      } else {
-        setError(result.error || "Failed to load categories.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const visibleCategories = useMemo(
     () =>

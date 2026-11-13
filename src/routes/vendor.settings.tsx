@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { app, useCurrentVendor } from "@/lib/peniel-store";
-import { vendorsApi, type VendorRecord } from "@/lib/api-client";
+import { vendorsApi, storageApi, type VendorRecord } from "@/lib/api-client";
 import { TemplatePicker } from "@/components/store/template-picker";
 
 export const Route = createFileRoute("/vendor/settings")({
@@ -216,6 +216,73 @@ function VendorSettings() {
       .catch(() => toast.error("Could not copy the link. Please copy it from the address bar."));
   };
 
+  const uploadImage = async (
+    file: File,
+    purpose: "store-logo" | "store-cover",
+  ): Promise<string | null> => {
+    if (!liveVendor) {
+      toast.error("Vendor not loaded");
+      return null;
+    }
+    const uploadResult = await storageApi.getUploadUrl({
+      purpose,
+      contentType: file.type,
+      filename: file.name,
+      vendorId: liveVendor.id,
+    });
+    if (!uploadResult.ok || !uploadResult.data) {
+      toast.error(uploadResult.error || "Failed to get upload URL");
+      return null;
+    }
+    const { uploadUrl, objectKey } = uploadResult.data;
+    const putResult = await storageApi.uploadFile(uploadUrl, file);
+    if (!putResult.ok) {
+      toast.error(putResult.error || "Failed to upload image");
+      return null;
+    }
+    return objectKey;
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    const objectKey = await uploadImage(file, "store-logo");
+    if (objectKey) {
+      const result = await vendorsApi.updateProfile(liveVendor!.id, { logo_object_key: objectKey });
+      if (result.ok) {
+        toast.success("Logo uploaded successfully");
+        setLiveVendor((prev) => (prev ? { ...prev, logo_object_key: objectKey } : null));
+      } else {
+        toast.error(result.error || "Failed to save logo");
+      }
+    }
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    const objectKey = await uploadImage(file, "store-cover");
+    if (objectKey) {
+      const result = await vendorsApi.updateStorefront(liveVendor!.id, {
+        cover_object_key: objectKey,
+      });
+      if (result.ok) {
+        toast.success("Cover image uploaded successfully");
+        setLiveVendor((prev) => (prev ? { ...prev, cover_object_key: objectKey } : null));
+      } else {
+        toast.error(result.error || "Failed to save cover image");
+      }
+    }
+  };
+
   return (
     <DashShell
       nav={vendorNav}
@@ -359,23 +426,52 @@ function VendorSettings() {
                 <div className="min-w-0">
                   <SettingLabel>Business logo</SettingLabel>
                   <div className="relative flex h-36 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-muted/30">
-                    <div
-                      className="grid size-[68px] place-items-center rounded-2xl font-display text-xl font-bold text-white shadow-md"
-                      style={{ backgroundColor: brandColor }}
-                    >
-                      {vendor.monogram}
-                    </div>
+                    {vendor.logo_object_key ? (
+                      <img
+                        src={`${vendor.logo_object_key}`}
+                        alt={`${vendor.name} logo`}
+                        className="size-[68px] object-contain"
+                      />
+                    ) : (
+                      <div
+                        className="grid size-[68px] place-items-center rounded-2xl font-display text-xl font-bold text-white shadow-md"
+                        style={{ backgroundColor: brandColor }}
+                      >
+                        {vendor.monogram}
+                      </div>
+                    )}
 
                     <span className="absolute bottom-2.5 left-2.5 rounded-md border border-border/60 bg-card/95 px-2 py-1 text-[9px] font-medium text-muted-foreground">
                       Current logo
                     </span>
                   </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="sr-only"
+                    id="logo-upload"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("logo-upload")?.click()}
+                    className="mt-2 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground transition hover:bg-muted"
+                  >
+                    <ImageIcon className="size-3.5" />
+                    Upload logo
+                  </button>
                 </div>
 
                 <div className="min-w-0">
                   <SettingLabel>Store cover image</SettingLabel>
                   <div className="relative h-36 overflow-hidden rounded-xl border border-border bg-muted/30">
-                    {vendor.cover ? (
+                    {vendor.cover_object_key ? (
+                      <img
+                        src={`${vendor.cover_object_key}`}
+                        alt={`${vendor.name} storefront cover`}
+                        className="size-full object-cover"
+                      />
+                    ) : vendor.cover ? (
                       <img
                         src={vendor.cover}
                         alt={`${vendor.name} storefront cover`}
@@ -392,6 +488,21 @@ function VendorSettings() {
                       Current cover
                     </span>
                   </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverUpload}
+                    className="sr-only"
+                    id="cover-upload"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("cover-upload")?.click()}
+                    className="mt-2 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground transition hover:bg-muted"
+                  >
+                    <ImageIcon className="size-3.5" />
+                    Upload cover
+                  </button>
                 </div>
               </div>
 

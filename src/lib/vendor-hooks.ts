@@ -1,10 +1,11 @@
 /**
- * Hooks for fetching live vendor data from the backend API.
+ * Hooks for fetching live vendor data from the backend API with realtime updates.
  * Falls back gracefully when the backend is not configured or the vendor
  * has not yet been submitted (demo/onboarding state).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "./supabase";
 import {
   analyticsApi,
   bookingsApi,
@@ -40,6 +41,50 @@ function initial<T>(): LoadState<T> {
   return { loading: true, data: null, error: null };
 }
 
+function useRealtimeSubscription<T>(
+  vendorId: string | null,
+  table: string,
+  filter: string,
+  onChange: (payload: { new: T; old: T; eventType: string }) => void,
+) {
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  useEffect(() => {
+    if (!vendorId || typeof window === "undefined") return;
+
+    const channelName = `vendor-${vendorId}-${table}`;
+    const channel = supabase.channel(channelName);
+
+    channel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table,
+          filter,
+        },
+        (payload) => {
+          onChange({
+            new: payload.new as T,
+            old: payload.old as T,
+            eventType: payload.eventType,
+          });
+        },
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [vendorId, table, filter, onChange]);
+}
+
 /** Fetch the authenticated user's vendor records from the backend. */
 export function useMyVendors() {
   const [state, setState] = useState<LoadState<VendorRecord[]>>(initial());
@@ -63,9 +108,33 @@ export function useVendorId(slug: string): string | null {
   return data?.find((v) => v.slug === slug)?.id ?? null;
 }
 
-/** Live vendor orders from the backend. */
+/** Live vendor orders from the backend with realtime updates. */
 export function useVendorOrders(vendorId: string | null) {
   const [state, setState] = useState<LoadState<VendorOrderRecord[]>>(initial());
+
+  const applyChange = (payload: {
+    new: VendorOrderRecord;
+    old: VendorOrderRecord;
+    eventType: string;
+  }) => {
+    setState((prev) => {
+      if (!prev.data) return prev;
+      const data = [...prev.data];
+      if (payload.eventType === "INSERT" && payload.new) {
+        data.unshift(payload.new);
+      } else if (payload.eventType === "UPDATE" && payload.new) {
+        const idx = data.findIndex((o) => o.id === payload.new.id);
+        if (idx >= 0) data[idx] = payload.new;
+      } else if (payload.eventType === "DELETE" && payload.old) {
+        const idx = data.findIndex((o) => o.id === payload.old.id);
+        if (idx >= 0) data.splice(idx, 1);
+      }
+      return { ...prev, data };
+    });
+  };
+
+  useRealtimeSubscription(vendorId, "vendor_orders", `vendor_id=eq.${vendorId}`, applyChange);
+
   useEffect(() => {
     if (!vendorId) {
       setState({ loading: false, data: null, error: null });
@@ -185,9 +254,29 @@ export function useVendorPayouts(vendorId: string | null) {
   return state;
 }
 
-/** Live vendor products from the backend. */
+/** Live vendor products from the backend with realtime updates. */
 export function useVendorProducts(vendorId: string | null) {
   const [state, setState] = useState<LoadState<ProductRecord[]>>(initial());
+
+  const applyChange = (payload: { new: ProductRecord; old: ProductRecord; eventType: string }) => {
+    setState((prev) => {
+      if (!prev.data) return prev;
+      const data = [...prev.data];
+      if (payload.eventType === "INSERT" && payload.new) {
+        data.unshift(payload.new);
+      } else if (payload.eventType === "UPDATE" && payload.new) {
+        const idx = data.findIndex((p) => p.id === payload.new.id);
+        if (idx >= 0) data[idx] = payload.new;
+      } else if (payload.eventType === "DELETE" && payload.old) {
+        const idx = data.findIndex((p) => p.id === payload.old.id);
+        if (idx >= 0) data.splice(idx, 1);
+      }
+      return { ...prev, data };
+    });
+  };
+
+  useRealtimeSubscription(vendorId, "products", `vendor_id=eq.${vendorId}`, applyChange);
+
   const reload = () => {
     if (!vendorId) {
       setState({ loading: false, data: null, error: null });
@@ -199,6 +288,7 @@ export function useVendorProducts(vendorId: string | null) {
       else setState({ loading: false, data: null, error: result.error });
     });
   };
+
   useEffect(() => {
     let active = true;
     if (!vendorId) {
@@ -217,9 +307,29 @@ export function useVendorProducts(vendorId: string | null) {
   return { ...state, reload };
 }
 
-/** Live vendor reviews from the backend. */
+/** Live vendor reviews from the backend with realtime updates. */
 export function useVendorReviews(vendorId: string | null) {
   const [state, setState] = useState<LoadState<ReviewRecord[]>>(initial());
+
+  const applyChange = (payload: { new: ReviewRecord; old: ReviewRecord; eventType: string }) => {
+    setState((prev) => {
+      if (!prev.data) return prev;
+      const data = [...prev.data];
+      if (payload.eventType === "INSERT" && payload.new) {
+        data.unshift(payload.new);
+      } else if (payload.eventType === "UPDATE" && payload.new) {
+        const idx = data.findIndex((r) => r.id === payload.new.id);
+        if (idx >= 0) data[idx] = payload.new;
+      } else if (payload.eventType === "DELETE" && payload.old) {
+        const idx = data.findIndex((r) => r.id === payload.old.id);
+        if (idx >= 0) data.splice(idx, 1);
+      }
+      return { ...prev, data };
+    });
+  };
+
+  useRealtimeSubscription(vendorId, "reviews", `vendor_id=eq.${vendorId}`, applyChange);
+
   useEffect(() => {
     if (!vendorId) {
       setState({ loading: false, data: null, error: null });
@@ -238,9 +348,32 @@ export function useVendorReviews(vendorId: string | null) {
   return state;
 }
 
-/** Live vendor bookings from the backend. */
+/** Live vendor bookings from the backend with realtime updates. */
 export function useVendorBookings(vendorId: string | null, status?: string) {
   const [state, setState] = useState<LoadState<BookingRecord[]>>(initial());
+
+  const applyChange = (payload: { new: BookingRecord; old: BookingRecord; eventType: string }) => {
+    setState((prev) => {
+      if (!prev.data) return prev;
+      const data = [...prev.data];
+      if (payload.eventType === "INSERT" && payload.new) {
+        data.unshift(payload.new);
+      } else if (payload.eventType === "UPDATE" && payload.new) {
+        const idx = data.findIndex((b) => b.id === payload.new.id);
+        if (idx >= 0) data[idx] = payload.new;
+      } else if (payload.eventType === "DELETE" && payload.old) {
+        const idx = data.findIndex((b) => b.id === payload.old.id);
+        if (idx >= 0) data.splice(idx, 1);
+      }
+      return { ...prev, data };
+    });
+  };
+
+  const filter = status
+    ? `vendor_id=eq.${vendorId},status=eq.${status}`
+    : `vendor_id=eq.${vendorId}`;
+  useRealtimeSubscription(vendorId, "bookings", filter, applyChange);
+
   useEffect(() => {
     if (!vendorId) {
       setState({ loading: false, data: null, error: null });
@@ -259,9 +392,33 @@ export function useVendorBookings(vendorId: string | null, status?: string) {
   return state;
 }
 
-/** Live vendor conversations from the backend. */
+/** Live vendor conversations from the backend with realtime updates. */
 export function useVendorConversations(vendorId: string | null) {
   const [state, setState] = useState<LoadState<ConversationRecord[]>>(initial());
+
+  const applyChange = (payload: {
+    new: ConversationRecord;
+    old: ConversationRecord;
+    eventType: string;
+  }) => {
+    setState((prev) => {
+      if (!prev.data) return prev;
+      const data = [...prev.data];
+      if (payload.eventType === "INSERT" && payload.new) {
+        data.unshift(payload.new);
+      } else if (payload.eventType === "UPDATE" && payload.new) {
+        const idx = data.findIndex((c) => c.id === payload.new.id);
+        if (idx >= 0) data[idx] = payload.new;
+      } else if (payload.eventType === "DELETE" && payload.old) {
+        const idx = data.findIndex((c) => c.id === payload.old.id);
+        if (idx >= 0) data.splice(idx, 1);
+      }
+      return { ...prev, data };
+    });
+  };
+
+  useRealtimeSubscription(vendorId, "conversations", `vendor_id=eq.${vendorId}`, applyChange);
+
   const reload = () => {
     if (!vendorId) return;
     setState((s) => ({ ...s, loading: true }));
@@ -270,6 +427,7 @@ export function useVendorConversations(vendorId: string | null) {
       else setState({ loading: false, data: null, error: result.error });
     });
   };
+
   useEffect(() => {
     let active = true;
     if (!vendorId) {
@@ -288,9 +446,29 @@ export function useVendorConversations(vendorId: string | null) {
   return { ...state, reload };
 }
 
-/** Live messages for a conversation from the backend. */
+/** Live messages for a conversation from the backend with realtime updates. */
 export function useConversationMessages(conversationId: string | null) {
   const [state, setState] = useState<LoadState<MessageRecord[]>>(initial());
+
+  const applyChange = (payload: { new: MessageRecord; old: MessageRecord; eventType: string }) => {
+    setState((prev) => {
+      if (!prev.data) return prev;
+      const data = [...prev.data];
+      if (payload.eventType === "INSERT" && payload.new) {
+        data.push(payload.new);
+      } else if (payload.eventType === "UPDATE" && payload.new) {
+        const idx = data.findIndex((m) => m.id === payload.new.id);
+        if (idx >= 0) data[idx] = payload.new;
+      } else if (payload.eventType === "DELETE" && payload.old) {
+        const idx = data.findIndex((m) => m.id === payload.old.id);
+        if (idx >= 0) data.splice(idx, 1);
+      }
+      return { ...prev, data };
+    });
+  };
+
+  useRealtimeSubscription(null, "messages", `conversation_id=eq.${conversationId}`, applyChange);
+
   const reload = () => {
     if (!conversationId) return;
     setState((s) => ({ ...s, loading: true }));
@@ -299,6 +477,7 @@ export function useConversationMessages(conversationId: string | null) {
       else setState({ loading: false, data: null, error: result.error });
     });
   };
+
   useEffect(() => {
     let active = true;
     if (!conversationId) {
@@ -317,9 +496,29 @@ export function useConversationMessages(conversationId: string | null) {
   return { ...state, reload };
 }
 
-/** Live vendor promo codes from the backend. */
+/** Live vendor promo codes from the backend with realtime updates. */
 export function useVendorPromos(vendorId: string | null) {
   const [state, setState] = useState<LoadState<PromoRecord[]>>(initial());
+
+  const applyChange = (payload: { new: PromoRecord; old: PromoRecord; eventType: string }) => {
+    setState((prev) => {
+      if (!prev.data) return prev;
+      const data = [...prev.data];
+      if (payload.eventType === "INSERT" && payload.new) {
+        data.unshift(payload.new);
+      } else if (payload.eventType === "UPDATE" && payload.new) {
+        const idx = data.findIndex((p) => p.id === payload.new.id);
+        if (idx >= 0) data[idx] = payload.new;
+      } else if (payload.eventType === "DELETE" && payload.old) {
+        const idx = data.findIndex((p) => p.id === payload.old.id);
+        if (idx >= 0) data.splice(idx, 1);
+      }
+      return { ...prev, data };
+    });
+  };
+
+  useRealtimeSubscription(vendorId, "promo_codes", `vendor_id=eq.${vendorId}`, applyChange);
+
   const reload = () => {
     if (!vendorId) return;
     setState((s) => ({ ...s, loading: true }));
@@ -328,6 +527,7 @@ export function useVendorPromos(vendorId: string | null) {
       else setState({ loading: false, data: null, error: result.error });
     });
   };
+
   useEffect(() => {
     let active = true;
     if (!vendorId) {
@@ -346,9 +546,33 @@ export function useVendorPromos(vendorId: string | null) {
   return { ...state, reload };
 }
 
-/** Live vendor customers from the backend. */
+/** Live vendor customers from the backend with realtime updates. */
 export function useVendorCustomers(vendorId: string | null) {
   const [state, setState] = useState<LoadState<VendorCustomerRecord[]>>(initial());
+
+  const applyChange = (payload: {
+    new: VendorCustomerRecord;
+    old: VendorCustomerRecord;
+    eventType: string;
+  }) => {
+    setState((prev) => {
+      if (!prev.data) return prev;
+      const data = [...prev.data];
+      if (payload.eventType === "INSERT" && payload.new) {
+        data.unshift(payload.new);
+      } else if (payload.eventType === "UPDATE" && payload.new) {
+        const idx = data.findIndex((c) => c.id === payload.new.id);
+        if (idx >= 0) data[idx] = payload.new;
+      } else if (payload.eventType === "DELETE" && payload.old) {
+        const idx = data.findIndex((c) => c.id === payload.old.id);
+        if (idx >= 0) data.splice(idx, 1);
+      }
+      return { ...prev, data };
+    });
+  };
+
+  useRealtimeSubscription(vendorId, "customers", `vendor_id=eq.${vendorId}`, applyChange);
+
   useEffect(() => {
     if (!vendorId) {
       setState({ loading: false, data: null, error: null });
@@ -367,10 +591,34 @@ export function useVendorCustomers(vendorId: string | null) {
   return state;
 }
 
-/** Live in-app notifications. */
+/** Live in-app notifications with realtime updates. */
 export function useNotifications(unreadOnly = false) {
   const [state, setState] =
     useState<LoadState<{ notifications: NotificationRecord[]; unreadCount: number }>>(initial());
+
+  const applyChange = (payload: {
+    new: NotificationRecord;
+    old: NotificationRecord;
+    eventType: string;
+  }) => {
+    setState((prev) => {
+      if (!prev.data) return prev;
+      const data = [...prev.data.notifications];
+      if (payload.eventType === "INSERT" && payload.new) {
+        data.unshift(payload.new);
+      } else if (payload.eventType === "UPDATE" && payload.new) {
+        const idx = data.findIndex((n) => n.id === payload.new.id);
+        if (idx >= 0) data[idx] = payload.new;
+      } else if (payload.eventType === "DELETE" && payload.old) {
+        const idx = data.findIndex((n) => n.id === payload.old.id);
+        if (idx >= 0) data.splice(idx, 1);
+      }
+      return { ...prev, data: { notifications: data, unreadCount: prev.data.unreadCount } };
+    });
+  };
+
+  useRealtimeSubscription(null, "notifications", `user_id=eq.current_user`, applyChange);
+
   const reload = () => {
     setState((s) => ({ ...s, loading: true }));
     notificationsApi.list(unreadOnly).then((result) => {
@@ -378,6 +626,7 @@ export function useNotifications(unreadOnly = false) {
       else setState({ loading: false, data: null, error: result.error });
     });
   };
+
   useEffect(() => {
     let active = true;
     notificationsApi.list(unreadOnly).then((result) => {

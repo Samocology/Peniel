@@ -14,6 +14,7 @@ import { adminNav } from "@/components/dash/vendor-nav";
 import { StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { adminApi, type AdminOrder } from "@/lib/api-client";
+import { useAdminOrders } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/orders")({
@@ -81,26 +82,8 @@ function OrderMetric({
 }
 
 function AdminOrders() {
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [filter, setFilter] = useState("All");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.orders().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setOrders(result.data);
-      } else {
-        setError(result.error || "Failed to load orders.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: orders = [], loading, error } = useAdminOrders();
 
   const visibleOrders = useMemo(
     () => orders.filter((o) => filter === "All" || o.status.toLowerCase() === filter.toLowerCase()),

@@ -14,6 +14,7 @@ import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { naira } from "@/lib/data";
 import { adminApi, type AdminPayout } from "@/lib/api-client";
+import { useAdminPayouts } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/payouts")({
@@ -60,26 +61,8 @@ function PayoutMetric({
 }
 
 function AdminPayouts() {
-  const [payouts, setPayouts] = useState<AdminPayout[]>([]);
   const [filter, setFilter] = useState<string>("All");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.payouts().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setPayouts(result.data);
-      } else {
-        setError(result.error || "Failed to load payouts.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: payouts = [], loading, error } = useAdminPayouts();
 
   const visiblePayouts = useMemo(
     () =>

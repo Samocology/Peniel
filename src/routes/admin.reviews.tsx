@@ -15,6 +15,7 @@ import { DashShell, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { adminApi, type AdminReview } from "@/lib/api-client";
+import { useAdminReviews } from "@/lib/admin-hooks";
 import { toast } from "sonner";
 
 type Filter = "All" | "Flagged" | "Pending" | "Reviewed";
@@ -36,27 +37,9 @@ export const Route = createFileRoute("/admin/reviews")({
 });
 
 function AdminReviews() {
-  const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("All");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    adminApi.reviews().then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setReviews(result.data);
-      } else {
-        setError(result.error || "Failed to load reviews.");
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: reviews = [], loading, error } = useAdminReviews();
 
   const flaggedCount = reviews.filter((r) => r.moderation_status === "flagged").length;
   const pendingCount = reviews.filter((r) => r.moderation_status === "pending").length;
@@ -77,14 +60,7 @@ function AdminReviews() {
       toast.error(result.error || "Failed to moderate review.");
       return;
     }
-    setReviews((current) =>
-      current.map((r) => (r.id === reviewId ? { ...r, moderation_status: status } : r)),
-    );
-    toast.success(
-      status === "published"
-        ? "Review kept on the storefront."
-        : "Review hidden from the storefront.",
-    );
+    toast.success(`Review ${status}.`);
   };
 
   if (loading) {

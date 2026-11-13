@@ -28,6 +28,7 @@ import { adminNav } from "@/components/dash/vendor-nav";
 import { StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
 import { adminApi, type AdminAnalytics, type AdminOrder, type AdminVendor } from "@/lib/api-client";
+import { useAdminAnalytics, useAdminOrders, useAdminVendors } from "@/lib/admin-hooks";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -133,37 +134,11 @@ function MetricCard({
 }
 
 function AdminOverview() {
-  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [vendors, setVendors] = useState<AdminVendor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      try {
-        const [a, o, v] = await Promise.all([
-          adminApi.analytics(),
-          adminApi.orders(),
-          adminApi.vendors(),
-        ]);
-        if (!active) return;
-        if (a.ok) setAnalytics(a.data);
-        if (o.ok) setOrders(o.data);
-        if (v.ok) setVendors(v.data);
-      } catch (err) {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : "Failed to load dashboard.");
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-    void load();
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: analytics, loading: analyticsLoading, error: analyticsError } = useAdminAnalytics();
+  const { data: orders, loading: ordersLoading } = useAdminOrders();
+  const { data: vendors, loading: vendorsLoading } = useAdminVendors();
+  const loading = analyticsLoading || ordersLoading || vendorsLoading;
+  const error = analyticsError;
 
   const gmv = analytics?.gmvMinor ?? 0;
   const platformRevenue = Math.round(gmv * 0.02);
