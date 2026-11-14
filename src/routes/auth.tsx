@@ -137,7 +137,9 @@ function AuthPage() {
         ? returnTo!
         : "/";
       const destination = isSignup && role === "vendor" ? "/vendor/onboarding" : allowedReturnTo;
-      void navigate({ to: destination });
+
+      // Navigate immediately - cookies are already set by login response
+      void navigate({ to: destination, replace: true });
     } catch (error) {
       console.error("Authentication request failed", error);
       setPasswordError("The authentication service is unavailable. Please try again.");
@@ -612,7 +614,7 @@ function AuthPage() {
               type="button"
               size="lg"
               onClick={() => {
-                window.location.href = "/api/auth/oauth/google";
+                window.location.href = `/api/auth/oauth/google?role=${role}`;
               }}
               disabled={isSubmitting}
               className="group h-[52px] w-full rounded-xl border border-[#DDE5DC] bg-white text-[13px] font-semibold text-[#29382D] shadow-[0_2px_8px_rgba(27,52,34,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#9EB7A1] hover:bg-[#FCFDFC] hover:shadow-[0_8px_20px_rgba(27,52,34,0.10)] active:translate-y-0 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#77967C] focus-visible:ring-offset-2 sm:h-[54px]"

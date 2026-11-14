@@ -63,12 +63,16 @@ function VerifyOtpPage() {
       }
 
       if (isSignup) {
-        toast.success("Email verified. Please sign in to continue.");
+        if (role === "vendor") {
+          void navigate({ to: "/vendor/onboarding", search: { returnTo } });
+        } else {
+          toast.success("Email verified. Please sign in to continue.");
 
-        void navigate({
-          to: "/auth",
-          search: { mode: "login", returnTo, role },
-        });
+          void navigate({
+            to: "/auth",
+            search: { mode: "login", returnTo, role },
+          });
+        }
 
         return;
       }

@@ -62,6 +62,7 @@ import { Route as VendorSupportRouteImport } from './routes/vendor.support'
 import { Route as VendorTransactionsRouteImport } from './routes/vendor.transactions'
 import { Route as VendorUpgradeRouteImport } from './routes/vendor.upgrade'
 import { Route as VendorVerificationRouteImport } from './routes/vendor.verification'
+import { Route as AuthOauthCallbackRouteImport } from './routes/auth.oauth.callback'
 import { Route as VendorProductsNewRouteImport } from './routes/vendor.products.new'
 import { Route as StoreSlugProductIdRouteImport } from './routes/store.$slug_.product.$id'
 
@@ -330,6 +331,11 @@ const VendorVerificationRoute = VendorVerificationRouteImport.update({
   path: '/vendor/verification',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthOauthCallbackRoute = AuthOauthCallbackRouteImport.update({
+  id: '/oauth/callback',
+  path: '/oauth/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const VendorProductsNewRoute = VendorProductsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -345,7 +351,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
@@ -395,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/vendor/verification': typeof VendorVerificationRoute
   '/admin/': typeof AdminIndexRoute
   '/vendor/': typeof VendorIndexRoute
+  '/auth/oauth/callback': typeof AuthOauthCallbackRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
@@ -402,7 +409,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
@@ -452,6 +459,7 @@ export interface FileRoutesByTo {
   '/vendor/verification': typeof VendorVerificationRoute
   '/admin': typeof AdminIndexRoute
   '/vendor': typeof VendorIndexRoute
+  '/auth/oauth/callback': typeof AuthOauthCallbackRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
   '/store/$slug/product/$id': typeof StoreSlugProductIdRoute
 }
@@ -460,7 +468,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/for-businesses': typeof ForBusinessesRoute
@@ -510,6 +518,7 @@ export interface FileRoutesById {
   '/vendor/verification': typeof VendorVerificationRoute
   '/admin/': typeof AdminIndexRoute
   '/vendor/': typeof VendorIndexRoute
+  '/auth/oauth/callback': typeof AuthOauthCallbackRoute
   '/vendor/products/new': typeof VendorProductsNewRoute
   '/store/$slug_/product/$id': typeof StoreSlugProductIdRoute
 }
@@ -569,6 +578,7 @@ export interface FileRouteTypes {
     | '/vendor/verification'
     | '/admin/'
     | '/vendor/'
+    | '/auth/oauth/callback'
     | '/vendor/products/new'
     | '/store/$slug/product/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -626,6 +636,7 @@ export interface FileRouteTypes {
     | '/vendor/verification'
     | '/admin'
     | '/vendor'
+    | '/auth/oauth/callback'
     | '/vendor/products/new'
     | '/store/$slug/product/$id'
   id:
@@ -683,6 +694,7 @@ export interface FileRouteTypes {
     | '/vendor/verification'
     | '/admin/'
     | '/vendor/'
+    | '/auth/oauth/callback'
     | '/vendor/products/new'
     | '/store/$slug_/product/$id'
   fileRoutesById: FileRoutesById
@@ -691,7 +703,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   ForBusinessesRoute: typeof ForBusinessesRoute
@@ -1116,6 +1128,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorVerificationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/oauth/callback': {
+      id: '/auth/oauth/callback'
+      path: '/oauth/callback'
+      fullPath: '/auth/oauth/callback'
+      preLoaderRoute: typeof AuthOauthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/vendor/products/new': {
       id: '/vendor/products/new'
       path: '/new'
@@ -1132,6 +1151,16 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthRouteChildren {
+  AuthOauthCallbackRoute: typeof AuthOauthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthOauthCallbackRoute: AuthOauthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface OrdersRouteChildren {
   OrdersIdRoute: typeof OrdersIdRoute
@@ -1160,7 +1189,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   ForBusinessesRoute: ForBusinessesRoute,

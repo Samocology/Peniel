@@ -174,7 +174,7 @@ function RootComponent() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [state.user?.email]); // Re-validate when user email changes
 
   const protectedPrefixes = ["/account", "/checkout", "/vendor", "/admin"];
   const authPrefixes = ["/auth", "/verify-otp", "/forgot-password", "/reset-password"];
@@ -187,10 +187,15 @@ function RootComponent() {
       void navigate({ to: "/auth", search: { mode: "login", returnTo: pathname } });
       return;
     }
+    // Don't auto-redirect from auth pages - let the auth form handle navigation
+    // to respect returnTo and role-based destinations (e.g., /vendor/onboarding)
+    if (isAuth && authenticated && pathname === "/auth") {
+      return;
+    }
     if (isAuth && authenticated) {
       void navigate({ to: "/" });
     }
-  }, [isProtected, isAuth, authenticated, sessionValidated, navigate]);
+  }, [isProtected, isAuth, authenticated, sessionValidated, navigate, pathname]);
 
   const needsCustomerNavSpace =
     state.user?.role === "customer" &&

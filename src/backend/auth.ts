@@ -693,6 +693,7 @@ async function handleResetPassword(
 async function handleGoogleOAuth(
   request: Request,
   config: { url: string; key: string },
+  role: string = "customer",
 ): Promise<Response> {
   const { verifier, challenge } = await createPkcePair();
   const redirectTo = `${new URL(request.url).origin}/api/auth/oauth/callback`;
@@ -706,6 +707,7 @@ async function handleGoogleOAuth(
   const headers = new Headers();
   headers.set("Location", authorizeUrl.toString());
   headers.append("Set-Cookie", cookie(OAUTH_VERIFIER_COOKIE, verifier, request, 600));
+  headers.append("Set-Cookie", cookie("peniel_oauth_role", role, request, 600));
 
   return new Response(null, {
     status: 302,
@@ -722,7 +724,9 @@ async function handleOAuthCallback(
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
   const verifier = parseCookies(request).get(OAUTH_VERIFIER_COOKIE);
+  const oauthRole = parseCookies(request).get("peniel_oauth_role") ?? "customer";
   const clearVerifierCookie = cookie(OAUTH_VERIFIER_COOKIE, "", request, 0);
+  const clearRoleCookie = cookie("peniel_oauth_role", "", request, 0);
 
   if (error) {
     const base = env.APP_BASE_URL ?? new URL(request.url).origin;
@@ -731,12 +735,14 @@ async function handleOAuthCallback(
       headers: { Location: `${base}/auth?error=oauth_failed` },
     });
     response.headers.append("Set-Cookie", clearVerifierCookie);
+    response.headers.append("Set-Cookie", clearRoleCookie);
     return response;
   }
 
   if (!code) {
     const response = json({ ok: false, error: "No authorization code received." }, 400);
     response.headers.append("Set-Cookie", clearVerifierCookie);
+    response.headers.append("Set-Cookie", clearRoleCookie);
     return response;
   }
   if (!verifier) {
@@ -745,6 +751,7 @@ async function handleOAuthCallback(
       400,
     );
     response.headers.append("Set-Cookie", clearVerifierCookie);
+    response.headers.append("Set-Cookie", clearRoleCookie);
     return response;
   }
 
@@ -756,6 +763,7 @@ async function handleOAuthCallback(
     await tokenResponse.body?.cancel();
     const response = json({ ok: false, error: "Could not exchange authorization code." }, 400);
     response.headers.append("Set-Cookie", clearVerifierCookie);
+    response.headers.append("Set-Cookie", clearRoleCookie);
     return response;
   }
   const payload = await parseSupabaseBody(tokenResponse);
@@ -763,13 +771,20 @@ async function handleOAuthCallback(
   if (!isSupabaseSession(payload) || !payload.user?.id) {
     const response = json({ ok: false, error: "Authentication response was incomplete." }, 502);
     response.headers.append("Set-Cookie", clearVerifierCookie);
+    response.headers.append("Set-Cookie", clearRoleCookie);
     return response;
   }
   const session = payload;
 
   const base = env.APP_BASE_URL ?? new URL(request.url).origin;
-  const response = new Response(null, { status: 302, headers: { Location: base } });
+  const callbackUrl = new URL(`${base}/auth/oauth/callback`);
+  callbackUrl.searchParams.set("role", oauthRole);
+  const response = new Response(null, {
+    status: 302,
+    headers: { Location: callbackUrl.toString() },
+  });
   response.headers.append("Set-Cookie", clearVerifierCookie);
+  response.headers.append("Set-Cookie", clearRoleCookie);
   response.headers.append(
     "Set-Cookie",
     cookie(ACCESS_COOKIE, session.access_token, request, Math.max(60, session.expires_in ?? 3600)),
@@ -812,8 +827,11 @@ export async function handleAuthRequest(request: Request, env: BackendEnv): Prom
       return await handleResetPassword(request, config, env);
     if (path === "/api/auth/session" && request.method === "GET")
       return await handleSession(request, config);
-    if (path === "/api/auth/oauth/google" && request.method === "GET")
-      return await handleGoogleOAuth(request, config);
+    if (path === "/api/auth/oauth/google" && request.method === "GET") {
+      const requestUrl = new URL(request.url);
+      const role = requestUrl.searchParams.get("role") ?? "customer";
+      return await handleGoogleOAuth(request, config, role);
+    }
     if (path === "/api/auth/oauth/callback" && request.method === "GET")
       return await handleOAuthCallback(request, config, env);
     return json({ ok: false, error: "Method not allowed." }, 405, { allow: "GET, POST" });
