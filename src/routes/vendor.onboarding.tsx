@@ -84,6 +84,11 @@ function Onboarding() {
     { id: "2", name: "", price: "" },
   ]);
 
+  const [delivery, setDelivery] = useState("");
+  const [hours, setHours] = useState("");
+  const [prepTime, setPrepTime] = useState("Under 30 mins");
+  const [fulfilmentOptions, setFulfilmentOptions] = useState("Delivery and pickup");
+
   const addProduct = () => {
     setProducts((prev) => [...prev, { id: Date.now().toString(), name: "", price: "" }]);
   };
@@ -184,6 +189,21 @@ function Onboarding() {
         name: p.name.trim(),
         price: Number(p.price),
       }));
+
+    // Build fulfillment-specific data
+    const fulfillmentData: Record<string, unknown> = {};
+    if (businessFulfilment === "order") {
+      fulfillmentData.delivery = delivery;
+      fulfillmentData.fulfilment_options = fulfilmentOptions;
+      fulfillmentData.prep_time = prepTime;
+    } else if (businessFulfilment === "booking") {
+      fulfillmentData.hours = hours;
+      fulfillmentData.service_options = delivery;
+    } else if (businessFulfilment === "reservation") {
+      fulfillmentData.hours = hours;
+      fulfillmentData.guest_info = delivery;
+    }
+
     setSavingVendor(true);
     try {
       const response = await fetch("/api/vendors", {
@@ -204,6 +224,7 @@ function Onboarding() {
           logo_object_key: logoKey,
           cover_object_key: coverKey,
           products: validProducts,
+          ...fulfillmentData,
         }),
       });
       const result = (await response.json()) as { ok?: boolean; error?: string };
@@ -240,6 +261,20 @@ function Onboarding() {
           attributes: {},
         })),
         groups: [],
+        delivery:
+          businessFulfilment === "order"
+            ? delivery
+            : businessFulfilment === "booking"
+              ? delivery
+              : undefined,
+        hours:
+          businessFulfilment === "booking" || businessFulfilment === "reservation"
+            ? hours
+            : undefined,
+        prep_time: businessFulfilment === "order" ? prepTime : undefined,
+        fulfilment_options: businessFulfilment === "order" ? fulfilmentOptions : undefined,
+        service_options: businessFulfilment === "booking" ? delivery : undefined,
+        guest_info: businessFulfilment === "reservation" ? delivery : undefined,
       });
       setVendorSubmitted(true);
       toast.success("Storefront submitted for review.");
@@ -253,17 +288,28 @@ function Onboarding() {
   const setupChoices =
     vendor.fulfilment === "order"
       ? [
-          ["Fulfilment", [vendor.delivery, "Customer pickup", "Delivery and pickup"]],
-          ["Preparation time", ["Under 30 mins", "30-60 mins", "Same day", "48 hours notice"]],
+          [
+            "Fulfilment",
+            [
+              delivery ||
+                "Delivery within Lekki, VI, Ikoyi & environs. ₦1,500 fee. Free above ₦20,000.",
+              "Customer pickup",
+              "Delivery and pickup",
+            ],
+          ],
+          [
+            "Preparation time",
+            [prepTime || "Under 30 mins", "30-60 mins", "Same day", "48 hours notice"],
+          ],
         ]
       : vendor.fulfilment === "booking"
         ? [
-            ["Appointment hours", [vendor.hours]],
-            ["Service options", [vendor.delivery, "In-person appointments"]],
+            ["Appointment hours", [hours || "Mon–Sat 9am–6pm, Sun closed"]],
+            ["Service options", [delivery || "In-store & home service", "In-person appointments"]],
           ]
         : [
-            ["Reservation hours", [vendor.hours]],
-            ["Guest information", [vendor.delivery, "Check-in details"]],
+            ["Reservation hours", [hours || "Mon–Sat 9am–6pm, Sun closed"]],
+            ["Guest information", [delivery || "Check-in from 2pm, checkout by 11am"]],
           ];
 
   return (
@@ -440,17 +486,17 @@ function Onboarding() {
               ].map(({ label, key, uploadKey, uploading, onUpload, purpose }) => (
                 <div key={key}>
                   <span className={label}>{label}</span>
-                  <div className="relative h-40 overflow-hidden rounded-xl border border-dashed border-border bg-muted/30">
+                  <label className="relative h-40 overflow-hidden rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer">
                     {uploadKey ? (
                       <img
-                        src={`${uploadKey}`}
+                        src={`${import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${uploadKey}`}
                         alt={`${businessName || "Business"} ${label.toLowerCase()}`}
                         className="size-full object-cover"
                       />
                     ) : (
                       <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
                         <ImagePlus className="size-6" />
-                        <span className="text-[10px]">No {label.toLowerCase()} uploaded</span>
+                        <span className="text-[10px]">Click to upload {label.toLowerCase()}</span>
                       </div>
                     )}
                     <input
@@ -461,15 +507,12 @@ function Onboarding() {
                       className="sr-only"
                       id={`${key}-upload`}
                     />
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById(`${key}-upload`)?.click()}
-                      disabled={uploading}
-                      className="absolute bottom-2.5 left-2.5 inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-border/60 bg-card/95 px-2 text-[9px] font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50"
-                    >
-                      {uploading ? "Uploading…" : `Upload ${label.toLowerCase()}`}
-                    </button>
-                  </div>
+                    {uploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl">
+                        <span className="text-white text-sm font-medium">Uploading…</span>
+                      </div>
+                    )}
+                  </label>
                 </div>
               ))}
               <div className="sm:col-span-2">
@@ -607,27 +650,132 @@ function Onboarding() {
           )}
 
           {step === 8 && (
-            <div className="space-y-4">
-              {setupChoices.map(([l, opts]) => (
-                <div key={l as string}>
-                  <span className={label}>{l as string}</span>
-                  <div className="flex flex-wrap gap-2">
-                    {(opts as string[]).map((o, i) => (
-                      <span
-                        key={o}
-                        className={
-                          "rounded-full border px-4 py-2 text-sm " +
-                          (i === 0
-                            ? "border-primary bg-primary-soft font-semibold text-primary"
-                            : "border-border text-muted-foreground")
-                        }
-                      >
-                        {o}
-                      </span>
-                    ))}
+            <div className="space-y-6">
+              {vendor.fulfilment === "order" && (
+                <>
+                  <div>
+                    <span className={label}>Delivery areas & fees</span>
+                    <textarea
+                      className={`${field} resize-y`}
+                      rows={3}
+                      value={delivery}
+                      onChange={(e) => setDelivery(e.target.value)}
+                      placeholder="e.g. Delivery within Lekki, VI, Ikoyi. ₦1,500 fee. Free above ₦20,000."
+                    />
                   </div>
-                </div>
-              ))}
+                  <div>
+                    <span className={label}>Fulfilment options</span>
+                    <div className="flex flex-wrap gap-2">
+                      {["Delivery and pickup", "Customer pickup", "Delivery only"].map((opt) => (
+                        <label
+                          key={opt}
+                          className="rounded-full border px-4 py-2 text-sm cursor-pointer transition"
+                        >
+                          <input
+                            type="radio"
+                            name="fulfilmentOptions"
+                            value={opt}
+                            checked={fulfilmentOptions === opt}
+                            onChange={() => setFulfilmentOptions(opt)}
+                            className="sr-only peer"
+                          />
+                          <span className="peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary border-border text-muted-foreground">
+                            {opt}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <span className={label}>Preparation time</span>
+                    <div className="flex flex-wrap gap-2">
+                      {["Under 30 mins", "30-60 mins", "Same day", "48 hours notice"].map((opt) => (
+                        <label
+                          key={opt}
+                          className="rounded-full border px-4 py-2 text-sm cursor-pointer transition"
+                        >
+                          <input
+                            type="radio"
+                            name="prepTime"
+                            value={opt}
+                            checked={prepTime === opt}
+                            onChange={() => setPrepTime(opt)}
+                            className="sr-only peer"
+                          />
+                          <span className="peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary border-border text-muted-foreground">
+                            {opt}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+              {vendor.fulfilment === "booking" && (
+                <>
+                  <div>
+                    <span className={label}>Appointment hours</span>
+                    <textarea
+                      className={`${field} resize-y`}
+                      rows={2}
+                      value={hours}
+                      onChange={(e) => setHours(e.target.value)}
+                      placeholder="e.g. Mon–Sat 9am–6pm, Sun closed"
+                    />
+                  </div>
+                  <div>
+                    <span className={label}>Service options</span>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        "In-store & home service",
+                        "In-person appointments",
+                        "Virtual consultations",
+                      ].map((opt) => (
+                        <label
+                          key={opt}
+                          className="rounded-full border px-4 py-2 text-sm cursor-pointer transition"
+                        >
+                          <input
+                            type="radio"
+                            name="serviceOptions"
+                            value={opt}
+                            checked={delivery === opt}
+                            onChange={() => setDelivery(opt)}
+                            className="sr-only peer"
+                          />
+                          <span className="peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary border-border text-muted-foreground">
+                            {opt}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+              {vendor.fulfilment === "reservation" && (
+                <>
+                  <div>
+                    <span className={label}>Reservation hours</span>
+                    <textarea
+                      className={`${field} resize-y`}
+                      rows={2}
+                      value={hours}
+                      onChange={(e) => setHours(e.target.value)}
+                      placeholder="e.g. Mon–Sat 9am–6pm, Sun closed"
+                    />
+                  </div>
+                  <div>
+                    <span className={label}>Guest information</span>
+                    <textarea
+                      className={`${field} resize-y`}
+                      rows={2}
+                      value={delivery}
+                      onChange={(e) => setDelivery(e.target.value)}
+                      placeholder="e.g. Check-in from 2pm, checkout by 11am"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -643,11 +791,11 @@ function Onboarding() {
                   <p className="mt-4 font-display text-xl font-bold">{businessName}</p>
                   <p className="text-sm text-muted-foreground">{businessDescription}</p>
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {[0, 1, 2].map((i) => (
-                      <div key={i} className="rounded-xl bg-card p-3">
+                    {products.slice(0, 3).map((product, i) => (
+                      <div key={product.id} className="rounded-xl bg-card p-3">
                         <div className="h-16 rounded-lg bg-muted" />
                         <p className="mt-2 text-xs font-semibold">
-                          {vendor.products[i]?.name ?? "Listing"}
+                          {product.name || `Product ${i + 1}`}
                         </p>
                       </div>
                     ))}

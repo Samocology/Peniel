@@ -41,9 +41,10 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { SectionHeading, Stars, VendorCard, Verified } from "@/components/site/bits";
 
 import { categories, vendors as seedVendors } from "@/lib/data";
-import { fetchBackendVendors } from "@/lib/backend-catalog";
+import { fetchBackendVendors, mapBackendVendor } from "@/lib/backend-catalog";
 
 import { useApp } from "@/lib/peniel-store";
+import { supabase } from "@/lib/supabase";
 
 import { locationMatches, normalizeLocationLabel } from "@/lib/location";
 
@@ -275,19 +276,67 @@ function orderCount(orders: string) {
 function Marketplace() {
   const app = useApp();
 
-  const [marketVendors, setMarketVendors] = useState(seedVendors);
+  const [marketVendors, setMarketVendors] = useState<Vendor[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
     void fetchBackendVendors()
       .then((liveVendors) => {
-        if (active) setMarketVendors(liveVendors);
+        if (!active) return;
+        // Merge custom vendors from local store
+        const customVendors = app.customVendors ?? [];
+        const allVendors = [...customVendors, ...liveVendors];
+        // Deduplicate by slug (custom vendors take precedence)
+        const seen = new Set<string>();
+        const deduped = allVendors.filter((v) => {
+          if (seen.has(v.slug)) return false;
+          seen.add(v.slug);
+          return true;
+        });
+        setMarketVendors(deduped);
+        setLoading(false);
       })
       .catch((error) => {
         console.error("Could not load live marketplace data", error);
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
+    };
+  }, [app.customVendors]);
+
+  // Realtime subscription for new vendors
+  useEffect(() => {
+    if (typeof window === "undefined" || !supabase) return;
+
+    const channel = supabase
+      .channel("marketplace-vendors")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "vendors",
+          filter: "status=eq.active",
+        },
+        async (payload) => {
+          const newVendor = payload.new as Record<string, unknown>;
+          if (!newVendor || !newVendor.slug) return;
+
+          setMarketVendors((prev) => {
+            if (prev.some((v) => v.slug === newVendor.slug)) return prev;
+            const mapped = mapBackendVendor(newVendor);
+            if (!mapped) return prev;
+            return [mapped, ...prev];
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -831,121 +880,119 @@ function Marketplace() {
           <div
             className={`mt-5 grid min-w-0 gap-3 sm:mt-6 sm:gap-4 ${viewMode === "grid" ? `${mobileViewMode === "grid" ? "grid-cols-2" : "grid-cols-1"} sm:grid-cols-2 xl:grid-cols-3` : "grid-cols-1"}`}
           >
-            {visibleVendors.map((v) =>
-              viewMode === "grid" ? (
-                <div key={v.slug} className="min-w-0">
+            {loading ? (
+              <div className="col-span-full flex items-center justify-center py-16">
+                <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                  <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm font-medium">Loading businesses…</p>
+                </div>
+              </div>
+            ) : visibleVendors.length === 0 ? (
+              <div className="col-span-full rounded-2xl border border-dashed border-border bg-card px-5 py-10 text-center sm:px-6 sm:py-12">
+                <MapPin className="mx-auto size-6 text-muted-foreground" />
+                <p className="mt-3 font-semibold">No businesses found</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Try adjusting your filters or search terms.
+                </p>
+              </div>
+            ) : (
+              visibleVendors.map((v) => {
+                const gridView = (
+                  <div key={v.slug} className="min-w-0">
+                    <Link
+                      to="/store/$slug"
+                      params={{ slug: v.slug }}
+                      className={`group flex min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_2px_12px_rgba(0,0,0,0.035)] transition-colors active:bg-muted/60 sm:hidden ${mobileViewMode === "grid" ? "flex-col items-stretch gap-0 p-2" : "items-center gap-3 p-2.5"}`}
+                    >
+                      <div
+                        className={`relative shrink-0 overflow-hidden bg-muted ${mobileViewMode === "grid" ? "aspect-[1.25] w-full rounded-xl" : "size-[5.5rem] rounded-xl"}`}
+                      >
+                        <img
+                          src={v.cover}
+                          alt={v.name}
+                          loading="lazy"
+                          className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        {v.featured && (
+                          <span className="absolute bottom-1 left-1 rounded-md bg-background/90 px-1.5 py-0.5 text-[9px] font-bold text-foreground shadow-sm">
+                            Featured
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className={`min-w-0 flex-1 ${mobileViewMode === "grid" ? "w-full p-2" : "py-1"}`}
+                      >
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <p
+                            className={`truncate font-bold tracking-tight text-foreground ${mobileViewMode === "grid" ? "text-xs" : "text-[13px]"}`}
+                          >
+                            {v.name}
+                          </p>
+                          {v.verified && <Verified />}
+                        </div>
+                        <p className="mt-1 truncate text-[10px] text-muted-foreground">
+                          {v.categoryLabel} · {v.location.split(",").slice(-2).join(",").trim()}
+                        </p>
+                        <p
+                          className={`mt-1.5 line-clamp-1 text-[11px] text-muted-foreground ${mobileViewMode === "grid" ? "hidden min-[380px]:block" : ""}`}
+                        >
+                          {v.tagline}
+                        </p>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <Star className="size-3 fill-current text-gold" />
+                          <span className="text-[11px] font-semibold tabular-nums">
+                            {v.rating.toFixed(1)}
+                          </span>
+                          <span className="truncate text-[10px] text-muted-foreground">
+                            ({v.reviews})
+                          </span>
+                        </div>
+                      </div>
+                      {mobileViewMode === "list" && (
+                        <ArrowRight className="mr-1 size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
+                      )}
+                    </Link>
+                    <div className="hidden sm:block">
+                      <VendorCard vendor={v} />
+                    </div>
+                  </div>
+                );
+
+                const listView = (
                   <Link
+                    key={v.slug}
                     to="/store/$slug"
                     params={{ slug: v.slug }}
-                    className={`group flex min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_2px_12px_rgba(0,0,0,0.035)] transition-colors active:bg-muted/60 sm:hidden ${mobileViewMode === "grid" ? "flex-col items-stretch gap-0 p-2" : "items-center gap-3 p-2.5"}`}
+                    className="group flex min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
                   >
-                    <div
-                      className={`relative shrink-0 overflow-hidden bg-muted ${mobileViewMode === "grid" ? "aspect-[1.25] w-full rounded-xl" : "size-[5.5rem] rounded-xl"}`}
-                    >
-                      <img
-                        src={v.cover}
-                        alt={v.name}
-                        loading="lazy"
-                        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      {v.featured && (
-                        <span className="absolute bottom-1 left-1 rounded-md bg-background/90 px-1.5 py-0.5 text-[9px] font-bold text-foreground shadow-sm">
-                          Featured
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      className={`min-w-0 flex-1 ${mobileViewMode === "grid" ? "w-full p-2" : "py-1"}`}
-                    >
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <p
-                          className={`truncate font-bold tracking-tight text-foreground ${mobileViewMode === "grid" ? "text-xs" : "text-[13px]"}`}
-                        >
-                          {v.name}
+                    <img
+                      src={v.cover}
+                      alt={v.name}
+                      loading="lazy"
+                      className="h-28 w-28 shrink-0 object-cover sm:h-36 sm:w-44"
+                    />
+                    <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-2 truncate font-semibold">
+                          {v.name} {v.verified && <Verified />}
                         </p>
-                        {v.verified && <Verified />}
+                        <p className="mt-1 truncate text-sm text-muted-foreground">{v.tagline}</p>
+                        <p className="mt-2 truncate text-xs text-muted-foreground">
+                          {v.categoryLabel} · {v.location}
+                        </p>
                       </div>
-                      <p className="mt-1 truncate text-[10px] text-muted-foreground">
-                        {v.categoryLabel} · {v.location.split(",").slice(-2).join(",").trim()}
-                      </p>
-                      <p
-                        className={`mt-1.5 line-clamp-1 text-[11px] text-muted-foreground ${mobileViewMode === "grid" ? "hidden min-[380px]:block" : ""}`}
-                      >
-                        {v.tagline}
-                      </p>
-                      <div className="mt-2 flex items-center gap-1.5">
-                        <Star className="size-3 fill-current text-gold" />
-                        <span className="text-[11px] font-semibold tabular-nums">
-                          {v.rating.toFixed(1)}
-                        </span>
-                        <span className="truncate text-[10px] text-muted-foreground">
-                          ({v.reviews})
-                        </span>
+                      <div className="shrink-0 text-right">
+                        <Stars value={v.rating} />
+                        <p className="mt-1 text-xs text-muted-foreground">{v.reviews} reviews</p>
                       </div>
                     </div>
-                    {mobileViewMode === "list" && (
-                      <ArrowRight className="mr-1 size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
-                    )}
                   </Link>
-                  <div className="hidden sm:block">
-                    <VendorCard vendor={v} />
-                  </div>
-                </div>
-              ) : (
-                <Link
-                  key={v.slug}
+                );
 
-                  to="/store/$slug"
-
-                  params={{ slug: v.slug }}
-
-                  className="group flex min-w-0 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
-                >
-                  <img
-                    src={v.cover}
-
-                    alt={v.name}
-
-                    loading="lazy"
-
-                    className="h-28 w-28 shrink-0 object-cover sm:h-36 sm:w-44"
-                  />
-
-                  <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
-                    <div className="min-w-0">
-                      <p className="flex items-center gap-2 truncate font-semibold">
-                        {v.name} {v.verified && <Verified />}
-                      </p>
-
-                      <p className="mt-1 truncate text-sm text-muted-foreground">{v.tagline}</p>
-
-                      <p className="mt-2 truncate text-xs text-muted-foreground">
-                        {v.categoryLabel} · {v.location}
-                      </p>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      <Stars value={v.rating} />
-
-                      <p className="mt-1 text-xs text-muted-foreground">{v.reviews} reviews</p>
-                    </div>
-                  </div>
-                </Link>
-              ),
+                return viewMode === "grid" ? gridView : listView;
+              })
             )}
           </div>
-
-          {visibleVendors.length === 0 && (
-            <div className="mt-6 rounded-2xl border border-dashed border-border bg-card px-5 py-10 text-center sm:px-6 sm:py-12">
-              <MapPin className="mx-auto size-6 text-muted-foreground" />
-
-              <p className="mt-3 font-semibold">No businesses in this distance</p>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Try a wider distance or choose Any distance.
-              </p>
-            </div>
-          )}
 
           <div className="mt-9 sm:mt-12">
             <SectionHeading

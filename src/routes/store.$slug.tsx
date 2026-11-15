@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { getVendor } from "@/lib/data";
+import {
+  getVendor,
+  type Vendor,
+  type Product,
+  type StoreLayout,
+  type BusinessType,
+} from "@/lib/data";
 import { fetchBackendVendor } from "@/lib/backend-catalog";
 import { defaultTemplateFor, getTemplate } from "@/lib/templates";
 import { mergeVendor, useApp } from "@/lib/peniel-store";
@@ -10,10 +16,131 @@ import { BuilderStore } from "@/components/store/layouts-a";
 import { ReservationStore } from "@/components/store/layouts-b";
 import { ComposedStore } from "@/components/store/layouts-c";
 
+const businessTypes: BusinessType[] = [
+  "restaurant",
+  "fresh-food",
+  "beauty",
+  "fashion",
+  "bakery",
+  "hotel",
+  "electronics",
+];
+const layouts: StoreLayout[] = [
+  "cinematic",
+  "builder",
+  "editorial",
+  "gallery",
+  "playful",
+  "reservation",
+  "grid",
+];
+
+function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
+  const slug = typeof value["slug"] === "string" ? value["slug"] : "";
+  const demo = getVendor(slug);
+  const fallback = demo ?? getVendor("abigails-kitchen")!;
+  if (!fallback) throw new Error("No fallback vendor available");
+
+  const typeValue = value["business_type"];
+  const businessType = businessTypes.includes(typeValue as BusinessType)
+    ? (typeValue as BusinessType)
+    : fallback.type;
+  const fulfilmentValue = value["fulfilment"];
+  const fulfilment =
+    fulfilmentValue === "booking" ||
+    fulfilmentValue === "reservation" ||
+    fulfilmentValue === "order"
+      ? fulfilmentValue
+      : fallback.fulfilment;
+  const storefront = Array.isArray(value["storefronts"]) ? value["storefronts"][0] : undefined;
+  const layoutValue =
+    storefront && typeof storefront === "object" ? storefront["layout"] : undefined;
+  const layout = layouts.includes(layoutValue as StoreLayout)
+    ? (layoutValue as StoreLayout)
+    : fallback.layout;
+  const products = Array.isArray(value["products"])
+    ? value["products"]
+        .map((p) => {
+          if (!p || typeof p !== "object") return null;
+          const prod = p as Record<string, unknown>;
+          const meta =
+            prod["attributes"] &&
+            typeof prod["attributes"] === "object" &&
+            typeof (prod["attributes"] as Record<string, unknown>)["meta"] === "string"
+              ? (prod["attributes"] as Record<string, unknown>)["meta"]
+              : undefined;
+          return {
+            id: typeof prod["id"] === "string" ? prod["id"] : "",
+            name: typeof prod["name"] === "string" ? prod["name"] : "",
+            desc: typeof prod["description"] === "string" ? prod["description"] : "",
+            price: typeof prod["price_minor"] === "number" ? prod["price_minor"] / 100 : 0,
+            group: typeof prod["group_name"] === "string" ? prod["group_name"] : "General",
+            ...(meta ? { meta } : {}),
+          };
+        })
+        .filter((p): p is Product => p !== null && p.id !== "")
+    : [];
+  const category = Array.isArray(value["categories"]) ? value["categories"][0] : undefined;
+  const description = typeof value["description"] === "string" ? value["description"] : "";
+
+  return {
+    ...fallback,
+    slug,
+    name: typeof value["name"] === "string" ? value["name"] : fallback.name,
+    tagline: description.split(/[.!?]/, 1)[0]?.trim() || fallback.tagline,
+    about: description || fallback.about,
+    type: businessType,
+    categorySlug:
+      typeof category === "object" && category && typeof category["slug"] === "string"
+        ? category["slug"]
+        : fallback.categorySlug,
+    categoryLabel:
+      typeof category === "object" && category && typeof category["name"] === "string"
+        ? category["name"]
+        : fallback.categoryLabel,
+    layout,
+    verified: false,
+    featured: false,
+    rating: 0,
+    reviews: 0,
+    orders: "New on Peniel",
+    location: typeof value["location"] === "string" ? value["location"] : fallback.location,
+    phone: typeof value["phone"] === "string" ? value["phone"] : "",
+    fulfilment,
+    groups: [...new Set(products.map((product) => product.group))],
+    products,
+  };
+}
+
 export const Route = createFileRoute("/store/$slug")({
   validateSearch: z.object({ t: z.string().optional() }),
-  loader: ({ params }) => {
-    return { vendor: getVendor(params.slug) };
+  loader: async ({ params, request }) => {
+    // First try static data
+    const staticVendor = getVendor(params.slug);
+    if (staticVendor) {
+      return { vendor: staticVendor };
+    }
+
+    // If not in static data, try fetching from backend API
+    try {
+      const baseUrl = new URL(request.url).origin;
+      const response = await fetch(`${baseUrl}/api/vendors?slug=${params.slug}`, {
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+      });
+      if (response.ok) {
+        const result = await response.json();
+        if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
+          // Map the backend vendor to the expected format
+          const backendVendor = result.data[0];
+          return { vendor: mapBackendVendorForLoader(backendVendor) };
+        }
+      }
+    } catch (error) {
+      console.error("Could not load vendor from backend in loader:", error);
+    }
+
+    return { vendor: null };
   },
   head: ({ loaderData }) => {
     if (!loaderData?.vendor) {
@@ -37,15 +164,20 @@ export const Route = createFileRoute("/store/$slug")({
 });
 
 function StorePage() {
-  const { vendor: base } = Route.useLoaderData();
+  const { vendor: baseFromLoader } = Route.useLoaderData();
   const { slug } = Route.useParams();
   const { t: previewId } = Route.useSearch();
-  const [remoteVendor, setRemoteVendor] = useState(base);
-  const [remoteLookupDone, setRemoteLookupDone] = useState(false);
   const s = useApp();
+
+  // Check custom vendors from the app store as fallback
+  const customVendor = s.customVendors?.find((v) => v.slug === slug);
+  const baseFromStore = customVendor ?? baseFromLoader;
+
+  const [remoteVendor, setRemoteVendor] = useState(baseFromStore);
+  const [remoteLookupDone, setRemoteLookupDone] = useState(false);
   useEffect(() => {
     let active = true;
-    setRemoteVendor(base);
+    setRemoteVendor(baseFromStore);
     setRemoteLookupDone(false);
     void fetchBackendVendor(slug)
       .then((result) => {
@@ -60,7 +192,7 @@ function StorePage() {
     return () => {
       active = false;
     };
-  }, [slug]);
+  }, [slug, baseFromStore]);
 
   const storeBase = remoteVendor;
   if (!storeBase) {

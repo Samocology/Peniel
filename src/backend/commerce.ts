@@ -199,6 +199,14 @@ async function createVendor(request: Request, env: BackendEnv, identity: Identit
   const businessType =
     typeof input["businessType"] === "string" ? input["businessType"].trim() : "";
   const fulfilment = input["fulfilment"];
+  const delivery = typeof input["delivery"] === "string" ? input["delivery"] : "";
+  const hours = typeof input["hours"] === "string" ? input["hours"] : "";
+  const prep_time = typeof input["prep_time"] === "string" ? input["prep_time"] : "";
+  const fulfilment_options =
+    typeof input["fulfilment_options"] === "string" ? input["fulfilment_options"] : "";
+  const service_options =
+    typeof input["service_options"] === "string" ? input["service_options"] : "";
+  const guest_info = typeof input["guest_info"] === "string" ? input["guest_info"] : "";
   if (
     !name ||
     name.length > 120 ||
@@ -226,6 +234,12 @@ async function createVendor(request: Request, env: BackendEnv, identity: Identit
       p_location: typeof input["location"] === "string" ? input["location"] : "",
       p_address: typeof input["address"] === "string" ? input["address"] : "",
       p_fulfilment: fulfilment,
+      p_delivery: delivery,
+      p_hours: hours,
+      p_prep_time: prep_time,
+      p_fulfilment_options: fulfilment_options,
+      p_service_options: service_options,
+      p_guest_info: guest_info,
       p_template_id: typeof input["templateId"] === "string" ? input["templateId"] : "cinematic",
       p_layout: typeof input["layout"] === "string" ? input["layout"] : "grid",
     }),

@@ -177,19 +177,32 @@ function RootComponent() {
   }, [state.user?.email]); // Re-validate when user email changes
 
   const protectedPrefixes = ["/account", "/checkout", "/vendor", "/admin"];
-  const authPrefixes = ["/auth", "/verify-otp", "/forgot-password", "/reset-password"];
+  const authPrefixes = [
+    "/auth",
+    "/verify-otp",
+    "/forgot-password",
+    "/reset-password",
+    "/admin/login",
+  ];
   const isProtected = protectedPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
   const isAuth = authPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
   useEffect(() => {
     if (!sessionValidated) return;
     if (isProtected && !authenticated) {
-      void navigate({ to: "/auth", search: { mode: "login", returnTo: pathname } });
+      const isAdminRoute = pathname.startsWith("/admin");
+      void navigate({
+        to: isAdminRoute ? "/admin/login" : "/auth",
+        search: { mode: "login", returnTo: pathname },
+      });
       return;
     }
     // Don't auto-redirect from auth pages - let the auth form handle navigation
     // to respect returnTo and role-based destinations (e.g., /vendor/onboarding)
     if (isAuth && authenticated && pathname === "/auth") {
+      return;
+    }
+    if (isAuth && authenticated && pathname === "/admin/login") {
       return;
     }
     if (isAuth && authenticated) {

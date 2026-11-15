@@ -326,9 +326,6 @@ async function subscribeToVendorChanges() {
   if (!supabase) return;
   if (vendorRealtimeChannel) return;
 
-  const s = app.get();
-  if (!s.user) return;
-
   try {
     const channel = supabase
       .channel("vendors-changes")

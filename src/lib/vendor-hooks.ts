@@ -50,7 +50,7 @@ function useRealtimeSubscription<T>(
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
-    if (!vendorId || typeof window === "undefined") return;
+    if (!vendorId || typeof window === "undefined" || !supabase) return;
 
     const channelName = `vendor-${vendorId}-${table}`;
     const channel = supabase.channel(channelName);
@@ -77,7 +77,7 @@ function useRealtimeSubscription<T>(
     channelRef.current = channel;
 
     return () => {
-      if (channelRef.current) {
+      if (channelRef.current && supabase) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }

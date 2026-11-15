@@ -32,7 +32,7 @@ function useAdminRealtimeSubscription<T>(
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !supabase) return;
 
     const channelName = `admin-${table}`;
     const channel = supabase.channel(channelName);
@@ -59,7 +59,7 @@ function useAdminRealtimeSubscription<T>(
     channelRef.current = channel;
 
     return () => {
-      if (channelRef.current) {
+      if (channelRef.current && supabase) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }

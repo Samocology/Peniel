@@ -146,8 +146,8 @@ function AdminOverview() {
   const totalOrders = analytics?.totalOrders ?? 0;
   const completedOrders = analytics?.completedOrders ?? 0;
 
-  const latestOrders = orders.slice(0, 5);
-  const newestVendors = vendors.slice(0, 5);
+  const latestOrders = orders?.slice(0, 5) ?? [];
+  const newestVendors = vendors?.slice(0, 5) ?? [];
 
   if (loading) {
     return (
