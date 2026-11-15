@@ -205,8 +205,61 @@ export function SiteHeader({ withSearch = false }: { withSearch?: boolean }) {
           )}
         </div>
 
-        {/* Mobile: hamburger for logged-out users */}
-        {user ? null : (
+        {/* Mobile: hamburger for logged-out users, account menu for logged-in users */}
+        {user ? (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                aria-label="Open account menu"
+              >
+                <Menu className="size-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-72 sm:w-80 p-4">
+              <nav className="flex flex-col gap-2">
+                <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-muted/40">
+                  <Wallet className="size-3.5 text-emerald-600" />
+                  <span>Wallet: ₦{(walletBalanceKobo ?? 0) / 100}</span>
+                </div>
+                <Link
+                  to="/account"
+                  onClick={() => navigate({ to: "/account" })}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted"
+                >
+                  <User className="size-4" />
+                  <span>Account</span>
+                </Link>
+                <Link
+                  to="/orders"
+                  onClick={() => navigate({ to: "/orders" })}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted"
+                >
+                  <Receipt className="size-4" />
+                  <span>Orders</span>
+                </Link>
+                <Link
+                  to="/messages"
+                  onClick={() => navigate({ to: "/messages" })}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-muted"
+                >
+                  <MessageCircle className="size-4" />
+                  <span>Chats</span>
+                </Link>
+                <div className="border-t border-border/50 my-2" />
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 text-left"
+                >
+                  <LogOut className="size-4" />
+                  <span>Log out</span>
+                </button>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        ) : (
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">

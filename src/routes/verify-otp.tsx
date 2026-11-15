@@ -64,7 +64,11 @@ function VerifyOtpPage() {
 
       if (isSignup) {
         if (role === "vendor") {
-          void navigate({ to: "/vendor/onboarding", search: { returnTo } });
+          // Vendor needs to log in after email verification, then they'll be redirected to onboarding
+          void navigate({
+            to: "/auth",
+            search: { mode: "login", returnTo: "/vendor/onboarding", role: "vendor" },
+          });
         } else {
           toast.success("Email verified. Please sign in to continue.");
 
