@@ -28,6 +28,30 @@ const layouts: StoreLayout[] = [
   "grid",
 ];
 
+const R2_PUBLIC_URL =
+  import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+
+function buildR2Url(objectKey: string | undefined): string | undefined {
+  if (!objectKey || typeof objectKey !== "string") return undefined;
+  return `${R2_PUBLIC_URL}/${objectKey}`;
+}
+
+function extractTheme(storefront: JsonRecord | undefined) {
+  if (!storefront || typeof storefront["theme"] !== "object" || storefront["theme"] === null)
+    return undefined;
+  const theme = storefront["theme"] as Record<string, unknown>;
+  return {
+    bg: typeof theme["bg"] === "string" ? theme["bg"] : undefined,
+    ink: typeof theme["ink"] === "string" ? theme["ink"] : undefined,
+    accent: typeof theme["accent"] === "string" ? theme["accent"] : undefined,
+    accentInk: typeof theme["accentInk"] === "string" ? theme["accentInk"] : undefined,
+    soft: typeof theme["soft"] === "string" ? theme["soft"] : undefined,
+    line: typeof theme["line"] === "string" ? theme["line"] : undefined,
+    radius: typeof theme["radius"] === "string" ? theme["radius"] : undefined,
+    heading: typeof theme["heading"] === "string" ? theme["heading"] : undefined,
+  };
+}
+
 function isRecord(value: unknown): value is JsonRecord {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -96,16 +120,33 @@ export function mapBackendVendor(value: unknown): Vendor | null {
   const layout = layouts.includes(layoutValue as StoreLayout)
     ? (layoutValue as StoreLayout)
     : fallback.layout;
+
+  // Extract storefront customizations
+  const coverUrl = buildR2Url(storefront?.["cover_object_key"] as string);
+  const logoUrl = buildR2Url(storefront?.["logo_object_key"] as string);
+  const theme = extractTheme(storefront);
+
   const products = Array.isArray(value["products"])
     ? value["products"].map(mapProduct).filter((product): product is Product => product !== null)
     : [];
   const category = firstRelation(value["categories"]);
   const description = typeof value["description"] === "string" ? value["description"] : "";
 
+  // Build monogram from name if no logo
+  const name = typeof value["name"] === "string" ? value["name"] : fallback.name;
+  const monogram = logoUrl
+    ? name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : fallback.monogram;
+
   return {
     ...fallback,
     slug,
-    name: typeof value["name"] === "string" ? value["name"] : fallback.name,
+    name,
     tagline: description.split(/[.!?]/, 1)[0]?.trim() || fallback.tagline,
     about: description || fallback.about,
     type: businessType,
@@ -113,6 +154,9 @@ export function mapBackendVendor(value: unknown): Vendor | null {
     categoryLabel:
       typeof category?.["name"] === "string" ? category["name"] : fallback.categoryLabel,
     layout,
+    cover: coverUrl ?? fallback.cover,
+    monogram,
+    theme: theme ? { ...fallback.theme, ...theme } : fallback.theme,
     verified: false,
     featured: false,
     rating: 0,

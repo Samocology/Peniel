@@ -24,6 +24,13 @@ import { app, useCurrentVendor } from "@/lib/peniel-store";
 import { vendorsApi, storageApi, type VendorRecord } from "@/lib/api-client";
 import { TemplatePicker } from "@/components/store/template-picker";
 
+const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+
+function buildR2Url(objectKey: string | undefined): string | undefined {
+  if (!objectKey || typeof objectKey !== "string") return undefined;
+  return `${R2_PUBLIC_URL}/${objectKey}`;
+}
+
 export const Route = createFileRoute("/vendor/settings")({
   head: () => ({
     meta: [
@@ -428,7 +435,7 @@ function VendorSettings() {
                   <div className="relative flex h-36 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-muted/30">
                     {vendor.logo_object_key ? (
                       <img
-                        src={`${vendor.logo_object_key}`}
+                        src={buildR2Url(vendor.logo_object_key)}
                         alt={`${vendor.name} logo`}
                         className="size-[68px] object-contain"
                       />
@@ -467,7 +474,7 @@ function VendorSettings() {
                   <div className="relative h-36 overflow-hidden rounded-xl border border-border bg-muted/30">
                     {vendor.cover_object_key ? (
                       <img
-                        src={`${vendor.cover_object_key}`}
+                        src={buildR2Url(vendor.cover_object_key)}
                         alt={`${vendor.name} storefront cover`}
                         className="size-full object-cover"
                       />

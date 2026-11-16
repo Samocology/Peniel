@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Store,
   Wallet,
+  AlertCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
@@ -135,10 +136,9 @@ function MetricCard({
 
 function AdminOverview() {
   const { data: analytics, loading: analyticsLoading, error: analyticsError } = useAdminAnalytics();
-  const { data: orders, loading: ordersLoading } = useAdminOrders();
-  const { data: vendors, loading: vendorsLoading } = useAdminVendors();
+  const { data: orders, loading: ordersLoading, error: ordersError } = useAdminOrders();
+  const { data: vendors, loading: vendorsLoading, error: vendorsError } = useAdminVendors();
   const loading = analyticsLoading || ordersLoading || vendorsLoading;
-  const error = analyticsError;
 
   const gmv = analytics?.gmvMinor ?? 0;
   const platformRevenue = Math.round(gmv * 0.02);
@@ -163,6 +163,30 @@ function AdminOverview() {
               <ChartNoAxesCombined className="size-5" />
             </div>
             <p className="text-sm font-semibold">Loading dashboard…</p>
+          </div>
+        </div>
+      </DashShell>
+    );
+  }
+
+  if (analyticsError || ordersError || vendorsError) {
+    return (
+      <DashShell
+        nav={adminNav}
+        kicker="Platform administration"
+        title="Overview"
+        subtitle="A clear picture of your marketplace performance."
+      >
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="max-w-md text-center p-6">
+            <AlertCircle className="mx-auto size-12 text-destructive" />
+            <h3 className="mt-4 text-lg font-semibold">Failed to load dashboard</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {analyticsError || ordersError || vendorsError}
+            </p>
+            <p className="mt-4 text-xs text-muted-foreground">
+              Ensure you have admin access and Supabase is configured on the worker.
+            </p>
           </div>
         </div>
       </DashShell>

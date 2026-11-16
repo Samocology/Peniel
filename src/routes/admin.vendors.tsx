@@ -12,6 +12,7 @@ import {
   MapPin,
   Star,
   Building2,
+  AlertCircle,
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
@@ -120,6 +121,28 @@ function AdminVendors() {
               <Store className="size-5" />
             </div>
             <p className="text-sm font-semibold">Loading vendors…</p>
+          </div>
+        </div>
+      </DashShell>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashShell
+        nav={adminNav}
+        kicker="Platform administration"
+        title="Vendors"
+        subtitle="Manage businesses, monitor performance and review vendor accounts."
+      >
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="max-w-md text-center p-6">
+            <AlertCircle className="mx-auto size-12 text-destructive" />
+            <h3 className="mt-4 text-lg font-semibold">Failed to load vendors</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+            <p className="mt-4 text-xs text-muted-foreground">
+              Ensure you have admin access and Supabase is configured on the worker.
+            </p>
           </div>
         </div>
       </DashShell>
