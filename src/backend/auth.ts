@@ -860,12 +860,10 @@ async function handleVerifyOtp(
 
   const table = type === "signup" ? "signup_otps" : "password_reset_otps";
 
-  const now = new Date().toISOString();
-  // Fetch ALL unused, unexpired codes for this email (not just the newest). Earlier
-  // retries can leave several rows behind; the customer may be holding a code from any
-  // of them, so we accept a match against any valid row.
+  // Fetch every code on file for this email (no server-side filter) so we can validate
+  // used/expiry in code and log exactly why a code was rejected.
   const selectResponse = await fetch(
-    `${config.url}/rest/v1/${table}?email=eq.${encodeURIComponent(email)}&used=eq.false&expires_at=gt.${encodeURIComponent(now)}&order=created_at.desc`,
+    `${config.url}/rest/v1/${table}?email=eq.${encodeURIComponent(email)}&order=created_at.desc`,
     {
       headers: {
         ...restAuthHeaders(env, config),
@@ -880,15 +878,48 @@ async function handleVerifyOtp(
     await drain(selectResponse);
     return json({ ok: false, error: "Could not verify the code. Try again later." }, 502);
   }
-  const otps = (await selectResponse.json()) as Array<{ id: string; code_hash: string }>;
+  const rows = (await selectResponse.json()) as Array<{
+    id: string;
+    code_hash: string;
+    used: boolean;
+    expires_at: string;
+  }>;
   await drain(selectResponse);
 
-  const otp = otps.find((o) => o.code_hash === code);
+  const nowMs = Date.now();
+  const validRows = rows.filter((o) => !o.used && new Date(o.expires_at).getTime() > nowMs);
+  const otp = validRows.find((o) => o.code_hash === code);
   if (!otp) {
     console.error(
-      `verify ${type} failed for ${email}: ${otps.length} valid code(s) on file, none matched the submitted code.`,
+      `verify ${type} failed for ${email}: ${rows.length} row(s) on file, ${validRows.length} valid, none matched. Rows: ${JSON.stringify(
+        rows.map((o) => ({ used: o.used, expires_at: o.expires_at })),
+      )}`,
     );
-    return json({ ok: false, error: "Invalid or expired code." }, 400);
+    // Distinguish the failure so the customer knows what to do next.
+    if (rows.length === 0) {
+      return json(
+        {
+          ok: false,
+          error: "We couldn't find a verification code for this email. Please request a new one.",
+          reason: "not_found",
+        },
+        400,
+      );
+    }
+    if (validRows.length === 0) {
+      return json(
+        {
+          ok: false,
+          error: "This code has expired. Please request a new one.",
+          reason: "expired",
+        },
+        400,
+      );
+    }
+    return json(
+      { ok: false, error: "That code doesn't match. Please try again.", reason: "mismatch" },
+      400,
+    );
   }
 
   if (type === "signup") {

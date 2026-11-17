@@ -328,7 +328,10 @@ test("signup OTP verification checks the local code and confirms the email", asy
       }
       if (url.startsWith(`${env.SUPABASE_URL}/rest/v1/signup_otps?`)) {
         if ((init?.method ?? "GET") === "GET") {
-          return Response.json([{ id: "otp-1", code_hash: "012345" }]);
+          const future = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+          return Response.json([
+            { id: "otp-1", code_hash: "012345", used: false, expires_at: future },
+          ]);
         }
         return new Response(null, { status: 204 });
       }
