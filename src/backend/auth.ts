@@ -154,7 +154,7 @@ async function createSupabaseUser(
   });
   const payload = await parseSupabaseBody(response);
   if (!response.ok) {
-    await response.body?.cancel();
+    await drain(response);
     const raw = String(payload["msg"] ?? payload["message"] ?? payload["error_description"] ?? "");
     const error = supabaseErrorMessage(payload, "Could not create the account.");
     const code = /already registered|already been registered/i.test(raw)
@@ -167,6 +167,7 @@ async function createSupabaseUser(
       ...(code ? { code } : {}),
     };
   }
+  await drain(response);
   const userValue = payload["user"] ?? payload;
   const user =
     userValue !== null &&

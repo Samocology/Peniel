@@ -168,6 +168,37 @@ test("signup role input is stored only as non-privileged intent metadata", async
   assert.equal(response.headers.has("set-cookie"), false);
 });
 
+test("signup with an existing email returns EMAIL_EXISTS instead of a 502", async () => {
+  const response = await withFetchMock(
+    async (input, init) => {
+      const url = String(input);
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users`) {
+        // Supabase admin rejects duplicate emails with 422 and a message body.
+        return Response.json(
+          { msg: "A user with this email address has already been registered" },
+          { status: 422 },
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    },
+    () =>
+      handleAuthRequest(
+        request("/api/auth/signup", "POST", {
+          name: "Person",
+          email: "person@example.com",
+          password: "correct-horse",
+          intentRole: "customer",
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(response.status, 409);
+  const body = (await response.json()) as { ok: boolean; error: string; code?: string };
+  assert.equal(body.ok, false);
+  assert.equal(body.code, "EMAIL_EXISTS");
+});
+
 test("signup OTP verification checks the local code and confirms the email", async () => {
   const calls: string[] = [];
   const response = await withFetchMock(
