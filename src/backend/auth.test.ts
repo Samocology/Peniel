@@ -6,6 +6,9 @@ import { handleAuthRequest } from "./auth.ts";
 const env = {
   SUPABASE_URL: "https://project.supabase.co",
   SUPABASE_ANON_KEY: "test-publishable-key",
+  SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
+  BREVO_API_KEY: "test-brevo-key",
+  BREVO_SENDER_EMAIL: "no-reply@peniel.test",
 };
 
 async function withFetchMock<T>(mock: typeof fetch, run: () => Promise<T>): Promise<T> {
@@ -116,15 +119,21 @@ test("invalid registration input is rejected without sending credentials upstrea
 });
 
 test("signup role input is stored only as non-privileged intent metadata", async () => {
+  let createUserBody: Record<string, unknown> | null = null;
   const response = await withFetchMock(
-    async (_input, init) => {
-      const requestBody = JSON.parse(String(init?.body)) as {
-        data?: { signup_intent?: string };
-      };
-      assert.equal(requestBody.data?.signup_intent, "customer");
-      return Response.json({
-        user: { id: "user-3", email: "person@example.com" },
-      });
+    async (input, init) => {
+      const url = String(input);
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users`) {
+        createUserBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return Response.json({ id: "user-3", email: "person@example.com" });
+      }
+      if (url.startsWith("https://api.brevo.com")) {
+        return new Response(null, { status: 204 });
+      }
+      if (url === `${env.SUPABASE_URL}/rest/v1/signup_otps`) {
+        return new Response(null, { status: 201 });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
     },
     () =>
       handleAuthRequest(
@@ -138,38 +147,60 @@ test("signup role input is stored only as non-privileged intent metadata", async
       ),
   );
 
+  const metadata = (createUserBody as { user_metadata?: { signup_intent?: string } } | null)
+    ?.user_metadata;
+  assert.equal(metadata?.signup_intent, "customer");
+  assert.equal((createUserBody as { email_confirm?: boolean } | null)?.email_confirm, false);
   assert.equal(response.status, 201);
-  assert.deepEqual(await response.json(), {
+  const body = (await response.json()) as {
+    ok: boolean;
+    data: { authenticated: boolean; needsOtp: boolean; user: { id: string } };
+  };
+  assert.deepEqual(body, {
     ok: true,
     data: {
       authenticated: false,
       needsOtp: true,
+      codeSent: true,
       user: { id: "user-3", email: "person@example.com", name: "" },
     },
   });
   assert.equal(response.headers.has("set-cookie"), false);
 });
 
-test("signup OTP verification sends the eight-digit code to Supabase", async () => {
+test("signup OTP verification checks the local code and confirms the email", async () => {
+  const calls: string[] = [];
   const response = await withFetchMock(
     async (input, init) => {
-      assert.equal(String(input), `${env.SUPABASE_URL}/auth/v1/verify`);
-      assert.deepEqual(JSON.parse(String(init?.body)), {
-        email: "person@example.com",
-        token: "01234567",
-        type: "signup",
-      });
-      return Response.json({
-        access_token: "verification-access-token",
-        refresh_token: "verification-refresh-token",
-        user: { id: "user-5", email: "person@example.com" },
-      });
+      const url = String(input);
+      calls.push(`${init?.method ?? "GET"} ${url}`);
+      if (
+        url ===
+        `${env.SUPABASE_URL}/rest/v1/signup_otps?email=eq.person%40example.com&used=eq.false&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&order=created_at.desc&limit=1`
+      ) {
+        // Note: expires_at is dynamic, so match by prefix instead below.
+      }
+      if (url.startsWith(`${env.SUPABASE_URL}/rest/v1/signup_otps?`)) {
+        if ((init?.method ?? "GET") === "GET") {
+          return Response.json([{ id: "otp-1", code_hash: "012345" }]);
+        }
+        return new Response(null, { status: 204 });
+      }
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users?email=eq.person%40example.com`) {
+        return Response.json([{ id: "user-5" }]);
+      }
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users/user-5`) {
+        const body = JSON.parse(String(init?.body)) as { email_confirm?: boolean };
+        assert.equal(body.email_confirm, true);
+        return Response.json({ id: "user-5" });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
     },
     () =>
       handleAuthRequest(
         request("/api/auth/verify-otp", "POST", {
           email: "person@example.com",
-          code: "01234567",
+          code: "012345",
           type: "signup",
         }),
         env,
@@ -181,17 +212,29 @@ test("signup OTP verification sends the eight-digit code to Supabase", async () 
     ok: true,
     data: { email: "person@example.com", type: "signup" },
   });
+  // Confirmed via admin API, never via Supabase's /verify endpoint.
+  assert.equal(
+    calls.some((c) => c.includes("/auth/v1/verify")),
+    false,
+  );
+  assert.ok(calls.some((c) => c.startsWith("PUT ") && c.endsWith("/auth/v1/admin/users/user-5")));
 });
 
-test("signup OTP resend asks Supabase to resend the signup confirmation", async () => {
+test("signup OTP resend issues a fresh code and sends it through Brevo", async () => {
+  let brevoBody: Record<string, unknown> | null = null;
+  let storedOtp: Record<string, unknown> | null = null;
   const response = await withFetchMock(
     async (input, init) => {
-      assert.equal(String(input), `${env.SUPABASE_URL}/auth/v1/resend`);
-      assert.deepEqual(JSON.parse(String(init?.body)), {
-        email: "person@example.com",
-        type: "signup",
-      });
-      return Response.json({});
+      const url = String(input);
+      if (url === `${env.SUPABASE_URL}/rest/v1/signup_otps`) {
+        storedOtp = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return new Response(null, { status: 201 });
+      }
+      if (url === "https://api.brevo.com/v3/smtp/email") {
+        brevoBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return new Response(null, { status: 204 });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
     },
     () =>
       handleAuthRequest(
@@ -203,8 +246,16 @@ test("signup OTP resend asks Supabase to resend the signup confirmation", async 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
     ok: true,
-    data: { accepted: true },
+    data: { accepted: true, codeSent: true },
   });
+  // The code is stored locally and delivered via Brevo (not Supabase's /resend).
+  assert.ok(storedOtp);
+  assert.match(String((storedOtp as { code_hash?: string }).code_hash), /^\d{6}$/);
+  assert.ok(brevoBody);
+  assert.equal(
+    (brevoBody as { to?: Array<{ email: string }> }).to?.[0]?.email,
+    "person@example.com",
+  );
 });
 
 test("session endpoint validates the cookie with Supabase rather than trusting its contents", async () => {
@@ -334,7 +385,10 @@ test("Google OAuth starts PKCE and exchanges its callback code server-side", asy
   );
 
   assert.equal(callbackResponse.status, 302);
-  assert.equal(callbackResponse.headers.get("location"), "https://peniel.test");
+  const location = new URL(callbackResponse.headers.get("location") ?? "");
+  assert.equal(location.origin, "https://peniel.test");
+  assert.equal(location.pathname, "/auth/oauth/callback");
+  assert.equal(location.searchParams.get("role"), "customer");
   const cookies = callbackResponse.headers.get("set-cookie") ?? "";
   assert.match(cookies, /peniel_access=oauth-access-token/);
   assert.match(cookies, /peniel_refresh=oauth-refresh-token/);

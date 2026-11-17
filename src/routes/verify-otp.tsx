@@ -27,7 +27,7 @@ function VerifyOtpPage() {
   const { returnTo, role, type } = search;
 
   const isSignup = type === "signup";
-  const otpLength = isSignup ? 8 : 6;
+  const otpLength = 6;
 
   const navigate = useNavigate({ from: "/verify-otp" });
 
@@ -219,7 +219,7 @@ function VerifyOtpPage() {
             />
           </div>
 
-          <div className={`grid ${isSignup ? "grid-cols-8" : "grid-cols-6"} gap-1.5 sm:gap-2`}>
+          <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
             {Array.from({ length: otpLength }, (_, i) => (
               <Input
                 key={i}

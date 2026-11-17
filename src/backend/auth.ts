@@ -76,6 +76,110 @@ async function sendBrevoEmail(
   }
 }
 
+async function storeOtp(
+  env: BackendEnv,
+  config: { url: string; key: string },
+  table: "signup_otps" | "password_reset_otps",
+  email: string,
+  code: string,
+): Promise<boolean> {
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return false;
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+  const response = await fetch(`${config.url}/rest/v1/${table}`, {
+    method: "POST",
+    headers: {
+      apikey: config.key,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "content-type": "application/json",
+      Prefer: "resolution=merge-duplicates",
+    },
+    body: JSON.stringify({ email, code_hash: code, expires_at: expiresAt }),
+  });
+  if (!response.ok) {
+    await response.body?.cancel();
+    return false;
+  }
+  await response.body?.cancel();
+  return true;
+}
+
+async function issueSignupOtp(
+  env: BackendEnv,
+  config: { url: string; key: string },
+  email: string,
+): Promise<boolean> {
+  const code = generateOtpCode();
+  const stored = await storeOtp(env, config, "signup_otps", email, code);
+  if (!stored) return false;
+  return sendBrevoEmail(
+    env,
+    email,
+    "Your Peniel verification code",
+    `<p>Your Peniel verification code is <strong>${code}</strong>.</p>
+     <p>It expires in ${OTP_EXPIRY_MINUTES} minutes. If you did not create an account, you can ignore this email.</p>`,
+  );
+}
+
+async function createSupabaseUser(
+  env: BackendEnv,
+  config: { url: string; key: string },
+  email: string,
+  password: string,
+  name: string,
+  intentRole: unknown,
+): Promise<
+  { ok: true; user: SupabaseUser } | { ok: false; status: number; error: string; code?: string }
+> {
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    return { ok: false, status: 503, error: "Signup is not configured on this deployment." };
+  }
+  const response = await fetch(`${config.url}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: {
+      apikey: config.key,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: false,
+      user_metadata: {
+        full_name: name,
+        signup_intent: intentRole === "vendor" ? "vendor" : "customer",
+      },
+    }),
+  });
+  const payload = await parseSupabaseBody(response);
+  if (!response.ok) {
+    await response.body?.cancel();
+    const raw = String(payload["msg"] ?? payload["message"] ?? payload["error_description"] ?? "");
+    const error = supabaseErrorMessage(payload, "Could not create the account.");
+    const code = /already registered|already been registered/i.test(raw)
+      ? "EMAIL_EXISTS"
+      : undefined;
+    return {
+      ok: false,
+      status: response.status === 422 ? 409 : response.status,
+      error,
+      ...(code ? { code } : {}),
+    };
+  }
+  const userValue = payload["user"] ?? payload;
+  const user =
+    userValue !== null &&
+    typeof userValue === "object" &&
+    typeof (userValue as Record<string, unknown>)["id"] === "string"
+      ? (userValue as SupabaseUser)
+      : undefined;
+  if (!user?.id) {
+    return { ok: false, status: 502, error: "Authentication response was incomplete." };
+  }
+  return { ok: true, user };
+}
+
 function authConfig(env: BackendEnv) {
   const url = env.SUPABASE_URL?.replace(/\/+$/, "");
   const key = env.SUPABASE_ANON_KEY;
@@ -177,6 +281,14 @@ async function parseSupabaseBody(response: Response): Promise<Record<string, unk
   }
 }
 
+async function drain(response: Response): Promise<void> {
+  try {
+    await response.body?.cancel();
+  } catch {
+    // Body may already be consumed or locked; nothing left to drain.
+  }
+}
+
 function supabaseErrorMessage(payload: Record<string, unknown>, fallback: string): string {
   const message = payload["msg"] ?? payload["message"] ?? payload["error_description"];
   if (typeof message !== "string") return fallback;
@@ -188,7 +300,11 @@ function supabaseErrorMessage(payload: Record<string, unknown>, fallback: string
   return fallback;
 }
 
-async function handleSignup(request: Request, config: { url: string; key: string }) {
+async function handleSignup(
+  request: Request,
+  config: { url: string; key: string },
+  env: BackendEnv,
+) {
   const input = await readJsonObject(request, MAX_AUTH_BODY_BYTES);
   if (!input) return json({ ok: false, error: "A valid JSON request is required." }, 400);
 
@@ -207,41 +323,17 @@ async function handleSignup(request: Request, config: { url: string; key: string
     return json({ ok: false, error: "One or more fields exceed the allowed length." }, 400);
   }
 
-  const response = await supabaseRequest(config, "signup", {
-    method: "POST",
-    body: JSON.stringify({
-      email,
-      password,
-      data: {
-        full_name: name,
-        signup_intent: intentRole === "vendor" ? "vendor" : "customer",
-      },
-    }),
-  });
-  const payload = await parseSupabaseBody(response);
-  if (!response.ok) {
-    const raw = String(payload["msg"] ?? payload["message"] ?? payload["error_description"] ?? "");
-    const error = supabaseErrorMessage(payload, "Could not create the account.");
-    const code = /already registered|already been registered/i.test(raw)
-      ? "EMAIL_EXISTS"
-      : undefined;
+  // Create the Supabase user WITHOUT sending Supabase's own email. The verification
+  // code is generated locally and delivered through Brevo so every OTP is logged there.
+  const created = await createSupabaseUser(env, config, email, password, name, intentRole);
+  if (!created.ok) {
     return json(
-      { ok: false, error, ...(code ? { code } : {}) },
-      response.status === 422 ? 409 : response.status,
+      { ok: false, error: created.error, ...(created.code ? { code: created.code } : {}) },
+      created.status,
     );
   }
 
-  const session = isSupabaseSession(payload) ? payload : null;
-  if (session && !session.user?.id) {
-    return json({ ok: false, error: "Authentication response was incomplete." }, 502);
-  }
-  const signupUserValue = payload["user"];
-  const signupUser =
-    signupUserValue !== null &&
-    typeof signupUserValue === "object" &&
-    typeof (signupUserValue as Record<string, unknown>)["id"] === "string"
-      ? (signupUserValue as SupabaseUser)
-      : undefined;
+  const codeSent = await issueSignupOtp(env, config, email);
 
   return json(
     {
@@ -249,7 +341,8 @@ async function handleSignup(request: Request, config: { url: string; key: string
       data: {
         authenticated: false,
         needsOtp: true,
-        user: userResponse(session?.user ?? signupUser),
+        codeSent,
+        user: userResponse(created.user),
       },
     },
     201,
@@ -472,6 +565,7 @@ async function handleForgotPassword(
 async function handleResendSignupOtp(
   request: Request,
   config: { url: string; key: string },
+  env: BackendEnv,
 ): Promise<Response> {
   const input = await readJsonObject(request, MAX_AUTH_BODY_BYTES);
   const email = typeof input?.["email"] === "string" ? input["email"].trim().toLowerCase() : "";
@@ -479,19 +573,12 @@ async function handleResendSignupOtp(
     return json({ ok: false, error: "Enter a valid email address." }, 400);
   }
 
-  const response = await supabaseRequest(config, "resend", {
-    method: "POST",
-    body: JSON.stringify({ email, type: "signup" }),
-  });
-  const payload = await parseSupabaseBody(response);
-  if (!response.ok) {
-    return json(
-      { ok: false, error: supabaseErrorMessage(payload, "Could not resend verification code.") },
-      response.status,
-    );
+  const sent = await issueSignupOtp(env, config, email);
+  if (!sent) {
+    return json({ ok: false, error: "Could not resend verification code. Please try again." }, 502);
   }
 
-  return json({ ok: true, data: { accepted: true } });
+  return json({ ok: true, data: { accepted: true, codeSent: sent } });
 }
 
 async function handleVerifyOtp(
@@ -503,7 +590,7 @@ async function handleVerifyOtp(
   const email = typeof input?.["email"] === "string" ? input["email"].trim().toLowerCase() : "";
   const code = typeof input?.["code"] === "string" ? input["code"] : "";
   const type = typeof input?.["type"] === "string" ? input["type"] : "reset";
-  const expectedCodeLength = type === "signup" ? 8 : 6;
+  const expectedCodeLength = OTP_CODE_LENGTH;
   if (
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
     !["signup", "reset"].includes(type) ||
@@ -515,30 +602,19 @@ async function handleVerifyOtp(
     );
   }
 
-  if (type === "signup") {
-    const response = await supabaseRequest(config, "verify", {
-      method: "POST",
-      body: JSON.stringify({ email, token: code, type: "signup" }),
-    });
-    const payload = await parseSupabaseBody(response);
-    if (!response.ok) {
-      return json(
-        { ok: false, error: supabaseErrorMessage(payload, "Invalid or expired code.") },
-        response.status,
-      );
-    }
-
-    return json({ ok: true, data: { email, type: "signup" } });
-  }
-
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
-    return json({ ok: false, error: "Password reset is not configured on this deployment." }, 503);
+    return json(
+      { ok: false, error: "Email verification is not configured on this deployment." },
+      503,
+    );
   }
+
+  const table = type === "signup" ? "signup_otps" : "password_reset_otps";
 
   const now = new Date().toISOString();
   const selectResponse = await fetch(
-    `${config.url}/rest/v1/password_reset_otps?email=eq.${encodeURIComponent(email)}&used=eq.false&expires_at=gt.${encodeURIComponent(now)}&order=created_at.desc&limit=1`,
+    `${config.url}/rest/v1/${table}?email=eq.${encodeURIComponent(email)}&used=eq.false&expires_at=gt.${encodeURIComponent(now)}&order=created_at.desc&limit=1`,
     {
       headers: {
         apikey: config.key,
@@ -551,11 +627,68 @@ async function handleVerifyOtp(
     return json({ ok: false, error: "Could not verify the code. Try again later." }, 502);
   }
   const otps = (await selectResponse.json()) as Array<{ id: string; code_hash: string }>;
-  await selectResponse.body?.cancel();
+  await drain(selectResponse);
 
   const otp = otps.find((o) => o.code_hash === code);
   if (!otp) {
     return json({ ok: false, error: "Invalid or expired code." }, 400);
+  }
+
+  if (type === "signup") {
+    // Mark the signup OTP as used, then confirm the user's email via the admin API.
+    const markResponse = await fetch(`${config.url}/rest/v1/${table}?id=eq.${otp.id}`, {
+      method: "PATCH",
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "content-type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ used: true }),
+    });
+    if (!markResponse.ok) {
+      await drain(markResponse);
+      return json({ ok: false, error: "Could not mark code as used. Try again later." }, 502);
+    }
+    await drain(markResponse);
+
+    const usersResponse = await fetch(
+      `${config.url}/auth/v1/admin/users?email=eq.${encodeURIComponent(email)}`,
+      {
+        headers: {
+          apikey: config.key,
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+      },
+    );
+    if (!usersResponse.ok) {
+      await drain(usersResponse);
+      return json({ ok: false, error: "Could not look up account. Try again later." }, 502);
+    }
+    const users = (await usersResponse.json()) as Array<{ id: string }>;
+    await drain(usersResponse);
+
+    const user = users[0];
+    if (!user) {
+      return json({ ok: false, error: "No account found for this email." }, 400);
+    }
+
+    const confirmResponse = await fetch(`${config.url}/auth/v1/admin/users/${user.id}`, {
+      method: "PUT",
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ email_confirm: true }),
+    });
+    if (!confirmResponse.ok) {
+      await drain(confirmResponse);
+      return json({ ok: false, error: "Could not verify the email. Try again later." }, 502);
+    }
+    await drain(confirmResponse);
+
+    return json({ ok: true, data: { email, type: "signup" } });
   }
 
   const markResponse = await fetch(`${config.url}/rest/v1/password_reset_otps?id=eq.${otp.id}`, {
@@ -569,10 +702,10 @@ async function handleVerifyOtp(
     body: JSON.stringify({ used: true, reset_token: crypto.randomUUID() }),
   });
   if (!markResponse.ok) {
-    await markResponse.body?.cancel();
+    await drain(markResponse);
     return json({ ok: false, error: "Could not mark code as used. Try again later." }, 502);
   }
-  await markResponse.body?.cancel();
+  await drain(markResponse);
 
   // Fetch the row to return the reset token and email.
   const tokenResponse = await fetch(
@@ -585,11 +718,11 @@ async function handleVerifyOtp(
     },
   );
   if (!tokenResponse.ok) {
-    await tokenResponse.body?.cancel();
+    await drain(tokenResponse);
     return json({ ok: false, error: "Could not issue reset token. Try again later." }, 502);
   }
   const tokenRows = (await tokenResponse.json()) as Array<{ reset_token: string }>;
-  await tokenResponse.body?.cancel();
+  await drain(tokenResponse);
 
   const resetToken = tokenRows[0]?.reset_token ?? "";
   return json({
@@ -812,7 +945,7 @@ export async function handleAuthRequest(request: Request, env: BackendEnv): Prom
 
   try {
     if (path === "/api/auth/signup" && request.method === "POST")
-      return await handleSignup(request, config);
+      return await handleSignup(request, config, env);
     if (path === "/api/auth/login" && request.method === "POST")
       return await handleLogin(request, config);
     if (path === "/api/auth/password/reset" && request.method === "POST")
@@ -820,7 +953,7 @@ export async function handleAuthRequest(request: Request, env: BackendEnv): Prom
     if (path === "/api/auth/forgot-password" && request.method === "POST")
       return await handleForgotPassword(request, config, env);
     if (path === "/api/auth/resend-signup-otp" && request.method === "POST")
-      return await handleResendSignupOtp(request, config);
+      return await handleResendSignupOtp(request, config, env);
     if (path === "/api/auth/verify-otp" && request.method === "POST")
       return await handleVerifyOtp(request, config, env);
     if (path === "/api/auth/reset-password" && request.method === "POST")
