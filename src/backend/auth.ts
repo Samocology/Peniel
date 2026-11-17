@@ -54,12 +54,12 @@ async function sendBrevoEmail(
   toEmail: string,
   subject: string,
   htmlContent: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; messageId?: string }> {
   if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
     console.error(
       "Brevo email skipped: missing BREVO_API_KEY or BREVO_SENDER_EMAIL secret on the worker.",
     );
-    return false;
+    return { ok: false };
   }
   try {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -80,12 +80,24 @@ async function sendBrevoEmail(
       console.error(
         `Brevo rejected email to ${toEmail}: ${response.status} ${detail.slice(0, 300)}`,
       );
-      return false;
+      return { ok: false };
     }
-    return true;
+    // Brevo returns 201 with a messageId on acceptance. If the email still doesn't
+    // arrive, look this messageId up under Brevo > Transactional > Logs to see whether
+    // it was delivered, bounced, blocked, or dropped (often an unverified sender or an
+    // unactivated account that can only send to the account owner's address).
+    let messageId: string | undefined;
+    try {
+      const body = (await response.json()) as { messageId?: string };
+      messageId = body.messageId;
+    } catch {
+      // ignore body parse failures
+    }
+    console.log(`Brevo accepted email to ${toEmail} (messageId=${messageId ?? "unknown"})`);
+    return { ok: true, ...(messageId ? { messageId } : {}) };
   } catch (error) {
     console.error(`Brevo email request to ${toEmail} failed`, error);
-    return false;
+    return { ok: false };
   }
 }
 
@@ -124,21 +136,35 @@ async function storeOtp(
   return true;
 }
 
+type OtpIssueResult = { ok: true } | { ok: false; reason: "store" | "brevo" };
+
 async function issueSignupOtp(
   env: BackendEnv,
   config: { url: string; key: string },
   email: string,
-): Promise<boolean> {
+): Promise<OtpIssueResult> {
   const code = generateOtpCode();
   const stored = await storeOtp(env, config, "signup_otps", email, code);
-  if (!stored) return false;
-  return sendBrevoEmail(
+  if (!stored) {
+    console.error(
+      "Signup OTP not sent: could not store the code. Likely the signup_otps table is missing — apply supabase/migrations/20261117000000_peniel_signup_otps.sql.",
+    );
+    return { ok: false, reason: "store" };
+  }
+  const sent = await sendBrevoEmail(
     env,
     email,
     "Your Peniel verification code",
     `<p>Your Peniel verification code is <strong>${code}</strong>.</p>
      <p>It expires in ${OTP_EXPIRY_MINUTES} minutes. If you did not create an account, you can ignore this email.</p>`,
   );
+  if (!sent.ok) {
+    console.error(
+      "Signup OTP not sent: Brevo rejected or is not configured (check BREVO_API_KEY / BREVO_SENDER_EMAIL and sender verification).",
+    );
+    return { ok: false, reason: "brevo" };
+  }
+  return { ok: true };
 }
 
 async function createSupabaseUser(
@@ -383,16 +409,19 @@ async function handleSignup(
       created.status,
     );
   }
-
-  const codeSent = await issueSignupOtp(env, config, email);
-  if (!codeSent) {
+  const otp = await issueSignupOtp(env, config, email);
+  if (!otp.ok) {
     // Roll back the half-created account so the customer can retry cleanly instead of
-    // being stuck on a verify screen with no code. The real reason is in wrangler tail.
+    // being stuck on a verify screen with no code.
     await deleteSupabaseUser(env, config, created.user.id);
     return json(
       {
         ok: false,
-        error: "We couldn't send your verification code right now. Please try again in a moment.",
+        error:
+          otp.reason === "store"
+            ? "We couldn't prepare your verification code. Please try again shortly."
+            : "We couldn't email your verification code right now. Please try again shortly.",
+        reason: otp.reason,
       },
       502,
     );
@@ -404,7 +433,7 @@ async function handleSignup(
       data: {
         authenticated: false,
         needsOtp: true,
-        codeSent,
+        codeSent: true,
         user: userResponse(created.user),
       },
     },
@@ -621,7 +650,7 @@ async function handleForgotPassword(
 
   return json({
     ok: true,
-    data: { accepted: true, codeSent: sent },
+    data: { accepted: true, codeSent: sent.ok },
   });
 }
 
@@ -636,12 +665,22 @@ async function handleResendSignupOtp(
     return json({ ok: false, error: "Enter a valid email address." }, 400);
   }
 
-  const sent = await issueSignupOtp(env, config, email);
-  if (!sent) {
-    return json({ ok: false, error: "Could not resend verification code. Please try again." }, 502);
+  const otp = await issueSignupOtp(env, config, email);
+  if (!otp.ok) {
+    return json(
+      {
+        ok: false,
+        error:
+          otp.reason === "store"
+            ? "Could not prepare a verification code. Please try again."
+            : "Could not send the verification email. Please try again.",
+        reason: otp.reason,
+      },
+      502,
+    );
   }
 
-  return json({ ok: true, data: { accepted: true, codeSent: sent } });
+  return json({ ok: true, data: { accepted: true, codeSent: true } });
 }
 
 async function handleVerifyOtp(

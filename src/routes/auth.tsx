@@ -53,12 +53,49 @@ function AuthPage() {
   const [passwordError, setPasswordError] = useState("");
   const [email, setEmail] = useState(searchEmail ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notice, setNotice] = useState<{
+    tone: "info" | "success";
+    text: string;
+    action?: "signin" | "resend";
+  } | null>(null);
 
   const isSignup = mode === "signup";
+
+  const goToLogin = () => {
+    setNotice(null);
+    setPasswordError("");
+    void navigate({
+      to: "/auth",
+      search: { mode: "login", email: email.trim().toLowerCase(), role, returnTo },
+    });
+  };
+
+  const resendVerification = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setPasswordError("");
+    try {
+      const result = await authApi.resendSignupOtp({ email: email.trim().toLowerCase() });
+      if (!result.ok) {
+        setPasswordError(result.error ?? "Could not resend the code. Please try again.");
+        return;
+      }
+      setNotice({ tone: "success", text: "We sent a fresh verification code to your email." });
+      void navigate({
+        to: "/verify-otp",
+        search: { email: email.trim().toLowerCase(), role, type: "signup" },
+      });
+    } catch {
+      setPasswordError("The authentication service is unavailable. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPasswordError("");
+    setNotice(null);
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
@@ -92,9 +129,18 @@ function AuthPage() {
           result.code === "EMAIL_EXISTS" ||
           /already exists|already registered/i.test(result.error ?? "")
         ) {
-          void navigate({
-            to: "/auth",
-            search: { mode: "login", email: emailValue },
+          setNotice({
+            tone: "info",
+            text: "An account with this email already exists. Sign in to continue.",
+            action: "signin",
+          });
+          return;
+        }
+        if (/email not confirmed|verify your email/i.test(result.error ?? "")) {
+          setNotice({
+            tone: "info",
+            text: "Your email isn't verified yet. We can send you a new verification code.",
+            action: "resend",
           });
           return;
         }
@@ -559,6 +605,53 @@ function AuthPage() {
                   })}
                 </div>
               </fieldset>
+            )}
+
+            {/* Notice (info / success) */}
+
+            {notice && (
+              <div
+                role="status"
+                className={`rounded-xl border px-3.5 py-3 text-xs ${
+                  notice.tone === "success"
+                    ? "border-green-200 bg-green-50 text-green-700"
+                    : "border-[#DCE6D8] bg-[#EFF4EC] text-[#3E5A40]"
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  {notice.tone === "success" ? (
+                    <Check className="mt-0.5 size-4 shrink-0" />
+                  ) : (
+                    <Mail className="mt-0.5 size-4 shrink-0" />
+                  )}
+                  <p className="font-medium leading-5">{notice.text}</p>
+                </div>
+                {notice.action === "signin" && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={goToLogin}
+                    disabled={isSubmitting}
+                    className="mt-2 h-8 px-0 text-xs font-semibold text-[#294431] underline underline-offset-4 hover:bg-transparent"
+                  >
+                    Sign in instead
+                    <ArrowRight className="ml-1 size-3.5" />
+                  </Button>
+                )}
+                {notice.action === "resend" && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={resendVerification}
+                    disabled={isSubmitting}
+                    className="mt-2 h-8 px-0 text-xs font-semibold text-[#294431] underline underline-offset-4 hover:bg-transparent"
+                  >
+                    {isSubmitting ? "Sending…" : "Resend verification code"}
+                  </Button>
+                )}
+              </div>
             )}
 
             {/* Error */}

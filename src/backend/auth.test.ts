@@ -264,12 +264,50 @@ test("signup rolls back the account and reports an error when the code cannot be
   );
 
   assert.equal(response.status, 502);
-  const body = (await response.json()) as { ok: boolean; error: string };
-  assert.match(body.error, /couldn't send your verification code/);
+  const body = (await response.json()) as { ok: boolean; error: string; reason?: string };
+  assert.match(body.error, /couldn't prepare your verification code/);
+  assert.equal(body.reason, "store");
   // The half-created account must be deleted so the user can retry cleanly.
   assert.ok(
     calls.some((c) => c === `DELETE ${env.SUPABASE_URL}/auth/v1/admin/users/user-rollback`),
   );
+});
+
+test("signup reports a brevo reason when the code is stored but the email fails", async () => {
+  const response = await withFetchMock(
+    async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users` && method === "POST") {
+        return Response.json({ id: "user-brevo", email: "person@example.com" });
+      }
+      if (url === `${env.SUPABASE_URL}/rest/v1/signup_otps` && method === "POST") {
+        return new Response(null, { status: 201 });
+      }
+      if (url === "https://api.brevo.com/v3/smtp/email") {
+        return Response.json({ message: "sender not verified" }, { status: 400 });
+      }
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users/user-brevo` && method === "DELETE") {
+        return new Response(null, { status: 204 });
+      }
+      throw new Error(`Unexpected fetch: ${method} ${url}`);
+    },
+    () =>
+      handleAuthRequest(
+        request("/api/auth/signup", "POST", {
+          name: "Person",
+          email: "person@example.com",
+          password: "correct-horse",
+          intentRole: "customer",
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(response.status, 502);
+  const body = (await response.json()) as { ok: boolean; error: string; reason?: string };
+  assert.equal(body.reason, "brevo");
+  assert.match(body.error, /couldn't email your verification code/);
 });
 
 test("signup OTP verification checks the local code and confirms the email", async () => {
