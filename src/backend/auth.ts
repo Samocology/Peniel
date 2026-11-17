@@ -138,7 +138,7 @@ async function createSupabaseUser(
   const response = await fetch(`${config.url}/auth/v1/admin/users`, {
     method: "POST",
     headers: {
-      apikey: config.key,
+      apikey: serviceRoleKey,
       Authorization: `Bearer ${serviceRoleKey}`,
       "content-type": "application/json",
     },
@@ -156,6 +156,15 @@ async function createSupabaseUser(
   if (!response.ok) {
     await drain(response);
     const raw = String(payload["msg"] ?? payload["message"] ?? payload["error_description"] ?? "");
+    // Supabase rejects the admin call with 401/403 when the service role key is missing/invalid.
+    if (response.status === 401 || response.status === 403) {
+      return {
+        ok: false,
+        status: 502,
+        error:
+          "Signups are temporarily unavailable because the server's Supabase service role key is not configured correctly.",
+      };
+    }
     const error = supabaseErrorMessage(payload, "Could not create the account.");
     const code = /already registered|already been registered/i.test(raw)
       ? "EMAIL_EXISTS"
@@ -657,7 +666,7 @@ async function handleVerifyOtp(
       `${config.url}/auth/v1/admin/users?email=eq.${encodeURIComponent(email)}`,
       {
         headers: {
-          apikey: config.key,
+          apikey: serviceRoleKey,
           Authorization: `Bearer ${serviceRoleKey}`,
         },
       },
@@ -677,7 +686,7 @@ async function handleVerifyOtp(
     const confirmResponse = await fetch(`${config.url}/auth/v1/admin/users/${user.id}`, {
       method: "PUT",
       headers: {
-        apikey: config.key,
+        apikey: serviceRoleKey,
         Authorization: `Bearer ${serviceRoleKey}`,
         "content-type": "application/json",
       },

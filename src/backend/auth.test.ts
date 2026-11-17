@@ -199,6 +199,36 @@ test("signup with an existing email returns EMAIL_EXISTS instead of a 502", asyn
   assert.equal(body.code, "EMAIL_EXISTS");
 });
 
+test("signup reports a clear error when Supabase rejects the service role key", async () => {
+  const response = await withFetchMock(
+    async (input, init) => {
+      const url = String(input);
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users`) {
+        // The admin call must authenticate with the service role key as both apikey and bearer.
+        const headers = new Headers(init?.headers);
+        assert.equal(headers.get("apikey"), env.SUPABASE_SERVICE_ROLE_KEY);
+        assert.equal(headers.get("authorization"), `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`);
+        return Response.json({ message: "Invalid API key" }, { status: 403 });
+      }
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    },
+    () =>
+      handleAuthRequest(
+        request("/api/auth/signup", "POST", {
+          name: "Person",
+          email: "person@example.com",
+          password: "correct-horse",
+          intentRole: "customer",
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(response.status, 502);
+  const body = (await response.json()) as { ok: boolean; error: string };
+  assert.match(body.error, /service role key is not configured correctly/);
+});
+
 test("signup OTP verification checks the local code and confirms the email", async () => {
   const calls: string[] = [];
   const response = await withFetchMock(
