@@ -923,7 +923,40 @@ async function handleVerifyOtp(
   }
 
   if (type === "signup") {
-    // Mark the signup OTP as used, then confirm the user's email via the admin API.
+    let user: { id: string } | undefined;
+    try {
+      // Resolve the account before consuming the one-time code. A failed lookup or
+      // email-confirm request must not invalidate an otherwise correct OTP.
+      const usersResponse = await fetch(
+        `${config.url}/auth/v1/admin/users?email=eq.${encodeURIComponent(email)}`,
+        {
+          headers: {
+            apikey: serviceRoleKey,
+            Authorization: `Bearer ${serviceRoleKey}`,
+          },
+        },
+      );
+      if (!usersResponse.ok) {
+        const detail = await usersResponse.text().catch(() => "");
+        console.error(
+          `verify signup account lookup failed for ${email}: ${usersResponse.status} ${detail.slice(0, 300)}`,
+        );
+        await drain(usersResponse);
+        return json({ ok: false, error: "Could not look up account. Try again later." }, 502);
+      }
+      const users = (await usersResponse.json()) as Array<{ id: string }>;
+      await drain(usersResponse);
+      user = users[0];
+    } catch (error) {
+      console.error(`verify signup account lookup failed for ${email}`, error);
+      return json({ ok: false, error: "Could not look up account. Try again later." }, 502);
+    }
+
+    if (!user) {
+      return json({ ok: false, error: "No account found for this email." }, 400);
+    }
+
+    // Mark the signup OTP as used only after the account is known to exist.
     const markResponse = await fetch(`${config.url}/rest/v1/${table}?id=eq.${otp.id}`, {
       method: "PATCH",
       headers: {
@@ -939,27 +972,6 @@ async function handleVerifyOtp(
     }
     await drain(markResponse);
 
-    const usersResponse = await fetch(
-      `${config.url}/auth/v1/admin/users?email=eq.${encodeURIComponent(email)}`,
-      {
-        headers: {
-          apikey: serviceRoleKey,
-          Authorization: `Bearer ${serviceRoleKey}`,
-        },
-      },
-    );
-    if (!usersResponse.ok) {
-      await drain(usersResponse);
-      return json({ ok: false, error: "Could not look up account. Try again later." }, 502);
-    }
-    const users = (await usersResponse.json()) as Array<{ id: string }>;
-    await drain(usersResponse);
-
-    const user = users[0];
-    if (!user) {
-      return json({ ok: false, error: "No account found for this email." }, 400);
-    }
-
     const confirmResponse = await fetch(`${config.url}/auth/v1/admin/users/${user.id}`, {
       method: "PUT",
       headers: {
@@ -970,6 +982,10 @@ async function handleVerifyOtp(
       body: JSON.stringify({ email_confirm: true }),
     });
     if (!confirmResponse.ok) {
+      const detail = await confirmResponse.text().catch(() => "");
+      console.error(
+        `verify signup email confirmation failed for ${email}: ${confirmResponse.status} ${detail.slice(0, 300)}`,
+      );
       await drain(confirmResponse);
       return json({ ok: false, error: "Could not verify the email. Try again later." }, 502);
     }
