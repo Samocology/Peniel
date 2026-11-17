@@ -229,6 +229,49 @@ test("signup reports a clear error when Supabase rejects the service role key", 
   assert.match(body.error, /service role key is not configured correctly/);
 });
 
+test("signup rolls back the account and reports an error when the code cannot be sent", async () => {
+  const calls: string[] = [];
+  const response = await withFetchMock(
+    async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      calls.push(`${method} ${url}`);
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users` && method === "POST") {
+        return Response.json({ id: "user-rollback", email: "person@example.com" });
+      }
+      if (url === `${env.SUPABASE_URL}/rest/v1/signup_otps` && method === "POST") {
+        // Simulate the signup_otps table missing (migration not applied).
+        return Response.json(
+          { message: 'relation "public.signup_otps" does not exist' },
+          { status: 404 },
+        );
+      }
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users/user-rollback` && method === "DELETE") {
+        return new Response(null, { status: 204 });
+      }
+      throw new Error(`Unexpected fetch: ${method} ${url}`);
+    },
+    () =>
+      handleAuthRequest(
+        request("/api/auth/signup", "POST", {
+          name: "Person",
+          email: "person@example.com",
+          password: "correct-horse",
+          intentRole: "customer",
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(response.status, 502);
+  const body = (await response.json()) as { ok: boolean; error: string };
+  assert.match(body.error, /couldn't send your verification code/);
+  // The half-created account must be deleted so the user can retry cleanly.
+  assert.ok(
+    calls.some((c) => c === `DELETE ${env.SUPABASE_URL}/auth/v1/admin/users/user-rollback`),
+  );
+});
+
 test("signup OTP verification checks the local code and confirms the email", async () => {
   const calls: string[] = [];
   const response = await withFetchMock(

@@ -55,7 +55,12 @@ async function sendBrevoEmail(
   subject: string,
   htmlContent: string,
 ): Promise<boolean> {
-  if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) return false;
+  if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
+    console.error(
+      "Brevo email skipped: missing BREVO_API_KEY or BREVO_SENDER_EMAIL secret on the worker.",
+    );
+    return false;
+  }
   try {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
@@ -70,8 +75,16 @@ async function sendBrevoEmail(
         htmlContent,
       }),
     });
-    return response.ok;
-  } catch {
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error(
+        `Brevo rejected email to ${toEmail}: ${response.status} ${detail.slice(0, 300)}`,
+      );
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error(`Brevo email request to ${toEmail} failed`, error);
     return false;
   }
 }
@@ -84,7 +97,10 @@ async function storeOtp(
   code: string,
 ): Promise<boolean> {
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) return false;
+  if (!serviceRoleKey) {
+    console.error("storeOtp skipped: missing SUPABASE_SERVICE_ROLE_KEY secret on the worker.");
+    return false;
+  }
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
   const response = await fetch(`${config.url}/rest/v1/${table}`, {
     method: "POST",
@@ -97,10 +113,14 @@ async function storeOtp(
     body: JSON.stringify({ email, code_hash: code, expires_at: expiresAt }),
   });
   if (!response.ok) {
-    await response.body?.cancel();
+    const detail = await response.text().catch(() => "");
+    console.error(
+      `storeOtp insert into ${table} failed: ${response.status} ${detail.slice(0, 300)}`,
+    );
+    await drain(response);
     return false;
   }
-  await response.body?.cancel();
+  await drain(response);
   return true;
 }
 
@@ -188,6 +208,27 @@ async function createSupabaseUser(
     return { ok: false, status: 502, error: "Authentication response was incomplete." };
   }
   return { ok: true, user };
+}
+
+async function deleteSupabaseUser(
+  env: BackendEnv,
+  config: { url: string; key: string },
+  userId: string,
+): Promise<void> {
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return;
+  try {
+    const response = await fetch(`${config.url}/auth/v1/admin/users/${userId}`, {
+      method: "DELETE",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    });
+    await drain(response);
+  } catch (error) {
+    console.error("Failed to roll back Supabase user after signup failure", error);
+  }
 }
 
 function authConfig(env: BackendEnv) {
@@ -344,6 +385,18 @@ async function handleSignup(
   }
 
   const codeSent = await issueSignupOtp(env, config, email);
+  if (!codeSent) {
+    // Roll back the half-created account so the customer can retry cleanly instead of
+    // being stuck on a verify screen with no code. The real reason is in wrangler tail.
+    await deleteSupabaseUser(env, config, created.user.id);
+    return json(
+      {
+        ok: false,
+        error: "We couldn't send your verification code right now. Please try again in a moment.",
+      },
+      502,
+    );
+  }
 
   return json(
     {
