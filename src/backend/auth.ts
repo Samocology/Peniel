@@ -350,6 +350,125 @@ async function createSupabaseUser(
   return { ok: true, user };
 }
 
+async function findSupabaseUserByEmail(
+  env: BackendEnv,
+  config: { url: string; key: string },
+  email: string,
+): Promise<{ ok: true; user?: SupabaseUser } | { ok: false; status: number }> {
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!serviceRoleKey) {
+    return { ok: false, status: 503 };
+  }
+
+  const authHeaders = {
+    apikey: serviceRoleKey,
+    Authorization: `Bearer ${serviceRoleKey}`,
+  };
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Try the targeted lookup first. Some Supabase Auth versions may
+  // return an empty result even when the account exists.
+  try {
+    const direct = await fetch(
+      `${config.url}/auth/v1/admin/users?email=${encodeURIComponent(normalizedEmail)}`,
+      { headers: authHeaders },
+    );
+
+    if (direct.ok) {
+      let payload: { users?: SupabaseUser[] } | SupabaseUser[];
+
+      try {
+        payload = (await direct.json()) as { users?: SupabaseUser[] } | SupabaseUser[];
+      } catch {
+        payload = [];
+      }
+
+      await drain(direct);
+
+      const directUsers = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload.users)
+          ? payload.users
+          : [];
+
+      const directUser = directUsers.find(
+        (candidate) =>
+          typeof candidate.email === "string" &&
+          candidate.email.trim().toLowerCase() === normalizedEmail,
+      );
+
+      if (directUser) {
+        return { ok: true, user: directUser };
+      }
+    } else {
+      await drain(direct);
+    }
+  } catch (error) {
+    console.error("Supabase targeted user lookup failed:", error);
+  }
+
+  // Fallback: paginate through the Admin API.
+  for (let page = 1; page <= 100; page += 1) {
+    let response: Response;
+
+    try {
+      response = await fetch(`${config.url}/auth/v1/admin/users?page=${page}&per_page=200`, {
+        headers: authHeaders,
+      });
+    } catch (error) {
+      console.error("Supabase paginated user lookup failed:", error);
+      return { ok: false, status: 502 };
+    }
+
+    if (!response.ok) {
+      const status = response.status;
+      const detail = await response.text().catch(() => "");
+
+      console.error(`Supabase Admin user lookup failed: ${status} ${detail.slice(0, 300)}`);
+      await drain(response);
+      return { ok: false, status };
+    }
+
+    let payload: { users?: SupabaseUser[] } | SupabaseUser[];
+
+    try {
+      payload = (await response.json()) as { users?: SupabaseUser[] } | SupabaseUser[];
+    } catch {
+      await drain(response);
+      return { ok: false, status: 502 };
+    }
+
+    await drain(response);
+
+    const users = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload.users)
+        ? payload.users
+        : [];
+
+    const user = users.find(
+      (candidate) =>
+        typeof candidate.email === "string" &&
+        candidate.email.trim().toLowerCase() === normalizedEmail,
+    );
+
+    if (user) {
+      console.log(`Supabase account found for ${normalizedEmail}`);
+      return { ok: true, user };
+    }
+
+    if (users.length < 200) {
+      console.log(`No Supabase account found for ${normalizedEmail}`);
+      return { ok: true };
+    }
+  }
+
+  console.error("Supabase user lookup exceeded the pagination limit.");
+  return { ok: false, status: 502 };
+}
+
 async function deleteSupabaseUser(
   env: BackendEnv,
   config: { url: string; key: string },
@@ -923,30 +1042,16 @@ async function handleVerifyOtp(
   }
 
   if (type === "signup") {
-    let user: { id: string } | undefined;
+    let user: SupabaseUser | undefined;
     try {
       // Resolve the account before consuming the one-time code. A failed lookup or
       // email-confirm request must not invalidate an otherwise correct OTP.
-      const usersResponse = await fetch(
-        `${config.url}/auth/v1/admin/users?email=eq.${encodeURIComponent(email)}`,
-        {
-          headers: {
-            apikey: serviceRoleKey,
-            Authorization: `Bearer ${serviceRoleKey}`,
-          },
-        },
-      );
-      if (!usersResponse.ok) {
-        const detail = await usersResponse.text().catch(() => "");
-        console.error(
-          `verify signup account lookup failed for ${email}: ${usersResponse.status} ${detail.slice(0, 300)}`,
-        );
-        await drain(usersResponse);
+      const lookup = await findSupabaseUserByEmail(env, config, email);
+      if (!lookup.ok) {
+        console.error(`verify signup account lookup failed for ${email}: ${lookup.status}`);
         return json({ ok: false, error: "Could not look up account. Try again later." }, 502);
       }
-      const users = (await usersResponse.json()) as Array<{ id: string }>;
-      await drain(usersResponse);
-      user = users[0];
+      user = lookup.user;
     } catch (error) {
       console.error(`verify signup account lookup failed for ${email}`, error);
       return json({ ok: false, error: "Could not look up account. Try again later." }, 502);
@@ -956,22 +1061,8 @@ async function handleVerifyOtp(
       return json({ ok: false, error: "No account found for this email." }, 400);
     }
 
-    // Mark the signup OTP as used only after the account is known to exist.
-    const markResponse = await fetch(`${config.url}/rest/v1/${table}?id=eq.${otp.id}`, {
-      method: "PATCH",
-      headers: {
-        ...restAuthHeaders(env, config),
-        "content-type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({ used: true }),
-    });
-    if (!markResponse.ok) {
-      await drain(markResponse);
-      return json({ ok: false, error: "Could not mark code as used. Try again later." }, 502);
-    }
-    await drain(markResponse);
-
+    // Confirm the Supabase user's email BEFORE consuming the OTP.
+    // If confirmation fails, the customer can retry with the same valid code.
     const confirmResponse = await fetch(`${config.url}/auth/v1/admin/users/${user.id}`, {
       method: "PUT",
       headers: {
@@ -991,7 +1082,43 @@ async function handleVerifyOtp(
     }
     await drain(confirmResponse);
 
-    return json({ ok: true, data: { email, type: "signup" } });
+    // Only consume the OTP after Supabase confirms the email successfully.
+    const markResponse = await fetch(
+      `${config.url}/rest/v1/${table}?id=eq.${encodeURIComponent(otp.id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          ...restAuthHeaders(env, config),
+          "content-type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ used: true }),
+      },
+    );
+    if (!markResponse.ok) {
+      const detail = await markResponse.text().catch(() => "");
+      console.error(
+        `Could not mark signup OTP as used for ${email}: ${markResponse.status} ${detail.slice(0, 300)}`,
+      );
+      await drain(markResponse);
+      return json(
+        {
+          ok: false,
+          error:
+            "Email verified, but we could not finish processing the code. Please try again.",
+        },
+        502,
+      );
+    }
+    await drain(markResponse);
+
+    return json({
+      ok: true,
+      data: {
+        email,
+        type: "signup",
+      },
+    });
   }
 
   const markResponse = await fetch(`${config.url}/rest/v1/password_reset_otps?id=eq.${otp.id}`, {

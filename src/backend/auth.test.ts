@@ -320,12 +320,6 @@ test("signup OTP verification checks the local code and confirms the email", asy
     async (input, init) => {
       const url = String(input);
       calls.push(`${init?.method ?? "GET"} ${url}`);
-      if (
-        url ===
-        `${env.SUPABASE_URL}/rest/v1/signup_otps?email=eq.person%40example.com&used=eq.false&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&order=created_at.desc&limit=1`
-      ) {
-        // Note: expires_at is dynamic, so match by prefix instead below.
-      }
       if (url.startsWith(`${env.SUPABASE_URL}/rest/v1/signup_otps?`)) {
         if ((init?.method ?? "GET") === "GET") {
           const future = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -335,8 +329,11 @@ test("signup OTP verification checks the local code and confirms the email", asy
         }
         return new Response(null, { status: 204 });
       }
-      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users?email=eq.person%40example.com`) {
-        return Response.json([{ id: "user-5" }]);
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users?email=person%40example.com`) {
+        return Response.json([]);
+      }
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=200`) {
+        return Response.json({ users: [{ id: "user-5", email: "person@example.com" }] });
       }
       if (url === `${env.SUPABASE_URL}/auth/v1/admin/users/user-5`) {
         const body = JSON.parse(String(init?.body)) as { email_confirm?: boolean };
@@ -356,7 +353,7 @@ test("signup OTP verification checks the local code and confirms the email", asy
       ),
   );
 
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 200, await response.clone().text());
   assert.deepEqual(await response.json(), {
     ok: true,
     data: { email: "person@example.com", type: "signup" },
