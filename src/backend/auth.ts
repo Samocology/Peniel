@@ -107,18 +107,17 @@ async function storeOtp(
   table: "signup_otps" | "password_reset_otps",
   email: string,
   code: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; status?: number }> {
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
     console.error("storeOtp skipped: missing SUPABASE_SERVICE_ROLE_KEY secret on the worker.");
-    return false;
+    return { ok: false };
   }
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
   const response = await fetch(`${config.url}/rest/v1/${table}`, {
     method: "POST",
     headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${serviceRoleKey}`,
+      ...restAuthHeaders(env, config),
       "content-type": "application/json",
       Prefer: "resolution=merge-duplicates",
     },
@@ -126,17 +125,21 @@ async function storeOtp(
   });
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
+    const jwtHint =
+      response.status === 401 && /JWT/i.test(detail)
+        ? " — the SUPABASE_SERVICE_ROLE_KEY is a new sb_secret_ key; this code now sends it as the apikey, so this should not recur."
+        : "";
     console.error(
-      `storeOtp insert into ${table} failed: ${response.status} ${detail.slice(0, 300)}`,
+      `storeOtp insert into ${table} failed: ${response.status} ${detail.slice(0, 300)}${jwtHint}`,
     );
     await drain(response);
-    return false;
+    return { ok: false, status: response.status };
   }
   await drain(response);
-  return true;
+  return { ok: true };
 }
 
-type OtpIssueResult = { ok: true } | { ok: false; reason: "store" | "brevo" };
+type OtpIssueResult = { ok: true } | { ok: false; reason: "store" | "brevo"; status?: number };
 
 async function issueSignupOtp(
   env: BackendEnv,
@@ -145,11 +148,11 @@ async function issueSignupOtp(
 ): Promise<OtpIssueResult> {
   const code = generateOtpCode();
   const stored = await storeOtp(env, config, "signup_otps", email, code);
-  if (!stored) {
+  if (!stored.ok) {
     console.error(
       "Signup OTP not sent: could not store the code. Likely the signup_otps table is missing — apply supabase/migrations/20261117000000_peniel_signup_otps.sql.",
     );
-    return { ok: false, reason: "store" };
+    return { ok: false, reason: "store", ...(stored.status ? { status: stored.status } : {}) };
   }
   const sent = await sendBrevoEmail(
     env,
@@ -262,6 +265,32 @@ function authConfig(env: BackendEnv) {
   const key = env.SUPABASE_ANON_KEY;
   if (!url || !key) return null;
   return { url, key };
+}
+
+/**
+ * PostgREST (the /rest/v1 REST API) determines the caller's role from a JWT in the
+ * Authorization header. Supabase now offers two key formats:
+ *  - Legacy JWT keys (eyJ...) — three dot-separated parts. Use anon as apikey and the
+ *    service_role JWT as the Bearer token.
+ *  - New secret keys (sb_secret_...) — NOT a JWT. PostgREST accepts these via the
+ *    `apikey` header directly and treats them as service_role.
+ * Sending a non-JWT sb_secret_ key as `Bearer` triggers 401 PGRST301
+ * ("Expected 3 parts in JWT; got 1"), which is exactly what this helper avoids.
+ */
+function isJwt(token: string | undefined): boolean {
+  return typeof token === "string" && token.split(".").length === 3;
+}
+
+function restAuthHeaders(env: BackendEnv, config: { key: string }): Record<string, string> {
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (serviceRoleKey && !isJwt(serviceRoleKey)) {
+    // New sb_secret_ format: pass it as the apikey, no Authorization Bearer.
+    return { apikey: serviceRoleKey };
+  }
+  return {
+    apikey: config.key,
+    ...(serviceRoleKey ? { Authorization: `Bearer ${serviceRoleKey}` } : {}),
+  };
 }
 
 function parseCookies(request: Request): Map<string, string> {
@@ -422,6 +451,7 @@ async function handleSignup(
             ? "We couldn't prepare your verification code. Please try again shortly."
             : "We couldn't email your verification code right now. Please try again shortly.",
         reason: otp.reason,
+        ...(otp.status ? { detail: `store status ${otp.status}` } : {}),
       },
       502,
     );
@@ -627,8 +657,7 @@ async function handleForgotPassword(
   const insertResponse = await fetch(`${config.url}/rest/v1/password_reset_otps`, {
     method: "POST",
     headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${serviceRoleKey}`,
+      ...restAuthHeaders(env, config),
       "content-type": "application/json",
       Prefer: "resolution=merge-duplicates",
     },
@@ -719,8 +748,7 @@ async function handleVerifyOtp(
     `${config.url}/rest/v1/${table}?email=eq.${encodeURIComponent(email)}&used=eq.false&expires_at=gt.${encodeURIComponent(now)}&order=created_at.desc&limit=1`,
     {
       headers: {
-        apikey: config.key,
-        Authorization: `Bearer ${serviceRoleKey}`,
+        ...restAuthHeaders(env, config),
       },
     },
   );
@@ -741,8 +769,7 @@ async function handleVerifyOtp(
     const markResponse = await fetch(`${config.url}/rest/v1/${table}?id=eq.${otp.id}`, {
       method: "PATCH",
       headers: {
-        apikey: config.key,
-        Authorization: `Bearer ${serviceRoleKey}`,
+        ...restAuthHeaders(env, config),
         "content-type": "application/json",
         Prefer: "return=minimal",
       },
@@ -796,8 +823,7 @@ async function handleVerifyOtp(
   const markResponse = await fetch(`${config.url}/rest/v1/password_reset_otps?id=eq.${otp.id}`, {
     method: "PATCH",
     headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${serviceRoleKey}`,
+      ...restAuthHeaders(env, config),
       "content-type": "application/json",
       Prefer: "return=minimal",
     },
@@ -814,8 +840,7 @@ async function handleVerifyOtp(
     `${config.url}/rest/v1/password_reset_otps?id=eq.${otp.id}&select=reset_token`,
     {
       headers: {
-        apikey: config.key,
-        Authorization: `Bearer ${serviceRoleKey}`,
+        ...restAuthHeaders(env, config),
       },
     },
   );
@@ -855,8 +880,7 @@ async function handleResetPassword(
     `${config.url}/rest/v1/password_reset_otps?reset_token=eq.${encodeURIComponent(resetToken)}&used=eq.true&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`,
     {
       headers: {
-        apikey: config.key,
-        Authorization: `Bearer ${serviceRoleKey}`,
+        ...restAuthHeaders(env, config),
       },
     },
   );
@@ -877,7 +901,7 @@ async function handleResetPassword(
     `${config.url}/auth/v1/admin/users?email=eq.${encodeURIComponent(session.email)}`,
     {
       headers: {
-        apikey: config.key,
+        apikey: serviceRoleKey,
         Authorization: `Bearer ${serviceRoleKey}`,
       },
     },
@@ -898,7 +922,7 @@ async function handleResetPassword(
   const updateResponse = await fetch(`${config.url}/auth/v1/admin/users/${user.id}`, {
     method: "PUT",
     headers: {
-      apikey: config.key,
+      apikey: serviceRoleKey,
       Authorization: `Bearer ${serviceRoleKey}`,
       "content-type": "application/json",
     },
@@ -916,8 +940,7 @@ async function handleResetPassword(
     {
       method: "DELETE",
       headers: {
-        apikey: config.key,
-        Authorization: `Bearer ${serviceRoleKey}`,
+        ...restAuthHeaders(env, config),
       },
     },
   );
