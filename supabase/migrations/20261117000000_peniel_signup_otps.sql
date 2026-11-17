@@ -33,3 +33,13 @@ create policy "service role manages signup otps"
   for all
   to service_role
   using (true);
+
+-- Table-level privileges. RLS alone is not enough: the service_role also needs
+-- GRANTs to run SELECT/INSERT/UPDATE/DELETE, otherwise PostgREST returns
+-- 403 42501 "permission denied for table signup_otps".
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.signup_otps to service_role;
+
+-- Ensure the pre-existing password_reset_otps table has the same grants (harmless
+-- if already granted).
+grant select, insert, update, delete on public.password_reset_otps to service_role;

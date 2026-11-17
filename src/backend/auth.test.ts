@@ -130,8 +130,10 @@ test("signup role input is stored only as non-privileged intent metadata", async
       if (url.startsWith("https://api.brevo.com")) {
         return new Response(null, { status: 204 });
       }
-      if (url === `${env.SUPABASE_URL}/rest/v1/signup_otps`) {
-        return new Response(null, { status: 201 });
+      if (url.startsWith(`${env.SUPABASE_URL}/rest/v1/signup_otps`)) {
+        return new Response(null, {
+          status: (init?.method ?? "GET") === "DELETE" ? 204 : 201,
+        });
       }
       throw new Error(`Unexpected fetch: ${url}`);
     },
@@ -239,7 +241,8 @@ test("signup rolls back the account and reports an error when the code cannot be
       if (url === `${env.SUPABASE_URL}/auth/v1/admin/users` && method === "POST") {
         return Response.json({ id: "user-rollback", email: "person@example.com" });
       }
-      if (url === `${env.SUPABASE_URL}/rest/v1/signup_otps` && method === "POST") {
+      if (url.startsWith(`${env.SUPABASE_URL}/rest/v1/signup_otps`)) {
+        if (method === "DELETE") return new Response(null, { status: 204 });
         // Simulate the signup_otps table missing (migration not applied).
         return Response.json(
           { message: 'relation "public.signup_otps" does not exist' },
@@ -281,7 +284,8 @@ test("signup reports a brevo reason when the code is stored but the email fails"
       if (url === `${env.SUPABASE_URL}/auth/v1/admin/users` && method === "POST") {
         return Response.json({ id: "user-brevo", email: "person@example.com" });
       }
-      if (url === `${env.SUPABASE_URL}/rest/v1/signup_otps` && method === "POST") {
+      if (url.startsWith(`${env.SUPABASE_URL}/rest/v1/signup_otps`)) {
+        if (method === "DELETE") return new Response(null, { status: 204 });
         return new Response(null, { status: 201 });
       }
       if (url === "https://api.brevo.com/v3/smtp/email") {
@@ -368,7 +372,9 @@ test("signup OTP resend issues a fresh code and sends it through Brevo", async (
   const response = await withFetchMock(
     async (input, init) => {
       const url = String(input);
-      if (url === `${env.SUPABASE_URL}/rest/v1/signup_otps`) {
+      const method = init?.method ?? "GET";
+      if (url.startsWith(`${env.SUPABASE_URL}/rest/v1/signup_otps`)) {
+        if (method === "DELETE") return new Response(null, { status: 204 });
         storedOtp = JSON.parse(String(init?.body)) as Record<string, unknown>;
         return new Response(null, { status: 201 });
       }

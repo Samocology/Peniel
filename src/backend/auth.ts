@@ -114,6 +114,17 @@ async function storeOtp(
     return { ok: false };
   }
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+  // Invalidate any older unused codes for this email so only the newest code is valid.
+  const cleanup = await fetch(
+    `${config.url}/rest/v1/${table}?email=eq.${encodeURIComponent(email)}&used=eq.false`,
+    {
+      method: "DELETE",
+      headers: {
+        ...restAuthHeaders(env, config),
+      },
+    },
+  );
+  await drain(cleanup);
   const response = await fetch(`${config.url}/rest/v1/${table}`, {
     method: "POST",
     headers: {
@@ -141,6 +152,101 @@ async function storeOtp(
 
 type OtpIssueResult = { ok: true } | { ok: false; reason: "store" | "brevo"; status?: number };
 
+/**
+ * Renders a branded, responsive HTML email for one-time passcodes. Uses table-based
+ * layout and inline styles so it renders consistently across email clients (Gmail,
+ * Outlook, Apple Mail, mobile). No external assets — everything is inline so there is
+ * nothing to block or load.
+ */
+function renderOtpEmail(opts: {
+  title: string;
+  intro: string;
+  code: string;
+  footnote: string;
+}): string {
+  const { title, intro, code, footnote } = opts;
+  const year = new Date().getUTCFullYear();
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>${title}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#EEF1EC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#EEF1EC;">
+    <tr>
+      <td align="center" style="padding:28px 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:460px;background-color:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 2px 10px rgba(23,41,31,0.06);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#17291F;padding:26px 30px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <span style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;border-radius:9px;background-color:#294331;color:#ffffff;font-weight:700;font-size:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">P</span>
+                  </td>
+                  <td style="vertical-align:middle;padding-left:11px;">
+                    <span style="color:#ffffff;font-weight:600;font-size:17px;letter-spacing:-0.2px;">Peniel</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Accent bar -->
+          <tr>
+            <td style="height:3px;line-height:3px;font-size:0;background-color:#A7B99E;">&nbsp;</td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:30px;">
+              <h1 style="margin:0 0 10px;color:#17291F;font-size:21px;font-weight:700;letter-spacing:-0.3px;line-height:28px;">${title}</h1>
+              <p style="margin:0 0 22px;color:#5A655C;font-size:14px;line-height:22px;">${intro}</p>
+
+              <!-- Code box -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#F3F6F0;border:1px solid #E2E7DF;border-radius:12px;padding:20px;text-align:center;">
+                    <p style="margin:0 0 8px;color:#7A857C;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Your code</p>
+                    <p style="margin:0;color:#17291F;font-size:34px;font-weight:800;letter-spacing:8px;font-family:'SF Mono',Menlo,Consolas,'Liberation Mono',monospace;">${code}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:20px 0 0;color:#8A938B;font-size:12px;line-height:18px;">
+                This code expires in <strong style="color:#5A655C;">${OTP_EXPIRY_MINUTES} minutes</strong>.
+                ${footnote}
+              </p>
+
+              <p style="margin:24px 0 0;color:#5A655C;font-size:14px;line-height:22px;">
+                Thanks,<br>
+                <strong style="color:#17291F;">The Peniel team</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:18px 30px;background-color:#FAFBF9;border-top:1px solid #EEF1EC;">
+              <p style="margin:0;color:#9AA29B;font-size:11px;line-height:16px;">
+                Peniel &middot; Your neighbourhood marketplace.<br>
+                &copy; ${year} Peniel. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 async function issueSignupOtp(
   env: BackendEnv,
   config: { url: string; key: string },
@@ -158,8 +264,13 @@ async function issueSignupOtp(
     env,
     email,
     "Your Peniel verification code",
-    `<p>Your Peniel verification code is <strong>${code}</strong>.</p>
-     <p>It expires in ${OTP_EXPIRY_MINUTES} minutes. If you did not create an account, you can ignore this email.</p>`,
+    renderOtpEmail({
+      title: "Verify your email",
+      intro:
+        "Welcome to Peniel. Enter the code below to confirm your email and activate your account.",
+      code,
+      footnote: "If you didn't create a Peniel account, you can safely ignore this email.",
+    }),
   );
   if (!sent.ok) {
     console.error(
@@ -673,8 +784,14 @@ async function handleForgotPassword(
     env,
     email,
     "Your Peniel password reset code",
-    `<p>Your password reset code is <strong>${code}</strong>.</p>
-     <p>It expires in ${OTP_EXPIRY_MINUTES} minutes. If you did not request this, you can ignore this email.</p>`,
+    renderOtpEmail({
+      title: "Reset your password",
+      intro:
+        "We received a request to reset your Peniel password. Enter the code below to choose a new one.",
+      code,
+      footnote:
+        "If you didn't request a password reset, you can safely ignore this email — your password won't change.",
+    }),
   );
 
   return json({
@@ -744,8 +861,11 @@ async function handleVerifyOtp(
   const table = type === "signup" ? "signup_otps" : "password_reset_otps";
 
   const now = new Date().toISOString();
+  // Fetch ALL unused, unexpired codes for this email (not just the newest). Earlier
+  // retries can leave several rows behind; the customer may be holding a code from any
+  // of them, so we accept a match against any valid row.
   const selectResponse = await fetch(
-    `${config.url}/rest/v1/${table}?email=eq.${encodeURIComponent(email)}&used=eq.false&expires_at=gt.${encodeURIComponent(now)}&order=created_at.desc&limit=1`,
+    `${config.url}/rest/v1/${table}?email=eq.${encodeURIComponent(email)}&used=eq.false&expires_at=gt.${encodeURIComponent(now)}&order=created_at.desc`,
     {
       headers: {
         ...restAuthHeaders(env, config),
@@ -753,7 +873,11 @@ async function handleVerifyOtp(
     },
   );
   if (!selectResponse.ok) {
-    await selectResponse.body?.cancel();
+    const detail = await selectResponse.text().catch(() => "");
+    console.error(
+      `verify select from ${table} failed: ${selectResponse.status} ${detail.slice(0, 300)}`,
+    );
+    await drain(selectResponse);
     return json({ ok: false, error: "Could not verify the code. Try again later." }, 502);
   }
   const otps = (await selectResponse.json()) as Array<{ id: string; code_hash: string }>;
@@ -761,6 +885,9 @@ async function handleVerifyOtp(
 
   const otp = otps.find((o) => o.code_hash === code);
   if (!otp) {
+    console.error(
+      `verify ${type} failed for ${email}: ${otps.length} valid code(s) on file, none matched the submitted code.`,
+    );
     return json({ ok: false, error: "Invalid or expired code." }, 400);
   }
 
