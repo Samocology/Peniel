@@ -135,7 +135,7 @@ function RootComponent() {
   const state = useApp();
   const navigate = useNavigate();
   const [sessionValidated, setSessionValidated] = useState(false);
-  const [authenticated, setAuthenticated] = useState(!!state.user);
+  const authenticated = !!state.user;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -160,10 +160,9 @@ function RootComponent() {
       .then((result) => {
         if (!active) return;
         const authed = result.ok && result.data.authenticated === true;
-        setAuthenticated(authed);
         setSessionValidated(true);
         if (authed && result.data.user) {
-          app.signIn(result.data.user.name, result.data.user.email, state.user?.role ?? "customer");
+          app.signIn(result.data.user.name, result.data.user.email, result.data.user.role ?? "customer");
         } else if (!authed && state.user) {
           void app.signOut().catch(() => {});
         }
@@ -199,14 +198,8 @@ function RootComponent() {
     }
     // Don't auto-redirect from auth pages - let the auth form handle navigation
     // to respect returnTo and role-based destinations (e.g., /vendor/onboarding)
-    if (isAuth && authenticated && pathname === "/auth") {
-      return;
-    }
-    if (isAuth && authenticated && pathname === "/admin/login") {
-      return;
-    }
     if (isAuth && authenticated) {
-      void navigate({ to: "/" });
+      return;
     }
   }, [isProtected, isAuth, authenticated, sessionValidated, navigate, pathname]);
 
