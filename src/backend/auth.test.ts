@@ -72,6 +72,65 @@ test("login proxies credentials and keeps Supabase tokens in HttpOnly cookies", 
   assert.match(cookies, /SameSite=Lax/);
 });
 
+test("login reports the Supabase error code and detail when credentials are rejected", async () => {
+  const response = await withFetchMock(
+    async () =>
+      Response.json(
+        {
+          error_code: "invalid_credentials",
+          message: "Invalid login credentials",
+        },
+        { status: 400 },
+      ),
+    () =>
+      handleAuthRequest(
+        request("/api/auth/login", "POST", {
+          email: "customer@example.com",
+          password: "wrong-password",
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: "Email or password is incorrect.",
+    supabaseCode: "invalid_credentials",
+  });
+});
+
+test("login reports a Supabase configuration error clearly", async () => {
+  const response = await withFetchMock(
+    async () =>
+      Response.json(
+        {
+          error_code: "invalid_api_key",
+          message: "Invalid API key",
+        },
+        { status: 401 },
+      ),
+    () =>
+      handleAuthRequest(
+        request("/api/auth/login", "POST", {
+          email: "customer@example.com",
+          password: "correct-horse",
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(response.status, 401);
+  const body = (await response.json()) as {
+    ok: boolean;
+    error: string;
+    supabaseCode?: string;
+  };
+  assert.equal(body.ok, false);
+  assert.match(body.error, /Authentication is not configured correctly/);
+  assert.equal(body.supabaseCode, "invalid_api_key");
+});
+
 test("cross-origin authentication mutations are rejected before contacting Supabase", async () => {
   let upstreamCalled = false;
   const response = await withFetchMock(
@@ -164,7 +223,7 @@ test("signup role input is stored only as non-privileged intent metadata", async
       authenticated: false,
       needsOtp: true,
       codeSent: true,
-      user: { id: "user-3", email: "person@example.com", name: "" },
+      user: { id: "user-3", email: "person@example.com", name: "", role: "customer" },
     },
   });
   assert.equal(response.headers.has("set-cookie"), false);
@@ -411,7 +470,11 @@ test("session endpoint validates the cookie with Supabase rather than trusting i
     async (input, init) => {
       assert.equal(String(input), `${env.SUPABASE_URL}/auth/v1/user`);
       assert.equal(new Headers(init?.headers).get("authorization"), "Bearer opaque-cookie-value");
-      return Response.json({ id: "user-2", email: "person@example.com" });
+      return Response.json({
+        id: "user-2",
+        email: "person@example.com",
+        user_metadata: { signup_intent: "vendor" },
+      });
     },
     () =>
       handleAuthRequest(
@@ -427,7 +490,7 @@ test("session endpoint validates the cookie with Supabase rather than trusting i
     ok: true,
     data: {
       authenticated: true,
-      user: { id: "user-2", email: "person@example.com", name: "" },
+      user: { id: "user-2", email: "person@example.com", name: "", role: "vendor" },
     },
   });
 });
@@ -493,8 +556,95 @@ test("logout revokes the Supabase session and clears both cookies", async () => 
   });
 });
 
+test("Google OAuth persists vendor signup intent and exposes it through the session", async () => {
+  const startResponse = await handleAuthRequest(
+    request("/api/auth/oauth/google?role=vendor", "GET"),
+    env,
+  );
+  assert.equal(startResponse.status, 302);
+
+  const startCookies = startResponse.headers.get("set-cookie") ?? "";
+  const verifier = startCookies.match(/peniel_oauth_verifier=([^;]+)/)?.[1];
+  assert.ok(verifier);
+  assert.match(startCookies, /peniel_oauth_role=vendor/);
+
+  let updateBody: Record<string, unknown> | null = null;
+  const callbackResponse = await withFetchMock(
+    async (input, init) => {
+      const url = String(input);
+      if (url === `${env.SUPABASE_URL}/auth/v1/token?grant_type=pkce`) {
+        return Response.json({
+          access_token: "oauth-access-token",
+          refresh_token: "oauth-refresh-token",
+          expires_in: 3600,
+          user: {
+            id: "oauth-user",
+            email: "person@example.com",
+            user_metadata: { full_name: "Person" },
+          },
+        });
+      }
+      if (url === `${env.SUPABASE_URL}/auth/v1/admin/users/oauth-user`) {
+        updateBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return Response.json({ id: "oauth-user" });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+    () =>
+      handleAuthRequest(
+        new Request("https://peniel.test/api/auth/oauth/callback?code=authorization-code", {
+          headers: {
+            cookie: `peniel_oauth_verifier=${verifier}; peniel_oauth_role=vendor`,
+          },
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(callbackResponse.status, 302);
+  assert.ok(updateBody);
+  assert.deepEqual(updateBody?.["user_metadata"], {
+    full_name: "Person",
+    signup_intent: "vendor",
+  });
+
+  const sessionResponse = await withFetchMock(
+    async (input) => {
+      assert.equal(
+        String(input),
+        `${env.SUPABASE_URL}/auth/v1/user`,
+      );
+      return Response.json({
+        id: "oauth-user",
+        email: "person@example.com",
+        user_metadata: { full_name: "Person", signup_intent: "vendor" },
+      });
+    },
+    () =>
+      handleAuthRequest(
+        new Request("https://peniel.test/api/auth/session", {
+          headers: {
+            cookie: callbackResponse.headers
+              .get("set-cookie")
+              ?.match(/peniel_access=([^;]+)/)?.[0] ?? "",
+          },
+        }),
+        env,
+      ),
+  );
+
+  assert.equal(sessionResponse.status, 200);
+  const sessionBody = (await sessionResponse.json()) as {
+    data: { user: { role?: string } };
+  };
+  assert.equal(sessionBody.data.user.role, "vendor");
+});
+
 test("Google OAuth starts PKCE and exchanges its callback code server-side", async () => {
-  const startResponse = await handleAuthRequest(request("/api/auth/oauth/google", "GET"), env);
+  const startResponse = await handleAuthRequest(
+    request("/api/auth/oauth/google", "GET", undefined, "https://peniel.test"),
+    env,
+  );
   assert.equal(startResponse.status, 302);
 
   const authorizeUrl = new URL(startResponse.headers.get("location") ?? "");
@@ -520,7 +670,11 @@ test("Google OAuth starts PKCE and exchanges its callback code server-side", asy
         access_token: "oauth-access-token",
         refresh_token: "oauth-refresh-token",
         expires_in: 3600,
-        user: { id: "oauth-user", email: "person@example.com" },
+        user: {
+          id: "oauth-user",
+          email: "person@example.com",
+          user_metadata: { signup_intent: "customer" },
+        },
       });
     },
     () =>

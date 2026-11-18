@@ -292,19 +292,26 @@ export type CartRecord = {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
+export type AuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  role?: "customer" | "vendor";
+};
+
 export const authApi = {
   session: () =>
-    get<{ authenticated: boolean; user: { id: string; email: string; name: string } | null }>(
+    get<{ authenticated: boolean; user: AuthUser | null }>(
       "/api/auth/session",
     ),
   signup: (body: { name: string; email: string; password: string; intentRole: string }) =>
     post<{
       authenticated: boolean;
       needsOtp?: boolean;
-      user: { id: string; email: string; name: string } | null;
+      user: AuthUser | null;
     }>("/api/auth/signup", body),
   login: (body: { email: string; password: string }) =>
-    post<{ authenticated: boolean; user: { id: string; email: string; name: string } | null }>(
+    post<{ authenticated: boolean; user: AuthUser | null }>(
       "/api/auth/login",
       body,
     ),

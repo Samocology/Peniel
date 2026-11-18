@@ -64,17 +64,28 @@ function VerifyOtpPage() {
 
       if (isSignup) {
         if (role === "vendor") {
-          // Vendor needs to log in after email verification, then they'll be redirected to onboarding
+          // Vendor needs to log in after email verification, then they'll be redirected to onboarding.
+          toast.success("Email verified. Sign in to set up your store.");
           void navigate({
             to: "/auth",
-            search: { mode: "login", returnTo: "/vendor/onboarding", role: "vendor" },
+            search: {
+              mode: "login",
+              returnTo: "/vendor/onboarding",
+              role: "vendor",
+              email: normalizedEmail,
+            },
           });
         } else {
           toast.success("Email verified. Please sign in to continue.");
 
           void navigate({
             to: "/auth",
-            search: { mode: "login", returnTo, role },
+            search: {
+              mode: "login",
+              ...(returnTo ? { returnTo } : {}),
+              ...(role ? { role } : {}),
+              email: normalizedEmail,
+            },
           });
         }
 
@@ -85,7 +96,10 @@ function VerifyOtpPage() {
 
       void navigate({
         to: "/reset-password",
-        search: { resetToken: result.data.resetToken, returnTo },
+        search: {
+          resetToken: result.data.resetToken,
+          ...(returnTo ? { returnTo } : {}),
+        },
       });
     } catch {
       setError("The authentication service is unavailable. Please try again.");
@@ -166,7 +180,7 @@ function VerifyOtpPage() {
       <div className="w-full max-w-[410px]">
         <Link
           to="/auth"
-          search={{ returnTo }}
+          search={{ mode: "login", ...(returnTo ? { returnTo } : {}) }}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-[#858D84] mb-8"
         >
           <ArrowLeft className="size-3.5" />

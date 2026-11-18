@@ -495,7 +495,7 @@ async function restoreAuthSession() {
       error?: string;
       data?: {
         authenticated?: boolean;
-        user?: { email?: string; name?: string } | null;
+        user?: { id: string; email?: string; name?: string; role?: "customer" | "vendor" } | null;
       };
     };
 
@@ -511,7 +511,7 @@ async function restoreAuthSession() {
         ? {
             name: user.name || user.email,
             email: user.email,
-            role: current.user?.email === user.email ? current.user.role : "customer",
+            role: user.role ?? "customer",
           }
         : undefined,
     }));

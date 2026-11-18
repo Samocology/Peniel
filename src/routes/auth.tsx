@@ -66,7 +66,12 @@ function AuthPage() {
     setPasswordError("");
     void navigate({
       to: "/auth",
-      search: { mode: "login", email: email.trim().toLowerCase(), role, returnTo },
+      search: {
+        mode: "login",
+        ...(email.trim().toLowerCase() ? { email: email.trim().toLowerCase() } : {}),
+        ...(role ? { role } : {}),
+        ...(returnTo ? { returnTo } : {}),
+      },
     });
   };
 
@@ -83,7 +88,11 @@ function AuthPage() {
       setNotice({ tone: "success", text: "We sent a fresh verification code to your email." });
       void navigate({
         to: "/verify-otp",
-        search: { email: email.trim().toLowerCase(), role, type: "signup" },
+        search: {
+          email: email.trim().toLowerCase(),
+          ...(role ? { role } : {}),
+          type: "signup",
+        },
       });
     } catch {
       setPasswordError("The authentication service is unavailable. Please try again.");
@@ -151,13 +160,18 @@ function AuthPage() {
       const data = result.data as {
         authenticated?: boolean;
         needsOtp?: boolean;
-        user: { id: string; email: string; name: string } | null;
+        user: { id: string; email: string; name: string; role?: "customer" | "vendor" } | null;
       };
 
       if (data.needsOtp) {
         void navigate({
           to: "/verify-otp",
-          search: { email, returnTo, role, type: "signup" },
+          search: {
+            email,
+            ...(returnTo ? { returnTo } : {}),
+            ...(role ? { role } : {}),
+            type: "signup",
+          },
         });
         return;
       }
@@ -175,14 +189,20 @@ function AuthPage() {
           .filter(Boolean)
           .map((part) => part[0]!.toUpperCase() + part.slice(1))
           .join(" ");
-      app.signIn(accountName, email, isSignup ? role : (state.user?.role ?? "customer"));
+      app.signIn(
+        accountName,
+        email,
+        data.user?.role ?? (isSignup ? role : (state.user?.role ?? "customer")),
+      );
 
       const allowedReturnTo = ["/vendor/onboarding", "/vendor/verification", "/"].includes(
         returnTo ?? "",
       )
         ? returnTo!
         : "/";
-      const destination = isSignup && role === "vendor" ? "/vendor/onboarding" : allowedReturnTo;
+      const destination = returnTo === "/vendor/onboarding" || (isSignup && role === "vendor")
+        ? "/vendor/onboarding"
+        : allowedReturnTo;
 
       // Navigate immediately - cookies are already set by login response
       void navigate({ to: destination, replace: true });

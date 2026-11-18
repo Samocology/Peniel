@@ -590,10 +590,12 @@ async function supabaseRequest(
 function userResponse(user: SupabaseUser | undefined) {
   if (!user?.id) return null;
   const metadataName = user.user_metadata?.["full_name"];
+  const signupIntent = user.user_metadata?.["signup_intent"];
   return {
     id: user.id,
     email: user.email ?? "",
     name: typeof metadataName === "string" ? metadataName : "",
+    role: signupIntent === "vendor" ? "vendor" : "customer",
   };
 }
 
@@ -632,6 +634,8 @@ function supabaseErrorMessage(payload: Record<string, unknown>, fallback: string
   if (/email not confirmed/i.test(message)) return "Please verify your email before signing in.";
   if (/already registered|already been registered/i.test(message))
     return "An account with this email already exists.";
+  if (/invalid api key|invalid jwt|jwt|apikey/i.test(message))
+    return "Authentication is not configured correctly. Contact support.";
   if (/password/i.test(message)) return "The password does not meet the requirements.";
   return fallback;
 }
@@ -717,8 +721,22 @@ async function handleLogin(request: Request, config: { url: string; key: string 
   });
   const payload = await parseSupabaseBody(response);
   if (!response.ok) {
+    const rawMessage = String(
+      payload["msg"] ?? payload["message"] ?? payload["error_description"] ?? "",
+    );
+    const errorCode = String(payload["error_code"] ?? payload["code"] ?? "");
+    console.error(
+      `Supabase password login failed for ${email}: status=${response.status} code=${
+        errorCode || "none"
+      } message=${rawMessage || "none"}`,
+    );
     return json(
-      { ok: false, error: supabaseErrorMessage(payload, "Could not sign in.") },
+      {
+        ok: false,
+        error: supabaseErrorMessage(payload, "Could not sign in."),
+        ...(errorCode ? { supabaseCode: errorCode } : {}),
+        ...(rawMessage && rawMessage !== "Invalid login credentials" ? { detail: rawMessage } : {}),
+      },
       response.status === 400 ? 401 : response.status,
     );
   }
@@ -1249,6 +1267,55 @@ async function handleResetPassword(
   return json({ ok: true, data: { passwordUpdated: true } });
 }
 
+async function ensureOAuthSignupIntent(
+  env: BackendEnv,
+  config: { url: string; key: string },
+  user: SupabaseUser,
+  requestedRole: string,
+): Promise<SupabaseUser> {
+  const role = requestedRole === "vendor" ? "vendor" : "customer";
+  if (user.user_metadata?.["signup_intent"] === role) return user;
+
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return user;
+
+  try {
+    const response = await fetch(`${config.url}/auth/v1/admin/users/${user.id}`, {
+      method: "PUT",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        user_metadata: {
+          ...(user.user_metadata ?? {}),
+          signup_intent: role,
+        },
+      }),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error(
+        `Could not persist Google OAuth signup intent for ${user.email ?? user.id}: ${response.status} ${detail.slice(0, 300)}`,
+      );
+      await drain(response);
+      return user;
+    }
+    await drain(response);
+    return {
+      ...user,
+      user_metadata: {
+        ...(user.user_metadata ?? {}),
+        signup_intent: role,
+      },
+    };
+  } catch (error) {
+    console.error(`Could not persist Google OAuth signup intent for ${user.email ?? user.id}`, error);
+    return user;
+  }
+}
+
 async function handleGoogleOAuth(
   request: Request,
   config: { url: string; key: string },
@@ -1283,7 +1350,7 @@ async function handleOAuthCallback(
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
   const verifier = parseCookies(request).get(OAUTH_VERIFIER_COOKIE);
-  const oauthRole = parseCookies(request).get("peniel_oauth_role") ?? "customer";
+  const oauthRole = parseCookies(request).get("peniel_oauth_role");
   const clearVerifierCookie = cookie(OAUTH_VERIFIER_COOKIE, "", request, 0);
   const clearRoleCookie = cookie("peniel_oauth_role", "", request, 0);
 
@@ -1333,11 +1400,13 @@ async function handleOAuthCallback(
     response.headers.append("Set-Cookie", clearRoleCookie);
     return response;
   }
-  const session = payload;
+  const sessionUser = await ensureOAuthSignupIntent(env, config, payload.user, oauthRole ?? "customer");
+  const session = { ...payload, user: sessionUser };
+  const resolvedRole = userResponse(sessionUser)?.role ?? "customer";
 
   const base = env.APP_BASE_URL ?? new URL(request.url).origin;
   const callbackUrl = new URL(`${base}/auth/oauth/callback`);
-  callbackUrl.searchParams.set("role", oauthRole);
+  callbackUrl.searchParams.set("role", resolvedRole);
   const response = new Response(null, {
     status: 302,
     headers: { Location: callbackUrl.toString() },

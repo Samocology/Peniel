@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { authApi } from "@/lib/api-client";
+import { app } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/auth/oauth/callback")({
   validateSearch: z.object({
@@ -17,27 +18,47 @@ function OAuthCallback() {
 
   useEffect(() => {
     if (error) {
-      void navigate({ to: "/auth", search: { mode: "login", error: "oauth_failed" } });
+      void navigate({
+        to: "/auth",
+        search: {
+          mode: "login",
+          ...(role ? { role } : {}),
+          error: "oauth_failed",
+        },
+      });
       return;
     }
 
-    // Check session to get user role, then redirect
     authApi
       .session()
       .then((result) => {
-        if (result.ok && result.data.authenticated && result.data.user) {
-          const userRole = role ?? "customer";
+        const user = result.ok && result.data.authenticated ? result.data.user : null;
+        if (user) {
+          const userRole = user.role ?? "customer";
+          app.signIn(user.name, user.email, userRole);
           const destination = userRole === "vendor" ? "/vendor/onboarding" : "/";
           void navigate({ to: destination, replace: true });
-        } else {
-          // Fallback to role from URL param
-          const destination = role === "vendor" ? "/vendor/onboarding" : "/";
-          void navigate({ to: destination, replace: true });
+          return;
         }
+
+        void navigate({
+          to: "/auth",
+          search: {
+            mode: "login",
+            ...(role ? { role } : {}),
+            error: "oauth_session_missing",
+          },
+        });
       })
       .catch(() => {
-        const destination = role === "vendor" ? "/vendor/onboarding" : "/";
-        void navigate({ to: destination, replace: true });
+        void navigate({
+          to: "/auth",
+          search: {
+            mode: "login",
+            ...(role ? { role } : {}),
+            error: "oauth_session_check_failed",
+          },
+        });
       });
   }, [navigate, role, error]);
 
