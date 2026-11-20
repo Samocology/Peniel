@@ -290,10 +290,24 @@ async function updateVendorProfile(request: Request, env: BackendEnv, identity: 
     const normalized = normalizePhone(input["whatsappNumber"]);
     if (normalized) patch["whatsapp_number"] = normalized;
   }
-  if (typeof input["logo_object_key"] === "string")
-    patch["logo_object_key"] = input["logo_object_key"].slice(0, 200);
-  if (typeof input["cover_object_key"] === "string")
-    patch["cover_object_key"] = input["cover_object_key"].slice(0, 200);
+  if (typeof input["logo_object_key"] === "string" || typeof input["cover_object_key"] === "string") {
+    const storefrontPatch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (typeof input["logo_object_key"] === "string")
+      storefrontPatch["logo_object_key"] = input["logo_object_key"].slice(0, 200);
+    if (typeof input["cover_object_key"] === "string")
+      storefrontPatch["cover_object_key"] = input["cover_object_key"].slice(0, 200);
+    const sr = await db(
+      env,
+      `storefronts?vendor_id=eq.${vendorId}`,
+      identity.accessToken,
+      {
+        method: "PATCH",
+        body: JSON.stringify(storefrontPatch),
+      },
+    );
+    const sp = await payload(sr);
+    if (!sr.ok) return dbErr(sr.status, sp);
+  }
   const r = await db(env, `vendors?id=eq.${vendorId}`, identity.accessToken, {
     method: "PATCH",
     body: JSON.stringify(patch),

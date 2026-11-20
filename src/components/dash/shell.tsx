@@ -57,16 +57,12 @@ export function DashShell({
   const matchingNav = displayNav.filter((item) =>
     item.label.toLowerCase().includes(navQuery.trim().toLowerCase()),
   );
-  const primaryItems = displayNav.filter(
-    (n) => n.primary && (!isVendor || n.to !== "/vendor/profile"),
-  );
+  const primaryItems = displayNav.filter((n) => n.primary);
   const primary = isVendor
     ? primaryItems.slice(0, 4)
     : primaryItems.slice(0, 5);
   const secondary = displayNav.filter((n) => !primary.includes(n));
-  const menuNav = isVendor
-    ? [...secondary, ...displayNav.filter((n) => n.to === "/vendor/profile")]
-    : secondary;
+  const menuNav = secondary;
   const initials = isVendor ? me.monogram : "VA";
   const notifications = isVendor
     ? [

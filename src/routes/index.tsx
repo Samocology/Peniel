@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -26,7 +26,7 @@ import { categories, vendors } from "@/lib/data";
 import { searchVendors } from "@/lib/discovery";
 import { getMarketplaceLocationLabel } from "@/lib/location";
 import { app, useApp } from "@/lib/peniel-store";
-import { vendorsApi } from "@/lib/api-client";
+import { vendorsApi, type VendorRecord } from "@/lib/api-client";
 import { useMyOrders } from "@/lib/vendor-hooks";
 import { LocationPicker } from "@/components/site/location-picker";
 import { ItemArt } from "@/components/store/store-kit";
@@ -586,14 +586,66 @@ function Landing() {
   );
 }
 
+const R2_PUBLIC_URL =
+  import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+
+function buildR2Url(objectKey: string | undefined): string | undefined {
+  if (!objectKey || typeof objectKey !== "string") return undefined;
+  return `${R2_PUBLIC_URL}/${objectKey}`;
+}
+
 function CustomerHome() {
   const state = useApp();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const name = state.user?.name.split(" ")[0] || state.customer.name.split(" ")[0];
-  const featured = vendors.filter((vendor) => vendor.featured).slice(0, 3);
   const ordersState = useMyOrders();
   const ordersCount = ordersState.data ? ordersState.data.length : 0;
+
+  const [liveVendors, setLiveVendors] = useState<typeof vendors>([]);
+  useEffect(() => {
+    let active = true;
+    vendorsApi.public().then((result) => {
+      if (!active || !result.ok) return;
+      const records = result.data ?? [];
+      const mapped = records
+        .filter((v) => v.status === "active")
+        .slice(0, 6)
+        .map((v) => {
+          const sf = (v as VendorRecord & { storefronts?: { cover_object_key?: string; logo_object_key?: string; theme?: Record<string, string> }[] }).storefronts?.[0];
+          const coverUrl = buildR2Url(sf?.cover_object_key);
+          const logoUrl = buildR2Url(sf?.logo_object_key);
+          const monogram = v.name
+            .split(" ")
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+          return {
+            ...vendors[0],
+            slug: v.slug,
+            name: v.name,
+            tagline: v.description.split(/[.!?]/, 1)[0]?.trim() || v.description,
+            about: v.description,
+            categoryLabel: v.categories?.name ?? v.business_type,
+            location: v.location,
+            cover: coverUrl ?? vendors[0].cover,
+            logo: logoUrl,
+            monogram,
+            verified: false,
+            featured: true,
+            rating: 0,
+            reviews: 0,
+          };
+        });
+      if (mapped.length > 0) setLiveVendors(mapped);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const featured = liveVendors.length > 0 ? liveVendors.slice(0, 3) : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -711,7 +763,7 @@ function CustomerHome() {
         <section>
           <SectionHeading
             title="Picked for you"
-            subtitle="Local favourites with great products and service."
+            subtitle="Discover real businesses on Peniel with great products and service."
             action={
               <Button asChild variant="outline" size="sm" className="gap-1">
                 <Link to="/marketplace">
@@ -721,43 +773,59 @@ function CustomerHome() {
             }
           />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((vendor) => (
-              <Link
-                key={vendor.slug}
-                to="/store/$slug"
-                params={{ slug: vendor.slug }}
-                className="group overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:-translate-y-1 hover:shadow-lift"
-              >
-                <div className="relative h-44 overflow-hidden">
-                  <img
-                    src={vendor.cover}
-                    alt={vendor.name}
-                    loading="lazy"
-                    className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {vendor.verified && (
-                    <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-card/95 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                      <BadgeCheck className="size-3.5" /> Verified
-                    </span>
-                  )}
-                </div>
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="min-w-0">
-                      <span className="block truncate font-display font-bold">{vendor.name}</span>
-                      <span className="mt-1 block truncate text-xs text-muted-foreground">
-                        {vendor.categoryLabel} ·{" "}
-                        {vendor.location.split(",").slice(-2).join(",").trim()}
+            {featured.length > 0 ? (
+              featured.map((vendor) => (
+                <Link
+                  key={vendor.slug}
+                  to="/store/$slug"
+                  params={{ slug: vendor.slug }}
+                  className="group overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:-translate-y-1 hover:shadow-lift"
+                >
+                  <div className="relative h-44 overflow-hidden">
+                    <img
+                      src={vendor.cover}
+                      alt={vendor.name}
+                      loading="lazy"
+                      className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    {vendor.verified && (
+                      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-card/95 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                        <BadgeCheck className="size-3.5" /> Verified
                       </span>
-                    </span>
-                    <span className="inline-flex shrink-0 items-center gap-1 text-sm font-bold">
-                      <Star className="size-3.5 fill-gold text-gold" />
-                      {vendor.rating.toFixed(1)}
-                    </span>
+                    )}
                   </div>
-                </div>
-              </Link>
-            ))}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block truncate font-display font-bold">{vendor.name}</span>
+                        <span className="mt-1 block truncate text-xs text-muted-foreground">
+                          {vendor.categoryLabel} ·{" "}
+                          {vendor.location.split(",").slice(-2).join(",").trim()}
+                        </span>
+                      </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-sm font-bold">
+                        <Star className="size-3.5 fill-gold text-gold" />
+                        {vendor.rating.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-full rounded-2xl border border-dashed border-border p-10 text-center">
+                <Store className="mx-auto size-8 text-muted-foreground" />
+                <p className="mt-3 font-display text-lg font-bold">No stores yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Be the first to open a storefront on Peniel.
+                </p>
+                <Link
+                  to="/vendor/onboarding"
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
+                >
+                  Create your store <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            )}
           </div>
         </section>
       </main>

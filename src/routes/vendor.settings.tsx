@@ -157,6 +157,8 @@ function VendorSettings() {
         whatsappNumber: liveVendor.whatsapp_number,
         fulfilment: liveVendor.fulfilment,
         status: liveVendor.status,
+        logo_object_key: (liveVendor as VendorRecord & { storefronts?: { logo_object_key?: string; cover_object_key?: string }[] }).storefronts?.[0]?.logo_object_key,
+        cover_object_key: (liveVendor as VendorRecord & { storefronts?: { logo_object_key?: string; cover_object_key?: string }[] }).storefronts?.[0]?.cover_object_key,
       }
     : storeVendor;
 
@@ -552,6 +554,30 @@ function VendorSettings() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div className="mt-5 flex justify-end border-t border-border/70 pt-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!liveVendor) {
+                      toast.error("Your storefront could not be loaded. Please sign in again.");
+                      return;
+                    }
+                    const result = await vendorsApi.updateStorefront(liveVendor.id, {
+                      theme: { brandColor },
+                    });
+                    if (result.ok) {
+                      toast.success("Brand identity saved. Customers will see the update.");
+                    } else {
+                      toast.error(result.error || "Could not save brand identity.");
+                    }
+                  }}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-[0.98]"
+                >
+                  <Check className="size-3.5" />
+                  Save branding
+                </button>
               </div>
             </Panel>
 

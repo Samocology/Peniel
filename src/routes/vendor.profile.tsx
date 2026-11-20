@@ -87,7 +87,7 @@ function VendorProfile() {
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-5">
           {/* Business identity */}
-          <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <section className="rounded-2xl border border-border bg-card shadow-sm">
             <div className="relative h-32 overflow-hidden bg-muted sm:h-40">
               {coverUrl ? (
                 <img src={coverUrl} alt="" className="size-full object-cover" />
@@ -105,7 +105,7 @@ function VendorProfile() {
             </div>
 
             <div className="px-4 pb-5 sm:px-6 sm:pb-6">
-              <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="relative z-10 flex flex-wrap items-end justify-between gap-3">
                 <div className="-mt-9 grid size-[76px] shrink-0 place-items-center overflow-hidden rounded-2xl border-4 border-card bg-primary shadow-sm sm:-mt-10 sm:size-[84px]">
                   {logoUrl ? (
                     <img src={logoUrl} alt={`${vendor.name} logo`} className="size-full object-contain" />

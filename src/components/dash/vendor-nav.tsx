@@ -4,7 +4,6 @@ import {
   Boxes,
   CalendarClock,
   CalendarRange,
-  CircleUserRound,
   Gauge,
   LifeBuoy,
   Megaphone,
@@ -41,12 +40,6 @@ export const vendorNav: NavItem[] = [
   { label: "Verification", to: "/vendor/verification", icon: <BadgeCheck className={i} /> },
   { label: "Store settings", to: "/vendor/settings", icon: <Settings className={i} /> },
   { label: "Support", to: "/vendor/support", icon: <LifeBuoy className={i} /> },
-  {
-    label: "Profile",
-    to: "/vendor/profile",
-    icon: <CircleUserRound className={i} />,
-    primary: true,
-  },
 ];
 
 export function vendorNavFor(vendor: Vendor): NavItem[] {
@@ -71,8 +64,7 @@ export function vendorNavFor(vendor: Vendor): NavItem[] {
       if (item.to === "/vendor/products") return { ...item, label: catalogLabel };
       if (item.to === "/vendor/bookings") return { ...item, label: bookingLabel, primary: true };
       return item;
-    })
-    .sort((a, b) => Number(a.to === "/vendor/profile") - Number(b.to === "/vendor/profile"));
+    });
 }
 
 export const adminNav: NavItem[] = [
