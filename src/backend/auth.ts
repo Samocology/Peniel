@@ -986,6 +986,7 @@ async function handleVerifyOtp(
       400,
     );
   }
+  
 
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
