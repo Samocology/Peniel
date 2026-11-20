@@ -170,6 +170,14 @@ function Onboarding() {
 
   const pct = Math.round((step / steps.length) * 100);
   const selectedCategory = categories.findIndex((category) => category.slug === categorySlug);
+  const canSubmit =
+    businessName.trim().length >= 2 &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(businessSlug) &&
+    businessSlug.length > 0 &&
+    Boolean(categorySlug) &&
+    address.trim().length >= 5 &&
+    city.trim().length > 0 &&
+    region.trim().length > 0;
   const submitVendor = async () => {
     if (savingVendor || vendorSubmitted) return;
     if (
@@ -344,6 +352,8 @@ function Onboarding() {
                   className={field}
                   value={businessName}
                   maxLength={120}
+                  minLength={2}
+                  required
                   onChange={(event) => {
                     const value = event.target.value;
                     setBusinessName(value);
@@ -361,15 +371,18 @@ function Onboarding() {
                 <span className={label}>Storefront link</span>
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm">
                   <span className="truncate text-muted-foreground">peniel.com.ng/store/</span>
-                  <input
-                    className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
-                    aria-label="Storefront URL"
-                    value={businessSlug}
-                    maxLength={80}
-                    onChange={(event) =>
-                      setBusinessSlug(event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
-                    }
-                  />
+                    <input
+                      className="min-w-0 flex-1 bg-transparent font-semibold outline-none"
+                      aria-label="Storefront URL"
+                      value={businessSlug}
+                      maxLength={80}
+                      minLength={1}
+                      pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                      required
+                      onChange={(event) =>
+                        setBusinessSlug(event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                      }
+                    />
                   <Check className="size-4 shrink-0 text-success" />
                 </div>
                 <p className="mt-1.5 text-xs text-success">This link is available</p>
@@ -429,6 +442,8 @@ function Onboarding() {
                 <input
                   className={field}
                   value={address}
+                  minLength={5}
+                  required
                   onChange={(event) => setAddress(event.target.value)}
                 />
               </div>
@@ -437,6 +452,7 @@ function Onboarding() {
                 <input
                   className={field}
                   value={city}
+                  required
                   onChange={(event) => setCity(event.target.value)}
                 />
               </div>
@@ -445,6 +461,7 @@ function Onboarding() {
                 <input
                   className={field}
                   value={region}
+                  required
                   onChange={(event) => setRegion(event.target.value)}
                 />
               </div>
@@ -480,10 +497,20 @@ function Onboarding() {
                     {uploadKey ? (
                       <img
                         src={`${import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${uploadKey}`}
-                        alt={`${businessName || "Business"} ${label.toLowerCase()}`}
+                        alt=""
                         className="size-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "";
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = "none";
+                          const parent = target.parentElement;
+                          if (parent && !parent.querySelector("[data-fallback]")) {
+                            const fallback = document.createElement("div");
+                            fallback.setAttribute("data-fallback", "true");
+                            fallback.className =
+                              "flex size-full flex-col items-center justify-center gap-2 text-muted-foreground";
+                            fallback.innerHTML = `<svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span class="text-[10px]">Click to upload ${label.toLowerCase()}</span>`;
+                            parent.appendChild(fallback);
+                          }
                         }}
                       />
                     ) : (
@@ -623,11 +650,15 @@ function Onboarding() {
                 </div>
                 <div>
                   <span className={label}>Payout account</span>
-                  <input className={field} defaultValue="Not connected in this demo" readOnly />
+                  <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                    Connect your bank after completing onboarding in vendor settings
+                  </div>
                 </div>
                 <div>
                   <span className={label}>Payout schedule</span>
-                  <input className={field} defaultValue="Not scheduled in this demo" readOnly />
+                  <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                    Daily after orders are delivered
+                  </div>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -839,7 +870,7 @@ function Onboarding() {
                   <button
                     type="button"
                     onClick={() => void submitVendor()}
-                    disabled={savingVendor}
+                    disabled={!canSubmit || savingVendor}
                     className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
                   >
                     {savingVendor ? "Publishing…" : "Publish store"}

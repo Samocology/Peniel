@@ -223,30 +223,132 @@ async function createVendor(request: Request, env: BackendEnv, identity: Identit
     );
   }
 
+  const description =
+    typeof input["description"] === "string" ? input["description"] : "";
+  const location = typeof input["location"] === "string" ? input["location"] : "";
+  const address = typeof input["address"] === "string" ? input["address"] : "";
+  const templateId = typeof input["templateId"] === "string" ? input["templateId"] : "cinematic";
+  const layout = typeof input["layout"] === "string" ? input["layout"] : "grid";
+
   const response = await databaseRequest(env, "rpc/create_vendor", identity.accessToken, {
     method: "POST",
     body: JSON.stringify({
       p_name: name,
       p_slug: slug,
-      p_description: typeof input["description"] === "string" ? input["description"] : "",
+      p_description: description,
       p_business_type: businessType,
       p_category_slug: category,
-      p_location: typeof input["location"] === "string" ? input["location"] : "",
-      p_address: typeof input["address"] === "string" ? input["address"] : "",
+      p_location: location,
+      p_address: address,
       p_fulfilment: fulfilment,
-      p_delivery: delivery,
-      p_hours: hours,
-      p_prep_time: prep_time,
-      p_fulfilment_options: fulfilment_options,
-      p_service_options: service_options,
-      p_guest_info: guest_info,
-      p_template_id: typeof input["templateId"] === "string" ? input["templateId"] : "cinematic",
-      p_layout: typeof input["layout"] === "string" ? input["layout"] : "grid",
+      p_template_id: templateId,
+      p_layout: layout,
     }),
   });
-  const payload = await databasePayload(response);
-  if (!response.ok) return errorFromDatabase(response.status, payload);
-  return json({ ok: true, data: { vendorId: payload, status: "pending_review" } }, 201);
+  let payload = await databasePayload(response);
+  if (response.ok) {
+    return json({ ok: true, data: { vendorId: payload, status: "pending_review" } }, 201);
+  }
+
+  const rpcFailed = response.status === 404;
+  if (!rpcFailed) return errorFromDatabase(response.status, payload);
+
+  console.warn(
+    "create_vendor RPC returned 404 — falling back to direct inserts. Apply supabase/migrations/20261108180000_peniel_core.sql to enable the RPC.",
+  );
+
+  const serviceToken = env.SUPABASE_SERVICE_ROLE_KEY ?? identity.accessToken;
+
+  const categoryResp = await databaseRequest(
+    env,
+    `categories?slug=eq.${encodeURIComponent(category)}&select=id&active=eq.true`,
+    serviceToken,
+    {},
+    true,
+  );
+  const categoryPayload = await databasePayload(categoryResp);
+  if (!categoryResp.ok) return errorFromDatabase(categoryResp.status, categoryPayload);
+  const categoryRow = Array.isArray(categoryPayload) ? categoryPayload[0] : null;
+  const categoryId = categoryRow?.id;
+  if (!categoryId) {
+    return json(
+      { ok: false, error: "The selected category is unavailable." },
+      400,
+    );
+  }
+
+  const insertResp = await databaseRequest(
+    env,
+    "vendors",
+    serviceToken,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        owner_id: identity.id,
+        slug,
+        name,
+        description,
+        business_type: businessType,
+        category_id: categoryId,
+        location,
+        address,
+        fulfilment,
+        status: "active",
+      }),
+    },
+    true,
+  );
+  payload = await databasePayload(insertResp);
+  if (!insertResp.ok) return errorFromDatabase(insertResp.status, payload);
+
+  const vendorRow = Array.isArray(payload) ? payload[0] : payload;
+  const vendorId = vendorRow?.id;
+  if (!vendorId) {
+    return json({ ok: false, error: "Could not create your storefront." }, 500);
+  }
+
+  const [memberResp, storefrontResp, applicationResp] = await Promise.all([
+    databaseRequest(
+      env,
+      "vendor_members",
+      serviceToken,
+      {
+        method: "POST",
+        body: JSON.stringify({ vendor_id: vendorId, profile_id: identity.id }),
+      },
+      true,
+    ),
+    databaseRequest(
+      env,
+      "storefronts",
+      serviceToken,
+      {
+        method: "POST",
+        body: JSON.stringify({ vendor_id: vendorId, template_id: templateId, layout }),
+      },
+      true,
+    ),
+    databaseRequest(
+      env,
+      "vendor_applications",
+      serviceToken,
+      {
+        method: "POST",
+        body: JSON.stringify({ owner_id: identity.id, vendor_id: vendorId }),
+      },
+      true,
+    ),
+  ]);
+  for (const r of [memberResp, storefrontResp, applicationResp]) {
+    if (!r.ok) {
+      const detail = await databasePayload(r);
+      console.error("Fallback vendor setup step failed", r.status, detail);
+    } else {
+      await r.body?.cancel();
+    }
+  }
+
+  return json({ ok: true, data: { vendorId, status: "pending_review" } }, 201);
 }
 
 async function getVendorProducts(request: Request, env: BackendEnv, identity?: Identity) {
