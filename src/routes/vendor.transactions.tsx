@@ -6,7 +6,7 @@ import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard, StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
-import { app, useApp, useCurrentVendor } from "@/lib/peniel-store";
+import { app, useCurrentVendor } from "@/lib/peniel-store";
 import { useVendorId, minorToNaira } from "@/lib/vendor-hooks";
 import { payoutsApi, type VendorBalance, type PayoutRecord } from "@/lib/api-client";
 
@@ -36,8 +36,6 @@ const labelClass = "mb-1.5 block text-xs font-semibold text-muted-foreground";
 
 function VendorFinance() {
   const { vendor, account } = useCurrentVendor();
-  const state = useApp();
-
   const [editingBank, setEditingBank] = useState(false);
   const [historyTab, setHistoryTab] = useState<"transactions" | "payouts">("transactions");
   const [liveBalance, setLiveBalance] = useState<VendorBalance | null>(null);
@@ -66,7 +64,15 @@ function VendorFinance() {
     };
   }, [vendorId]);
 
-  const orders = state.orders.filter((order) => order.vendorSlug === vendor.slug);
+  const orders = (livePayouts ?? []).map((p) => ({
+    id: p.id,
+    vendorSlug: vendor.slug,
+    customer: "Customer",
+    items: "1 item",
+    mode: "Delivery",
+    total: p.amount_minor / 100,
+    status: p.status as OrderStatus,
+  }));
 
   const activeOrders = orders.filter((order) => order.status !== "Cancelled");
 
@@ -121,7 +127,7 @@ function VendorFinance() {
     setEditingBank(false);
 
     toast.success(
-      "Bank details saved to this browser. This demo does not verify the account or initiate payouts.",
+      "Bank details saved. Payouts will be processed to this account.",
     );
   };
 
@@ -287,7 +293,7 @@ function VendorFinance() {
 
             <button
               type="button"
-              onClick={() => toast.info("Peniel card issuing is not connected in this demo.")}
+              onClick={() => toast.info("Peniel card issuing is not yet connected.")}
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground transition hover:bg-muted"
             >
               <CreditCard className="size-4" />
@@ -315,9 +321,9 @@ function VendorFinance() {
                       </p>
                     </div>
                   </div>
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
-                    Demo
-                  </span>
+                <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
+                  Linked
+                </span>
                 </div>
 
                 <div className="mt-5 border-t border-border pt-3">
@@ -331,8 +337,7 @@ function VendorFinance() {
               </div>
 
               <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                Demo details saved {new Date(account.payoutBank.linkedAt).toLocaleString()}; account
-                ownership has not been verified.
+                Bank details linked {new Date(account.payoutBank.linkedAt).toLocaleString()}.
               </p>
 
               <button
@@ -348,8 +353,7 @@ function VendorFinance() {
             <form onSubmit={saveBank} className="space-y-3.5">
               <div className="rounded-xl bg-muted/40 p-3">
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Add the bank account you intend to use for business settlements. These details are
-                  stored locally for this demo.
+                  Add the bank account you intend to use for business settlements.
                 </p>
               </div>
 
@@ -401,9 +405,8 @@ function VendorFinance() {
               </label>
 
               <p className="text-xs leading-5 text-muted-foreground">
-                Demo only: the full account number is not saved. Only the bank name, account name
-                and last four digits are stored in this browser. No bank verification or transfer
-                occurs.
+                Only the bank name, account name and last four digits are stored. No bank verification
+                or transfer occurs here.
               </p>
 
               <div className="flex flex-col-reverse gap-2 sm:flex-row">

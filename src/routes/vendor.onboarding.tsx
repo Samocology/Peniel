@@ -206,30 +206,20 @@ function Onboarding() {
 
     setSavingVendor(true);
     try {
-      const response = await fetch("/api/vendors", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name: businessName,
-          slug: businessSlug,
-          description: businessDescription,
-          businessType,
-          categorySlug,
-          location: [city, region].filter(Boolean).join(", "),
-          address,
-          fulfilment: businessFulfilment,
-          layout: vendor.layout,
-          templateId: vendor.layout,
-          logo_object_key: logoKey,
-          cover_object_key: coverKey,
-          products: validProducts,
-          ...fulfillmentData,
-        }),
+      const response = await vendorsApi.create({
+        name: businessName,
+        slug: businessSlug,
+        description: businessDescription,
+        businessType,
+        categorySlug,
+        location: [city, region].filter(Boolean).join(", "),
+        address,
+        fulfilment: businessFulfilment,
+        templateId: vendor.layout,
+        layout: vendor.layout,
       });
-      const result = (await response.json()) as { ok?: boolean; error?: string };
-      if (!response.ok || !result.ok) {
-        throw new Error(result.error ?? "Could not submit your storefront for review.");
+      if (!response.ok) {
+        throw new Error(response.error ?? "Could not submit your storefront for review.");
       }
       const selectedCategoryInfo = categories.find((item) => item.slug === categorySlug);
       app.addCustomVendor({
@@ -486,12 +476,15 @@ function Onboarding() {
               ].map(({ label, key, uploadKey, uploading, onUpload, purpose }) => (
                 <div key={key}>
                   <span className={label}>{label}</span>
-                  <label className="relative h-40 overflow-hidden rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer">
+                  <label className="relative h-32 sm:h-40 overflow-hidden rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer">
                     {uploadKey ? (
                       <img
                         src={`${import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${uploadKey}`}
                         alt={`${businessName || "Business"} ${label.toLowerCase()}`}
                         className="size-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "";
+                        }}
                       />
                     ) : (
                       <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
@@ -669,7 +662,7 @@ function Onboarding() {
                       {["Delivery and pickup", "Customer pickup", "Delivery only"].map((opt) => (
                         <label
                           key={opt}
-                          className="rounded-full border px-4 py-2 text-sm cursor-pointer transition"
+                          className="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium cursor-pointer transition-all border-border bg-background hover:border-primary/30 hover:bg-primary/5"
                         >
                           <input
                             type="radio"
@@ -679,7 +672,7 @@ function Onboarding() {
                             onChange={() => setFulfilmentOptions(opt)}
                             className="sr-only peer"
                           />
-                          <span className="peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary border-border text-muted-foreground">
+                          <span className="peer-checked:text-primary peer-checked:font-semibold border-border text-muted-foreground transition-colors">
                             {opt}
                           </span>
                         </label>
@@ -692,7 +685,7 @@ function Onboarding() {
                       {["Under 30 mins", "30-60 mins", "Same day", "48 hours notice"].map((opt) => (
                         <label
                           key={opt}
-                          className="rounded-full border px-4 py-2 text-sm cursor-pointer transition"
+                          className="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium cursor-pointer transition-all border-border bg-background hover:border-primary/30 hover:bg-primary/5"
                         >
                           <input
                             type="radio"
@@ -702,7 +695,7 @@ function Onboarding() {
                             onChange={() => setPrepTime(opt)}
                             className="sr-only peer"
                           />
-                          <span className="peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary border-border text-muted-foreground">
+                          <span className="peer-checked:text-primary peer-checked:font-semibold border-border text-muted-foreground transition-colors">
                             {opt}
                           </span>
                         </label>
@@ -733,7 +726,7 @@ function Onboarding() {
                       ].map((opt) => (
                         <label
                           key={opt}
-                          className="rounded-full border px-4 py-2 text-sm cursor-pointer transition"
+                          className="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium cursor-pointer transition-all border-border bg-background hover:border-primary/30 hover:bg-primary/5"
                         >
                           <input
                             type="radio"
@@ -743,7 +736,7 @@ function Onboarding() {
                             onChange={() => setDelivery(opt)}
                             className="sr-only peer"
                           />
-                          <span className="peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary border-border text-muted-foreground">
+                          <span className="peer-checked:text-primary peer-checked:font-semibold border-border text-muted-foreground transition-colors">
                             {opt}
                           </span>
                         </label>

@@ -148,8 +148,13 @@ function RootComponent() {
       pathname === "/reset-password"
     )
       return;
+    // Role-aware redirect: vendors go to their dashboard, customers to onboarding/home
+    if (state.user?.role === "vendor") {
+      navigate({ to: "/vendor" });
+      return;
+    }
     navigate({ to: "/onboarding" });
-  }, [pathname, navigate]);
+  }, [pathname, navigate, state.user?.role]);
 
   // Validate the session with the backend so the local store stays in sync.
   useEffect(() => {
@@ -200,6 +205,14 @@ function RootComponent() {
     // to respect returnTo and role-based destinations (e.g., /vendor/onboarding)
     if (isAuth && authenticated) {
       return;
+    }
+    // Role-aware redirect: vendors landing on home go to their dashboard
+    if (pathname === "/" && authenticated && state.user?.role === "vendor") {
+      void navigate({ to: "/vendor" });
+      return;
+    }
+    if (isAuth && authenticated) {
+      void navigate({ to: "/" });
     }
   }, [isProtected, isAuth, authenticated, sessionValidated, navigate, pathname]);
 

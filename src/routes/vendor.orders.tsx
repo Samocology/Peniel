@@ -10,14 +10,13 @@ import {
   Truck,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
-import { app, useApp, type OrderStatus } from "@/lib/peniel-store";
-import { useCurrentVendor } from "@/lib/peniel-store";
+import { useCurrentVendor, type OrderStatus } from "@/lib/peniel-store";
 import { useVendorId, useVendorOrders, backendStatusLabel, minorToNaira } from "@/lib/vendor-hooks";
 import { ordersApi } from "@/lib/api-client";
 
@@ -75,45 +74,23 @@ function VendorOrders() {
   const vendorId = useVendorId(vendor.slug);
   const liveOrders = useVendorOrders(vendorId);
 
-  // Use live backend orders when available, fall back to demo store orders
+  // Use live backend orders only — no mock/demo fallback
   const useLive = liveOrders.data !== null;
 
-  const demoOrders = useMemo(
-    () => s.orders.filter((o) => o.vendorSlug === vendor.slug),
-    [s.orders, vendor.slug],
-  );
-
-  // Counts for the filter tabs — works for both live and demo
   const count = (status: OrderStatus) => {
-    if (useLive) {
-      return (liveOrders.data ?? []).filter((o) => BACKEND_TO_FILTER[o.status] === status).length;
-    }
-    return demoOrders.filter((o) => o.status === status).length;
+    return (liveOrders.data ?? []).filter((o) => BACKEND_TO_FILTER[o.status] === status).length;
   };
 
-  const liveRows = useMemo(() => {
-    if (!useLive) return [];
-    return (liveOrders.data ?? []).filter((o) => f === "All" || BACKEND_TO_FILTER[o.status] === f);
-  }, [liveOrders.data, f, useLive]);
-
-  const demoRows = demoOrders.filter((o) => f === "All" || o.status === f);
-  const rows = useLive ? liveRows : demoRows;
-  const orders = useLive ? (liveOrders.data ?? []) : demoOrders;
+  const rows = (liveOrders.data ?? []).filter((o) => f === "All" || BACKEND_TO_FILTER[o.status] === f);
+  const orders = liveOrders.data ?? [];
 
   const openCount =
     count("New") + count("Confirmed") + count("Preparing") + count("Out for delivery");
 
-  const totalRevenue = useLive
-    ? (liveOrders.data ?? [])
-        .filter((o) => o.status !== "cancelled")
-        .reduce((t, o) => t + o.subtotal_minor, 0) / 100
-    : demoOrders.filter((o) => o.status !== "Cancelled").reduce((t, o) => t + o.total, 0);
-
-  // Demo set (local state)
-  const set = (id: string, status: OrderStatus, message: string) => {
-    app.setOrderStatus(id, status);
-    toast.success(message);
-  };
+  const totalRevenue =
+    (liveOrders.data ?? [])
+      .filter((o) => o.status !== "cancelled")
+      .reduce((t, o) => t + o.subtotal_minor, 0) / 100;
 
   // Live set (backend API)
   const setLive = async (orderId: string, backendStatus: string, message: string) => {
@@ -133,7 +110,7 @@ function VendorOrders() {
     }
   };
 
-  const totalOrderCount = useLive ? (liveOrders.data ?? []).length : demoOrders.length;
+  const totalOrderCount = (liveOrders.data ?? []).length;
 
   const pageTitle =
     vendor.fulfilment === "reservation"
@@ -328,7 +305,7 @@ function VendorOrders() {
                 </div>
               ) : useLive ? (
                 <ul className="space-y-3">
-                  {liveRows.map((order) => {
+                  {rows.map((order) => {
                     const uiStatus = BACKEND_TO_FILTER[order.status] ?? "New";
                     const ref = order.orders?.reference ?? order.id;
                     const customer =

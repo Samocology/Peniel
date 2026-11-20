@@ -26,6 +26,8 @@ import { categories, vendors } from "@/lib/data";
 import { searchVendors } from "@/lib/discovery";
 import { getMarketplaceLocationLabel } from "@/lib/location";
 import { app, useApp } from "@/lib/peniel-store";
+import { vendorsApi } from "@/lib/api-client";
+import { useMyOrders } from "@/lib/vendor-hooks";
 import { LocationPicker } from "@/components/site/location-picker";
 import { ItemArt } from "@/components/store/store-kit";
 import bizRestaurant from "@/assets/biz-restaurant.jpg";
@@ -590,6 +592,8 @@ function CustomerHome() {
   const [query, setQuery] = useState("");
   const name = state.user?.name.split(" ")[0] || state.customer.name.split(" ")[0];
   const featured = vendors.filter((vendor) => vendor.featured).slice(0, 3);
+  const ordersState = useMyOrders();
+  const ordersCount = ordersState.data ? ordersState.data.length : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -676,7 +680,7 @@ function CustomerHome() {
             },
             {
               label: "Your orders",
-              detail: `${state.orders.length} recent activities`,
+              detail: `${ordersCount} recent activities`,
               to: "/orders",
               icon: Truck,
             },

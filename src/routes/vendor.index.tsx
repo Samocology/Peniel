@@ -22,7 +22,7 @@ import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard, StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
-import { useApp, useCurrentVendor } from "@/lib/peniel-store";
+import { useCurrentVendor } from "@/lib/peniel-store";
 import { useVendorId, useVendorAnalytics, useVendorOrders, minorToNaira } from "@/lib/vendor-hooks";
 
 export const Route = createFileRoute("/vendor/")({
@@ -96,32 +96,25 @@ function EmptyState({
 
 function VendorOverview() {
   const { vendor, account } = useCurrentVendor();
-  const state = useApp();
   const vendorId = useVendorId(vendor.slug);
   const liveAnalytics = useVendorAnalytics(vendorId);
   const liveOrders = useVendorOrders(vendorId);
-  const useLive = liveAnalytics.data !== null;
 
-  const demoOrders = state.orders.filter((o) => o.vendorSlug === vendor.slug);
+  const openOrders = (liveOrders.data ?? []).filter((o) =>
+    [
+      "paid",
+      "confirmed",
+      "preparing",
+      "ready_for_pickup",
+      "shipped",
+      "out_for_delivery",
+    ].includes(o.status),
+  );
 
-  const openOrders = useLive
-    ? (liveOrders.data ?? []).filter((o) =>
-        [
-          "paid",
-          "confirmed",
-          "preparing",
-          "ready_for_pickup",
-          "shipped",
-          "out_for_delivery",
-        ].includes(o.status),
-      )
-    : demoOrders.filter((o) =>
-        ["New", "Confirmed", "Preparing", "Out for delivery"].includes(o.status),
-      );
-
-  const revenue = useLive
-    ? liveAnalytics.data!.totalRevenue / 100
-    : demoOrders.filter((o) => o.status !== "Cancelled").reduce((t, o) => t + o.total, 0);
+  const revenue =
+    (liveOrders.data ?? [])
+      .filter((o) => o.status !== "cancelled")
+      .reduce((t, o) => t + o.subtotal_minor, 0) / 100;
 
   const catalogLabel =
     vendor.type === "restaurant" || vendor.type === "bakery"
@@ -154,8 +147,7 @@ function VendorOverview() {
   const greetingName = vendor.name.trim();
 
   const liveRecentRows = (liveOrders.data ?? []).slice(0, 5);
-  const demoRecentRows = demoOrders.slice(0, 5);
-  const hasActivity = useLive ? liveRecentRows.length > 0 : demoOrders.length > 0;
+  const hasActivity = liveRecentRows.length > 0;
 
   return (
     <DashShell
@@ -248,17 +240,17 @@ function VendorOverview() {
               </p>
             </div>
 
-            <span className="hidden items-center gap-1.5 text-[10px] text-muted-foreground sm:inline-flex">
-              <Clock3 className="size-3" />
-              {useLive ? "Live backend data" : "Based on saved account data"}
-            </span>
+              <span className="hidden items-center gap-1.5 text-[10px] text-muted-foreground sm:inline-flex">
+                <Clock3 className="size-3" />
+                Live backend data
+              </span>
           </div>
 
           <div className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-4">
             <StatCard
-              label={useLive ? "Net revenue" : "Tracked revenue"}
+              label="Net revenue"
               value={naira(revenue)}
-              hint={useLive ? "After platform commission" : "Based on non-cancelled saved orders"}
+              hint="After platform commission"
               tone="primary"
               icon={<Wallet className="size-4 text-primary" />}
             />
@@ -294,7 +286,7 @@ function VendorOverview() {
 
           {liveAnalytics.error && (
             <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-              Live analytics unavailable: {liveAnalytics.error}. Showing demo data.
+              Live analytics unavailable: {liveAnalytics.error}
             </div>
           )}
         </section>
@@ -339,7 +331,7 @@ function VendorOverview() {
 
                       <div>
                         <p className="text-xs font-semibold">
-                          {useLive ? (liveOrders.data ?? []).length : demoOrders.length} recorded{" "}
+                          {(liveOrders.data ?? []).length} recorded{" "}
                           {activityLabel}
                         </p>
                         <p className="mt-0.5 text-[10px] text-muted-foreground">
@@ -356,37 +348,21 @@ function VendorOverview() {
                   <DataTable
                     head={["Reference", "Customer", "Items", "Total", "Status"]}
                     rows={
-                      useLive
-                        ? liveRecentRows.map((o) => [
-                            <span key="ref" className="font-mono text-[11px] font-medium">
-                              {o.orders?.reference ?? o.id}
-                            </span>,
-                            <span key="cust" className="font-medium">
-                              {o.orders?.customer_snapshot?.["fullName"] ?? "Customer"}
-                            </span>,
-                            <span key="items" className="text-muted-foreground">
-                              {o.order_items?.reduce((s, i) => s + i.quantity, 0) ?? 0} items
-                            </span>,
-                            <span key="total" className="font-semibold">
-                              {minorToNaira(o.subtotal_minor + o.delivery_minor)}
-                            </span>,
-                            <StatusPill key="status" status={o.status} />,
-                          ])
-                        : demoRecentRows.map((order) => [
-                            <span key="ref" className="font-mono text-[11px] font-medium">
-                              {order.id}
-                            </span>,
-                            <span key="cust" className="font-medium">
-                              {order.customer}
-                            </span>,
-                            <span key="items" className="text-muted-foreground">
-                              {order.items}
-                            </span>,
-                            <span key="total" className="font-semibold">
-                              {naira(order.total)}
-                            </span>,
-                            <StatusPill key="status" status={order.status} />,
-                          ])
+                      liveRecentRows.map((o) => [
+                        <span key="ref" className="font-mono text-[11px] font-medium">
+                          {o.orders?.reference ?? o.id}
+                        </span>,
+                        <span key="cust" className="font-medium">
+                          {o.orders?.customer_snapshot?.["fullName"] ?? "Customer"}
+                        </span>,
+                        <span key="items" className="text-muted-foreground">
+                          {o.order_items?.reduce((s, i) => s + i.quantity, 0) ?? 0} items
+                        </span>,
+                        <span key="total" className="font-semibold">
+                          {minorToNaira(o.subtotal_minor + o.delivery_minor)}
+                        </span>,
+                        <StatusPill key="status" status={o.status} />,
+                      ])
                     }
                   />
                 </>
