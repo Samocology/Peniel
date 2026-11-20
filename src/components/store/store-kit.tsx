@@ -212,17 +212,25 @@ export function StoreFooter({ vendor }: { vendor: Vendor }) {
         {/* Brand */}
         <div className="md:col-span-5">
           <div className="flex items-center gap-3">
-            <span
-              className="grid size-10 shrink-0 place-items-center rounded-full text-xs font-semibold"
-              style={{
-                background: t.soft,
-                color: t.accent,
-                border: `1px solid ${t.line}`,
-                fontFamily: t.heading,
-              }}
-            >
-              {vendor.monogram}
-            </span>
+            {vendor.logo ? (
+              <img
+                src={vendor.logo}
+                alt={`${vendor.name} logo`}
+                className="size-10 shrink-0 rounded-full object-contain"
+              />
+            ) : (
+              <span
+                className="grid size-10 shrink-0 place-items-center rounded-full text-xs font-semibold"
+                style={{
+                  background: t.soft,
+                  color: t.accent,
+                  border: `1px solid ${t.line}`,
+                  fontFamily: t.heading,
+                }}
+              >
+                {vendor.monogram}
+              </span>
+            )}
 
             <div>
               <p className="text-lg font-semibold tracking-tight" style={{ fontFamily: t.heading }}>

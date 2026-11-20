@@ -1,6 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { z } from "zod";
 import { authApi } from "@/lib/api-client";
 import { app } from "@/lib/peniel-store";
 
@@ -14,18 +15,12 @@ export const Route = createFileRoute("/auth/oauth/callback")({
 
 function OAuthCallback() {
   const { error, role } = Route.useSearch();
-  const navigate = useNavigate({ from: "/auth/oauth/callback" });
 
   useEffect(() => {
     if (error) {
-      void navigate({
-        to: "/auth",
-        search: {
-          mode: "login",
-          ...(role ? { role } : {}),
-          error: "oauth_failed",
-        },
-      });
+      window.location.replace(
+        `/auth?mode=login${role ? `&role=${role}` : ""}&error=oauth_failed`,
+      );
       return;
     }
 
@@ -37,30 +32,20 @@ function OAuthCallback() {
           const userRole = user.role ?? "customer";
           app.signIn(user.name, user.email, userRole);
           const destination = userRole === "vendor" ? "/vendor/onboarding" : "/";
-          void navigate({ to: destination, replace: true });
+          window.location.replace(destination);
           return;
         }
 
-        void navigate({
-          to: "/auth",
-          search: {
-            mode: "login",
-            ...(role ? { role } : {}),
-            error: "oauth_session_missing",
-          },
-        });
+        window.location.replace(
+          `/auth?mode=login${role ? `&role=${role}` : ""}&error=oauth_session_missing`,
+        );
       })
       .catch(() => {
-        void navigate({
-          to: "/auth",
-          search: {
-            mode: "login",
-            ...(role ? { role } : {}),
-            error: "oauth_session_check_failed",
-          },
-        });
+        window.location.replace(
+          `/auth?mode=login${role ? `&role=${role}` : ""}&error=oauth_session_check_failed`,
+        );
       });
-  }, [navigate, role, error]);
+  }, [role, error]);
 
   return (
     <div className="min-h-dvh bg-[#F7F8F5] flex items-center justify-center">
@@ -71,5 +56,3 @@ function OAuthCallback() {
     </div>
   );
 }
-
-import { z } from "zod";

@@ -136,6 +136,7 @@ export type Vendor = {
   categoryLabel: string;
   layout: StoreLayout;
   cover: string;
+  logo?: string;
   monogram: string;
   verified: boolean;
   featured: boolean;

@@ -10,11 +10,19 @@ import {
   ShieldCheck,
   Store,
 } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNavFor } from "@/components/dash/vendor-nav";
-import { vendors } from "@/lib/data";
-import { app, useCurrentVendor } from "@/lib/peniel-store";
+import { useCurrentVendor } from "@/lib/peniel-store";
+import { vendorsApi, type VendorRecord } from "@/lib/api-client";
+
+const R2_PUBLIC_URL =
+  import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+
+function buildR2Url(objectKey: string | undefined): string | undefined {
+  if (!objectKey || typeof objectKey !== "string") return undefined;
+  return `${R2_PUBLIC_URL}/${objectKey}`;
+}
 
 export const Route = createFileRoute("/vendor/profile")({
   head: () => ({
@@ -35,8 +43,39 @@ export const Route = createFileRoute("/vendor/profile")({
 });
 
 function VendorProfile() {
-  const { vendor, account } = useCurrentVendor();
+  const { vendor, account, base } = useCurrentVendor();
   const nav = vendorNavFor(vendor);
+  const [liveVendor, setLiveVendor] = useState<VendorRecord | null>(null);
+  const [liveLoading, setLiveLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    vendorsApi.mine().then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setLiveVendor(result.data.find((v) => v.slug === base.slug) ?? null);
+      }
+      setLiveLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [base.slug]);
+
+  const live = liveVendor
+    ? {
+        ...vendor,
+        name: liveVendor.name,
+        tagline: liveVendor.description,
+        about: liveVendor.description,
+        location: liveVendor.location,
+        logoUrl: buildR2Url(liveVendor.logo_object_key),
+        coverUrl: buildR2Url(liveVendor.cover_object_key),
+      }
+    : { ...vendor, logoUrl: undefined, coverUrl: undefined };
+
+  const logoUrl = live.logoUrl ?? (vendor.logo ? vendor.logo : undefined);
+  const coverUrl = live.coverUrl ?? (vendor.cover ? vendor.cover : undefined);
 
   return (
     <DashShell
@@ -50,7 +89,11 @@ function VendorProfile() {
           {/* Business identity */}
           <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
             <div className="relative h-32 overflow-hidden bg-muted sm:h-40">
-              <img src={vendor.cover} alt="" className="size-full object-cover" />
+              {coverUrl ? (
+                <img src={coverUrl} alt="" className="size-full object-cover" />
+              ) : (
+                <div className="size-full bg-gradient-to-br from-primary/10 to-muted" />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
 
               <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
@@ -63,8 +106,14 @@ function VendorProfile() {
 
             <div className="px-4 pb-5 sm:px-6 sm:pb-6">
               <div className="flex flex-wrap items-end justify-between gap-3">
-                <div className="-mt-9 grid size-[76px] shrink-0 place-items-center rounded-2xl border-4 border-card bg-primary font-display text-xl font-bold text-primary-foreground shadow-sm sm:-mt-10 sm:size-[84px] sm:text-2xl">
-                  {vendor.monogram}
+                <div className="-mt-9 grid size-[76px] shrink-0 place-items-center overflow-hidden rounded-2xl border-4 border-card bg-primary shadow-sm sm:-mt-10 sm:size-[84px]">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt={`${vendor.name} logo`} className="size-full object-contain" />
+                  ) : (
+                    <span className="font-display text-xl font-bold text-primary-foreground sm:text-2xl">
+                      {vendor.monogram}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:pb-1">
@@ -90,7 +139,7 @@ function VendorProfile() {
               <div className="mt-4 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
-                    {vendor.name}
+                    {live.name}
                   </h2>
 
                   {vendor.verified && (
@@ -102,7 +151,7 @@ function VendorProfile() {
                 </div>
 
                 <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground sm:text-sm">
-                  {vendor.tagline}
+                  {live.tagline}
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-muted-foreground">
@@ -112,7 +161,7 @@ function VendorProfile() {
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="size-3.5" />
-                    {vendor.location}
+                    {live.location}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <Clock3 className="size-3.5" />
@@ -180,7 +229,7 @@ function VendorProfile() {
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Business description
                 </p>
-                <p className="mt-2 text-[13px] leading-6 text-muted-foreground">{vendor.about}</p>
+                <p className="mt-2 text-[13px] leading-6 text-muted-foreground">{live.about}</p>
               </div>
 
               <div className="rounded-xl border border-border bg-muted/30 p-4">
@@ -209,79 +258,61 @@ function VendorProfile() {
           </Panel>
         </div>
 
-        {/* Business switcher */}
+        {/* Business summary card */}
         <div className="min-w-0">
-          <Panel title="Your businesses">
-            <div className="mb-4">
-              <p className="text-xs leading-5 text-muted-foreground">
-                Switch between demo business accounts. Each account keeps its own plan, profile and
-                settings.
-              </p>
+          <Panel title="Your business">
+            <div className="flex flex-col items-center text-center">
+              <div className="grid size-16 place-items-center overflow-hidden rounded-2xl bg-primary shadow-sm">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={`${vendor.name} logo`} className="size-full object-contain" />
+                ) : (
+                  <span className="font-display text-lg font-bold text-primary-foreground">
+                    {vendor.monogram}
+                  </span>
+                )}
+              </div>
+              <h3 className="mt-3 text-sm font-bold">{live.name}</h3>
+              <p className="mt-1 text-[11px] text-muted-foreground">{vendor.categoryLabel}</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">{live.location}</p>
             </div>
 
-            <ul className="space-y-2">
-              {vendors.map((v) => {
-                const selected = v.slug === vendor.slug;
+            <div className="mt-5 space-y-3 border-t border-border pt-4">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Storefront</span>
+                <span className="font-semibold">/{vendor.slug}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Plan</span>
+                <span className="font-semibold capitalize">
+                  {account.plan === "starter" ? "Free" : account.plan}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Status</span>
+                <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-600">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  {live.status === "suspended" ? "Suspended" : "Active"}
+                </span>
+              </div>
+            </div>
 
-                return (
-                  <li key={v.slug}>
-                    <button
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => {
-                        if (selected) return;
-                        app.switchVendor(v.slug);
-                        toast.success(`Switched to ${v.name}`);
-                      }}
-                      className={[
-                        "flex w-full items-center gap-3 rounded-xl border p-3 text-left transition",
-                        selected
-                          ? "border-primary/40 bg-primary/5"
-                          : "border-border hover:border-primary/30 hover:bg-muted/50",
-                      ].join(" ")}
-                    >
-                      <span
-                        className={[
-                          "grid size-10 shrink-0 place-items-center rounded-xl font-display text-xs font-bold",
-                          selected
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground",
-                        ].join(" ")}
-                      >
-                        {v.monogram}
-                      </span>
-
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-semibold">{v.name}</span>
-                        <span className="mt-1 block truncate text-[10px] text-muted-foreground">
-                          {v.categoryLabel}
-                        </span>
-                      </span>
-
-                      {selected ? (
-                        <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-primary">
-                          <span className="size-1.5 rounded-full bg-primary" />
-                          Active
-                        </span>
-                      ) : (
-                        <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" />
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <div className="mt-4 rounded-xl bg-muted/40 p-3">
+            <div className="mt-5 rounded-xl bg-primary/[0.04] p-3.5">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-3.5 text-primary" />
-                <p className="text-[10px] font-semibold">Business account protection</p>
+                <p className="text-[10px] font-semibold">Business account protected</p>
               </div>
               <p className="mt-1.5 text-[10px] leading-5 text-muted-foreground">
-                Your selected business determines which storefront and dashboard settings you
-                manage.
+                Your storefront, orders, and customer data are securely managed on Peniel.
               </p>
             </div>
+
+            <Link
+              to="/vendor/settings"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
+            >
+              <PencilLine className="size-3.5" />
+              Edit business details
+            </Link>
           </Panel>
         </div>
       </div>

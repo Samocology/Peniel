@@ -190,20 +190,21 @@ function RootComponent() {
   ];
   const isProtected = protectedPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
   const isAuth = authPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  const isAdminRoute = pathname.startsWith("/admin") && pathname !== "/admin/login";
+  const isAdmin =
+    state.user?.role === "admin" || state.user?.role === "super_admin";
 
   useEffect(() => {
     if (!sessionValidated) return;
     if (isProtected && !authenticated) {
-      const isAdminRoute = pathname.startsWith("/admin");
       void navigate({
         to: isAdminRoute ? "/admin/login" : "/auth",
         search: { mode: "login", returnTo: pathname },
       });
       return;
     }
-    // Don't auto-redirect from auth pages - let the auth form handle navigation
-    // to respect returnTo and role-based destinations (e.g., /vendor/onboarding)
-    if (isAuth && authenticated) {
+    if (isAdminRoute && authenticated && !isAdmin) {
+      void navigate({ to: "/", replace: true });
       return;
     }
     // Role-aware redirect: vendors landing on home go to their dashboard
@@ -211,16 +212,26 @@ function RootComponent() {
       void navigate({ to: "/vendor" });
       return;
     }
-    if (isAuth && authenticated) {
-      void navigate({ to: "/" });
-    }
-  }, [isProtected, isAuth, authenticated, sessionValidated, navigate, pathname]);
+  }, [isProtected, isAdminRoute, isAdmin, authenticated, sessionValidated, navigate, pathname, state.user?.role]);
 
   const needsCustomerNavSpace =
     state.user?.role === "customer" &&
     !pathname.startsWith("/vendor") &&
     !pathname.startsWith("/admin") &&
     pathname !== "/auth";
+
+  // Show loading state while session is being validated on protected routes
+  // to prevent flash of admin/vendor content before auth guard redirects.
+  if (isProtected && !sessionValidated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

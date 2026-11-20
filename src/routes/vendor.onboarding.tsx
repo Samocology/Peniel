@@ -229,6 +229,15 @@ function Onboarding() {
       if (!response.ok) {
         throw new Error(response.error ?? "Could not submit your storefront for review.");
       }
+      const createdVendorId = (response.data as { vendorId?: string } | undefined)?.vendorId;
+      if (createdVendorId) {
+        if (logoKey) {
+          await vendorsApi.updateProfile(createdVendorId, { logo_object_key: logoKey });
+        }
+        if (coverKey) {
+          await vendorsApi.updateStorefront(createdVendorId, { cover_object_key: coverKey });
+        }
+      }
       const selectedCategoryInfo = categories.find((item) => item.slug === categorySlug);
       app.addCustomVendor({
         ...vendor,
@@ -243,6 +252,12 @@ function Onboarding() {
         location: [city.trim(), region.trim()].join(", "),
         phone: "",
         email: "",
+        ...(logoKey
+          ? { logo: `${import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${logoKey}` }
+          : {}),
+        ...(coverKey
+          ? { cover: `${import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${coverKey}` }
+          : {}),
         verified: false,
         featured: false,
         rating: 0,

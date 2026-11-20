@@ -140,6 +140,7 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
         : fallback.categoryLabel,
     layout,
     cover: coverUrl ?? fallback.cover,
+    ...(logoUrl ? { logo: logoUrl } : {}),
     monogram,
     theme: theme ? { ...fallback.theme, ...theme } : fallback.theme,
     verified: false,
@@ -158,13 +159,8 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
 export const Route = createFileRoute("/store/$slug")({
   validateSearch: z.object({ t: z.string().optional() }),
   loader: async ({ params, request }) => {
-    // First try static data
-    const staticVendor = getVendor(params.slug);
-    if (staticVendor) {
-      return { vendor: staticVendor };
-    }
-
-    // If not in static data, try fetching from backend API
+    // Try fetching live vendor data from the backend first so that
+    // uploaded logos, cover images, and updated details are shown.
     try {
       const baseUrl = new URL(request.url).origin;
       const response = await fetch(`${baseUrl}/api/vendors?slug=${params.slug}`, {
@@ -174,13 +170,18 @@ export const Route = createFileRoute("/store/$slug")({
       if (response.ok) {
         const result = await response.json();
         if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
-          // Map the backend vendor to the expected format
           const backendVendor = result.data[0];
           return { vendor: mapBackendVendorForLoader(backendVendor) };
         }
       }
     } catch (error) {
       console.error("Could not load vendor from backend in loader:", error);
+    }
+
+    // Fall back to static data if the backend is unavailable
+    const staticVendor = getVendor(params.slug);
+    if (staticVendor) {
+      return { vendor: staticVendor };
     }
 
     return { vendor: null };

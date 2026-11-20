@@ -204,8 +204,9 @@ function AuthPage() {
         ? "/vendor/onboarding"
         : allowedReturnTo;
 
-      // Navigate immediately - cookies are already set by login response
-      void navigate({ to: destination, replace: true });
+      // Hard redirect ensures the session cookie is picked up and the
+      // root auth guard runs on the destination page immediately.
+      window.location.replace(destination);
     } catch (error) {
       console.error("Authentication request failed", error);
       setPasswordError("The authentication service is unavailable. Please try again.");
@@ -384,11 +385,11 @@ function AuthPage() {
               </span>
             </div>
 
-            <h2 className="font-display text-[34px] leading-[1.08] font-semibold tracking-tight text-[#203027] sm:text-[42px]">
+            <h2 className="font-display text-[30px] leading-[1.1] font-semibold tracking-tight text-[#203027] sm:text-[36px] lg:text-[38px]">
               {isSignup ? (
                 <>
                   Your Peniel account
-                  <span className="mt-1 block text-[#557358]">starts here.</span>
+                  <span className="block text-[#557358]">starts here.</span>
                 </>
               ) : (
                 "Good to see you."
@@ -397,7 +398,7 @@ function AuthPage() {
 
             <p className="mt-3 max-w-[350px] text-sm leading-6 text-[#777F76]">
               {isSignup
-                ? "Discover great local finds, connect with businesses, or grow your own storefront-all in one place."
+                ? "Discover great local finds, connect with businesses, or grow your own storefront—all in one place."
                 : "Sign in to continue your Peniel experience."}
             </p>
           </div>

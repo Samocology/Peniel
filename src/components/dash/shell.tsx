@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Bell, LogOut, Menu, Search, X } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Menu, Search, Store, UserRound, X } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { BottomBar } from "@/components/site/bottom-nav";
 import { app, unreadFor, useApp, useCurrentVendor } from "@/lib/peniel-store";
@@ -37,6 +37,7 @@ export function DashShell({
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [navQuery, setNavQuery] = useState("");
   const isVendor = kicker === "Business console";
   const st = useApp();
@@ -60,7 +61,7 @@ export function DashShell({
     (n) => n.primary && (!isVendor || n.to !== "/vendor/profile"),
   );
   const primary = isVendor
-    ? [...primaryItems.slice(0, 4), ...displayNav.filter((n) => n.to === "/vendor/profile")]
+    ? primaryItems.slice(0, 4)
     : primaryItems.slice(0, 5);
   const secondary = displayNav.filter((n) => !primary.includes(n));
   const menuNav = isVendor
@@ -137,14 +138,23 @@ export function DashShell({
           </nav>
           <div className="space-y-1 border-t border-border p-3">
             {isVendor && (
-              <button
-                type="button"
-                onClick={signOut}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-destructive/5 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <LogOut className="size-4" />
-                Sign out
-              </button>
+              <>
+                <Link
+                  to="/vendor/profile"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-muted"
+                >
+                  <UserRound className="size-4" />
+                  Profile
+                </Link>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-destructive/5 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <LogOut className="size-4" />
+                  Sign out
+                </button>
+              </>
             )}
             <Link
               to="/"
@@ -222,9 +232,65 @@ export function DashShell({
                   <Bell className="size-4" />
                   <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive" />
                 </button>
-                <span className="grid size-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  {initials}
-                </span>
+                <div className="relative">
+                  <button
+                    aria-label="Account menu"
+                    aria-expanded={profileOpen}
+                    onClick={() => setProfileOpen((open) => !open)}
+                    className="flex items-center gap-1.5 rounded-full transition hover:opacity-90"
+                  >
+                    <span className="grid size-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                      {initials}
+                    </span>
+                    <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" />
+                  </button>
+                  {profileOpen && (
+                    <>
+                      <button
+                        aria-label="Close menu"
+                        className="fixed inset-0 z-40"
+                        onClick={() => setProfileOpen(false)}
+                      />
+                      <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-56 rounded-xl border border-border bg-card p-1.5 shadow-lift">
+                        <div className="border-b border-border px-3 py-2.5">
+                          <p className="truncate text-xs font-semibold">{isVendor ? me.name : "Administrator"}</p>
+                          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                            {isVendor ? `${me.categoryLabel} · ${account.plan === "starter" ? "Free plan" : account.plan + " plan"}` : "Peniel admin"}
+                          </p>
+                        </div>
+                        {isVendor && (
+                          <Link
+                            to="/vendor/profile"
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs font-medium text-foreground transition hover:bg-muted"
+                          >
+                            <UserRound className="size-3.5" />
+                            Business profile
+                          </Link>
+                        )}
+                        <Link
+                          to="/vendor/settings"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs font-medium text-foreground transition hover:bg-muted"
+                        >
+                          <Store className="size-3.5" />
+                          Store settings
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileOpen(false);
+                            signOut();
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs font-medium text-destructive transition hover:bg-destructive/5"
+                        >
+                          <LogOut className="size-3.5" />
+                          Sign out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             {notificationsOpen && (
@@ -300,14 +366,24 @@ export function DashShell({
                 </nav>
                 <div className="space-y-1 border-t border-border p-3">
                   {isVendor && (
-                    <button
-                      type="button"
-                      onClick={signOut}
-                      className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition hover:bg-destructive/5 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <LogOut className="size-4" />
-                      Sign out
-                    </button>
+                    <>
+                      <Link
+                        to="/vendor/profile"
+                        onClick={() => setMenu(false)}
+                        className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-muted"
+                      >
+                        <UserRound className="size-4" />
+                        Profile
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={signOut}
+                        className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition hover:bg-destructive/5 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <LogOut className="size-4" />
+                        Sign out
+                      </button>
+                    </>
                   )}
                   {storeLink && (
                     <Link
