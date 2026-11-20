@@ -1406,11 +1406,10 @@ async function handleOAuthCallback(
   const resolvedRole = userResponse(sessionUser)?.role ?? "customer";
 
   const base = env.APP_BASE_URL ?? new URL(request.url).origin;
-  const callbackUrl = new URL(`${base}/auth/oauth/callback`);
-  callbackUrl.searchParams.set("role", resolvedRole);
+  const destination = resolvedRole === "vendor" ? "/vendor/onboarding" : "/";
   const response = new Response(null, {
     status: 302,
-    headers: { Location: callbackUrl.toString() },
+    headers: { Location: `${base}${destination}` },
   });
   response.headers.append("Set-Cookie", clearVerifierCookie);
   response.headers.append("Set-Cookie", clearRoleCookie);

@@ -143,18 +143,23 @@ function RootComponent() {
     if (
       pathname === "/onboarding" ||
       pathname === "/auth" ||
+      pathname === "/auth/oauth/callback" ||
       pathname === "/verify-otp" ||
       pathname === "/forgot-password" ||
       pathname === "/reset-password"
     )
       return;
+    // Never redirect admin routes to onboarding — let the auth guard handle them.
+    if (pathname.startsWith("/admin")) return;
+    // Only redirect authenticated customers/vendors who haven't onboarded yet.
+    if (!state.user) return;
     // Role-aware redirect: vendors go to their dashboard, customers to onboarding/home
-    if (state.user?.role === "vendor") {
+    if (state.user.role === "vendor") {
       navigate({ to: "/vendor" });
       return;
     }
     navigate({ to: "/onboarding" });
-  }, [pathname, navigate, state.user?.role]);
+  }, [pathname, navigate, state.user]);
 
   // Validate the session with the backend so the local store stays in sync.
   useEffect(() => {
@@ -205,6 +210,11 @@ function RootComponent() {
     }
     if (isAdminRoute && authenticated && !isAdmin) {
       void navigate({ to: "/", replace: true });
+      return;
+    }
+    // Authenticated admin visiting the login page → go to admin dashboard
+    if (pathname === "/admin/login" && authenticated && isAdmin) {
+      void navigate({ to: "/admin", replace: true });
       return;
     }
     // Role-aware redirect: vendors landing on home go to their dashboard

@@ -141,7 +141,7 @@ async function getPublicVendors(request: Request, env: BackendEnv) {
   const url = new URL(request.url);
   const slug = url.searchParams.get("slug")?.trim().toLowerCase();
   const select =
-    "id,slug,name,description,business_type,location,phone,fulfilment,categories(slug,name),storefronts(template_id,layout,theme,logo_object_key,cover_object_key),products(id,name,description,group_name,price_minor,currency,attributes)";
+    "id,slug,name,description,business_type,location,phone,fulfilment,categories(slug,name),storefronts(template_id,layout,theme,logo_object_key,cover_object_key),products(id,name,description,group_name,price_minor,currency,attributes),reviews(rating)";
   const queryParams = new URLSearchParams({
     select,
     status: "eq.active",
@@ -173,7 +173,16 @@ async function getPublicVendors(request: Request, env: BackendEnv) {
           vendor["location"].toLowerCase().includes(location)))
     );
   });
-  return json({ ok: true, data: filtered });
+  const enriched = filtered.map((item) => {
+    const vendor = item as Record<string, unknown>;
+    const reviews = Array.isArray(vendor["reviews"]) ? vendor["reviews"] : [];
+    const ratings = reviews
+      .map((r: unknown) => (typeof r === "object" && r !== null ? (r as Record<string, unknown>)["rating"] : 0))
+      .filter((r: unknown): r is number => typeof r === "number" && r > 0);
+    const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+    return { ...vendor, rating_avg: Math.round(avgRating * 10) / 10, rating_count: ratings.length };
+  });
+  return json({ ok: true, data: enriched });
 }
 
 async function getOwnedVendors(env: BackendEnv, identity: Identity) {

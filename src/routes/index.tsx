@@ -606,11 +606,14 @@ function CustomerHome() {
   useEffect(() => {
     let active = true;
     vendorsApi.public().then((result) => {
-      if (!active || !result.ok) return;
+      if (!active) return;
+      if (!result.ok) {
+        console.error("Could not load vendors:", result.error);
+        return;
+      }
       const records = result.data ?? [];
       const mapped = records
         .filter((v) => v.status === "active")
-        .slice(0, 6)
         .map((v) => {
           const sf = (v as VendorRecord & { storefronts?: { cover_object_key?: string; logo_object_key?: string; theme?: Record<string, string> }[] }).storefronts?.[0];
           const coverUrl = buildR2Url(sf?.cover_object_key);
@@ -621,6 +624,7 @@ function CustomerHome() {
             .join("")
             .toUpperCase()
             .slice(0, 2);
+          const enriched = v as VendorRecord & { rating_avg?: number; rating_count?: number };
           return {
             ...vendors[0],
             slug: v.slug,
@@ -634,18 +638,19 @@ function CustomerHome() {
             monogram,
             verified: false,
             featured: true,
-            rating: 0,
-            reviews: 0,
+            rating: enriched.rating_avg ?? 0,
+            reviews: enriched.rating_count ?? 0,
           };
-        });
-      if (mapped.length > 0) setLiveVendors(mapped);
+        })
+        .sort((a, b) => b.rating - a.rating || b.reviews - a.reviews);
+      setLiveVendors(mapped);
     });
     return () => {
       active = false;
     };
   }, []);
 
-  const featured = liveVendors.length > 0 ? liveVendors.slice(0, 3) : [];
+  const featured = liveVendors.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-background">
@@ -814,15 +819,17 @@ function CustomerHome() {
             ) : (
               <div className="col-span-full rounded-2xl border border-dashed border-border p-10 text-center">
                 <Store className="mx-auto size-8 text-muted-foreground" />
-                <p className="mt-3 font-display text-lg font-bold">No stores yet</p>
+                <p className="mt-3 font-display text-lg font-bold">
+                  Discover real businesses on Peniel
+                </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Be the first to open a storefront on Peniel.
+                  Explore great products and service from verified local vendors.
                 </p>
                 <Link
-                  to="/vendor/onboarding"
+                  to="/marketplace"
                   className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
                 >
-                  Create your store <ArrowRight className="size-3.5" />
+                  Explore marketplace <ArrowRight className="size-3.5" />
                 </Link>
               </div>
             )}

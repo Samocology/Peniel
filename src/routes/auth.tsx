@@ -376,16 +376,16 @@ function AuthPage() {
           {/* Intro */}
 
           <div className="mb-7 sm:mb-8">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#DCE7D8] bg-gradient-to-r from-[#EDF3EA] to-white px-3.5 py-2 shadow-sm shadow-[#20382A]/[0.04]">
-              <span className="grid size-5 place-items-center rounded-full bg-[#557358]/10">
-                <Sparkles className="size-3 text-[#557358]" />
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#DCE7D8] bg-gradient-to-r from-[#EDF3EA] to-white px-3 py-1.5 shadow-sm shadow-[#20382A]/[0.04] sm:px-3.5 sm:py-2">
+              <span className="grid size-4 place-items-center rounded-full bg-[#557358]/10 sm:size-5">
+                <Sparkles className="size-2.5 text-[#557358] sm:size-3" />
               </span>
-              <span className="text-[9px] font-bold tracking-[0.15em] text-[#526F54]">
+              <span className="text-[8px] font-bold tracking-[0.15em] text-[#526F54] sm:text-[9px]">
                 {isSignup ? "YOUR PENIEL JOURNEY STARTS HERE" : "WELCOME BACK"}
               </span>
             </div>
 
-            <h2 className="font-display text-[30px] leading-[1.1] font-semibold tracking-tight text-[#203027] sm:text-[36px] lg:text-[38px]">
+            <h2 className="font-display text-[26px] leading-[1.12] font-semibold tracking-tight text-[#203027] sm:text-[32px] lg:text-[36px]">
               {isSignup ? (
                 <>
                   Your Peniel account
@@ -396,9 +396,9 @@ function AuthPage() {
               )}
             </h2>
 
-            <p className="mt-3 max-w-[350px] text-sm leading-6 text-[#777F76]">
+            <p className="mt-2.5 max-w-[350px] text-[13px] leading-5 text-[#777F76] sm:mt-3 sm:text-sm sm:leading-6">
               {isSignup
-                ? "Discover great local finds, connect with businesses, or grow your own storefront—all in one place."
+                ? "Discover great local finds, connect with businesses, or grow your own storefront. All in one place."
                 : "Sign in to continue your Peniel experience."}
             </p>
           </div>
