@@ -20,7 +20,7 @@ export type OrderStatus =
 export type OrderLine = { id: string; item: string; meta: string; qty: number; price: number };
 
 export type Profile = Partial<
-  Pick<Vendor, "name" | "tagline" | "about" | "location" | "hours" | "delivery">
+  Pick<Vendor, "name" | "tagline" | "about" | "location" | "hours" | "delivery" | "logo_object_key" | "cover_object_key">
 > & {
   deliveryFee?: number;
   freeAbove?: number;
@@ -368,6 +368,7 @@ async function subscribeToVendorChanges() {
                   orders: "New on Peniel",
                   hours: "",
                   delivery: "",
+                  status: "active",
                   products: [],
                   groups: [],
                   layout:
@@ -870,10 +871,23 @@ export function useCurrentVendor() {
   return { vendor: mergeVendor(base, a), account: a, base };
 }
 
+const R2_PUBLIC_URL =
+  typeof window !== "undefined"
+    ? (import.meta as { env?: { VITE_R2_PUBLIC_MEDIA_URL?: string } }).env?.VITE_R2_PUBLIC_MEDIA_URL ??
+      "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"
+    : "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+
+function buildR2Url(objectKey: string | undefined): string | undefined {
+  if (!objectKey || typeof objectKey !== "string") return undefined;
+  return `${R2_PUBLIC_URL}/${objectKey}`;
+}
+
 export function mergeVendor(v: Vendor, a?: Account): Vendor {
   if (!a) return v;
   const p = a.profile;
-  return {
+  const logoKey = p.logo_object_key || v.logo_object_key;
+  const coverKey = p.cover_object_key || v.cover_object_key;
+  const result: Vendor = {
     ...v,
     name: p.name || v.name,
     tagline: p.tagline || v.tagline,
@@ -881,9 +895,14 @@ export function mergeVendor(v: Vendor, a?: Account): Vendor {
     location: p.location || v.location,
     hours: p.hours || v.hours,
     delivery: p.delivery || v.delivery,
+    logo: buildR2Url(logoKey) ?? v.logo ?? "",
+    cover: buildR2Url(coverKey) ?? v.cover ?? "",
     theme: p.brandColor ? { ...v.theme, accent: p.brandColor } : v.theme,
     products: [...v.products, ...(a.products ?? [])].filter((x) => !a.hidden.includes(x.id)),
   };
+  if (logoKey) result.logo_object_key = logoKey;
+  if (coverKey) result.cover_object_key = coverKey;
+  return result;
 }
 
 export const unreadFor = (t: Thread, side: ChatMsg["from"]) =>

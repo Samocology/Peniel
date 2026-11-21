@@ -56,6 +56,13 @@ export type VendorRecord = {
   fulfilment: "order" | "booking" | "reservation";
   status: string;
   categories: { slug: string; name: string } | null;
+  storefronts?: {
+    layout: string;
+    template_id: string;
+    logo_object_key?: string;
+    cover_object_key?: string;
+    theme?: Record<string, unknown>;
+  }[];
 };
 
 export type ProductRecord = {

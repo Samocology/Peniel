@@ -5,6 +5,7 @@ import { TemplatePicker } from "@/components/store/template-picker";
 import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, PartyPopper, Store } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { categories, naira, type BusinessType } from "@/lib/data";
+import { defaultTemplateFor } from "@/lib/templates";
 import { toast } from "sonner";
 import { useState, useCallback } from "react";
 import { vendorsApi, storageApi } from "@/lib/api-client";
@@ -63,7 +64,7 @@ const categoryTypes: Record<string, BusinessType> = {
 
 function Onboarding() {
   const { step } = Route.useSearch();
-  const { vendor } = useCurrentVendor();
+  const { vendor, account, base } = useCurrentVendor();
   const [businessName, setBusinessName] = useState("");
   const [businessSlug, setBusinessSlug] = useState("");
   const [businessDescription, setBusinessDescription] = useState("");
@@ -214,18 +215,19 @@ function Onboarding() {
 
     setSavingVendor(true);
     try {
-      const response = await vendorsApi.create({
-        name: businessName,
-        slug: businessSlug,
-        description: businessDescription,
-        businessType,
-        categorySlug,
-        location: [city, region].filter(Boolean).join(", "),
-        address,
-        fulfilment: businessFulfilment,
-        templateId: vendor.layout,
-        layout: vendor.layout,
-      });
+const selectedTemplate = account.choice ?? defaultTemplateFor(base).id;
+    const response = await vendorsApi.create({
+      name: businessName,
+      slug: businessSlug,
+      description: businessDescription,
+      businessType,
+      categorySlug,
+      location: [city, region].filter(Boolean).join(", "),
+      address,
+      fulfilment: businessFulfilment,
+      templateId: selectedTemplate,
+      layout: selectedTemplate,
+    });
       if (!response.ok) {
         throw new Error(response.error ?? "Could not submit your storefront for review.");
       }

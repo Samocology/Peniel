@@ -157,12 +157,8 @@ function VendorSettings() {
         whatsappNumber: liveVendor.whatsapp_number,
         fulfilment: liveVendor.fulfilment,
         status: liveVendor.status,
-        logo_object_key:
-          (liveVendor as VendorRecord & { storefronts?: { logo_object_key?: string }[] }).storefronts?.[0]?.logo_object_key ??
-          (liveVendor as VendorRecord & { logo_object_key?: string }).logo_object_key,
-        cover_object_key:
-          (liveVendor as VendorRecord & { storefronts?: { cover_object_key?: string }[] }).storefronts?.[0]?.cover_object_key ??
-          (liveVendor as VendorRecord & { cover_object_key?: string }).cover_object_key,
+        logo_object_key: liveVendor.storefronts?.[0]?.logo_object_key,
+        cover_object_key: liveVendor.storefronts?.[0]?.cover_object_key,
       }
     : storeVendor;
 
@@ -275,6 +271,7 @@ function VendorSettings() {
       const result = await vendorsApi.updateProfile(liveVendor!.id, { logo_object_key: objectKey });
       if (result.ok) {
         toast.success("Logo uploaded successfully");
+        app.saveProfile({ logo_object_key: objectKey });
         await refreshVendor();
       } else {
         toast.error(result.error || "Failed to save logo");
@@ -296,6 +293,7 @@ function VendorSettings() {
       });
       if (result.ok) {
         toast.success("Cover image uploaded successfully");
+        app.saveProfile({ cover_object_key: objectKey });
         await refreshVendor();
       } else {
         toast.error(result.error || "Failed to save cover image");
@@ -575,8 +573,11 @@ function VendorSettings() {
                       toast.error("Your storefront could not be loaded. Please sign in again.");
                       return;
                     }
+                    const account = app.account(liveVendor.slug);
+                    const selectedTemplate = account?.choice;
                     const result = await vendorsApi.updateStorefront(liveVendor.id, {
                       theme: { brandColor },
+                      ...(selectedTemplate ? { templateId: selectedTemplate, layout: selectedTemplate } : {}),
                     });
                     if (result.ok) {
                       toast.success("Brand identity saved. Customers will see the update.");

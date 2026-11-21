@@ -137,6 +137,8 @@ export type Vendor = {
   layout: StoreLayout;
   cover: string;
   logo?: string;
+  logo_object_key?: string;
+  cover_object_key?: string;
   monogram: string;
   verified: boolean;
   featured: boolean;
@@ -149,6 +151,7 @@ export type Vendor = {
   phone: string;
   email: string;
   fulfilment: "order" | "booking" | "reservation";
+  status: string;
   /** storefront theme - vendor brand owns the visual, platform stays subtle */
   theme: {
     bg: string;
@@ -188,6 +191,7 @@ export const vendors: Vendor[] = [
     phone: "0812 345 6789",
     email: "hello@abigailskitchen.ng",
     fulfilment: "order",
+    status: "active",
     theme: {
       bg: "#0e0c0a",
       ink: "#f5efe3",
@@ -286,6 +290,7 @@ export const vendors: Vendor[] = [
     phone: "0803 111 2244",
     email: "orders@freshfromthefarm.ng",
     fulfilment: "order",
+    status: "active",
     theme: {
       bg: "#f4f8ee",
       ink: "#17301a",
@@ -479,6 +484,7 @@ export const vendors: Vendor[] = [
     phone: "0701 998 3311",
     email: "atelier@kemiscouture.com",
     fulfilment: "order",
+    status: "active",
     theme: {
       bg: "#0c0c0c",
       ink: "#f2ede4",
@@ -562,6 +568,7 @@ export const vendors: Vendor[] = [
     phone: "0806 552 7788",
     email: "orders@mamacee.ng",
     fulfilment: "order",
+    status: "active",
     theme: {
       bg: "#fffaf5",
       ink: "#4a2b2b",
@@ -722,6 +729,7 @@ export const vendors: Vendor[] = [
     phone: "0809 442 1177",
     email: "sales@lagostechhub.com",
     fulfilment: "order",
+    status: "active",
     theme: {
       bg: "#0f1216",
       ink: "#e8edf4",

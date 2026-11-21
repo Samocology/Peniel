@@ -69,10 +69,11 @@ function VendorProfile() {
         tagline: liveVendor.description,
         about: liveVendor.description,
         location: liveVendor.location,
-        logoUrl: buildR2Url(liveVendor.logo_object_key),
-        coverUrl: buildR2Url(liveVendor.cover_object_key),
+        status: liveVendor.status,
+        logoUrl: buildR2Url(liveVendor.storefronts?.[0]?.logo_object_key),
+        coverUrl: buildR2Url(liveVendor.storefronts?.[0]?.cover_object_key),
       }
-    : { ...vendor, logoUrl: undefined, coverUrl: undefined };
+    : { ...vendor, logoUrl: undefined, coverUrl: undefined, status: vendor.status };
 
   const logoUrl = live.logoUrl ?? (vendor.logo ? vendor.logo : undefined);
   const coverUrl = live.coverUrl ?? (vendor.cover ? vendor.cover : undefined);
