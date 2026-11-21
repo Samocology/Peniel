@@ -122,8 +122,10 @@ export function mapBackendVendor(value: unknown): Vendor | null {
     : fallback.layout;
 
   // Extract storefront customizations
-  const coverUrl = buildR2Url(storefront?.["cover_object_key"] as string);
-  const logoUrl = buildR2Url(storefront?.["logo_object_key"] as string);
+  const logoKey = storefront?.["logo_object_key"] as string | undefined;
+  const coverKey = storefront?.["cover_object_key"] as string | undefined;
+  const logoUrl = buildR2Url(logoKey);
+  const coverUrl = buildR2Url(coverKey);
   const theme = extractTheme(storefront);
 
   const products = Array.isArray(value["products"])
@@ -155,6 +157,9 @@ export function mapBackendVendor(value: unknown): Vendor | null {
       typeof category?.["name"] === "string" ? category["name"] : fallback.categoryLabel,
     layout,
     cover: coverUrl ?? fallback.cover,
+    logo: logoUrl ?? fallback.logo,
+    logo_object_key: logoKey ?? fallback.logo_object_key,
+    cover_object_key: coverKey ?? fallback.cover_object_key,
     monogram,
     theme: theme ? { ...fallback.theme, ...theme } : fallback.theme,
     verified: false,
