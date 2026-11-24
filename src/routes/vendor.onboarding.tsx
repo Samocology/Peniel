@@ -843,13 +843,6 @@ const selectedTemplate = account.choice ?? defaultTemplateFor(base).id;
                   </div>
                 </div>
               </div>
-              <Link
-                to="/store/$slug"
-                params={{ slug: businessSlug }}
-                className="mt-4 inline-block text-sm font-semibold text-primary"
-              >
-                Open full preview →
-              </Link>
             </div>
           )}
 
