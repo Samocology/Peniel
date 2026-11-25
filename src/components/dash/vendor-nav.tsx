@@ -38,7 +38,7 @@ export const vendorNav: NavItem[] = [
   { label: "Reviews", to: "/vendor/reviews", icon: <Star className={i} /> },
   { label: "Analytics", to: "/vendor/analytics", icon: <BarChart3 className={i} /> },
   { label: "Verification", to: "/vendor/verification", icon: <BadgeCheck className={i} /> },
-  { label: "Store settings", to: "/vendor/settings", icon: <Settings className={i} /> },
+  { label: "Store settings", to: "/vendor/settings", icon: <Settings className={i} />, primary: true },
   { label: "Support", to: "/vendor/support", icon: <LifeBuoy className={i} /> },
 ];
 

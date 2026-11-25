@@ -188,7 +188,7 @@ async function getPublicVendors(request: Request, env: BackendEnv) {
 async function getOwnedVendors(env: BackendEnv, identity: Identity) {
   const query = new URLSearchParams({
     select:
-      "id,slug,name,description,business_type,location,phone,fulfilment,status,categories(slug,name)",
+      "id,slug,name,description,business_type,location,phone,fulfilment,status,categories(slug,name),storefronts(logo_object_key,cover_object_key,layout,template_id,theme)",
     owner_id: `eq.${identity.id}`,
     order: "created_at.desc",
     limit: "50",

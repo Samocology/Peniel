@@ -902,6 +902,16 @@ export function mergeVendor(v: Vendor, a?: Account): Vendor {
   };
   if (logoKey) result.logo_object_key = logoKey;
   if (coverKey) result.cover_object_key = coverKey;
+
+  // Recalculate monogram from the vendor name so it isn't stuck on the dummy value.
+  result.monogram = result.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return result;
 }
 

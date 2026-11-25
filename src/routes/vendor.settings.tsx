@@ -455,6 +455,12 @@ function VendorSettings() {
                         alt={`${vendor.name} logo`}
                         className="size-[68px] object-contain"
                       />
+                    ) : vendor.logo ? (
+                      <img
+                        src={vendor.logo}
+                        alt={`${vendor.name} logo`}
+                        className="size-[68px] object-contain"
+                      />
                     ) : (
                       <div
                         className="grid size-[68px] place-items-center rounded-2xl font-display text-xl font-bold text-white shadow-md"
