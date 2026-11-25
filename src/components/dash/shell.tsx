@@ -58,9 +58,7 @@ export function DashShell({
     item.label.toLowerCase().includes(navQuery.trim().toLowerCase()),
   );
   const primaryItems = displayNav.filter((n) => n.primary);
-  const primary = isVendor
-    ? primaryItems.slice(0, 4)
-    : primaryItems.slice(0, 5);
+  const primary = primaryItems.slice(0, 5);
   const secondary = displayNav.filter((n) => !primary.includes(n));
   const menuNav = secondary;
   const initials = isVendor ? me.monogram : "VA";

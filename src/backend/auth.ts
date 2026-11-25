@@ -308,7 +308,7 @@ async function createSupabaseUser(
       email_confirm: false,
       user_metadata: {
         full_name: name,
-        signup_intent: intentRole === "vendor" ? "vendor" : "customer",
+        signup_intent: ["vendor", "admin", "super_admin"].includes(intentRole) ? String(intentRole) : "customer",
       },
     }),
   });
@@ -595,7 +595,7 @@ function userResponse(user: SupabaseUser | undefined) {
     id: user.id,
     email: user.email ?? "",
     name: typeof metadataName === "string" ? metadataName : "",
-    role: signupIntent === "vendor" ? "vendor" : "customer",
+    role: typeof signupIntent === "string" && ["vendor", "admin", "super_admin"].includes(signupIntent) ? signupIntent : "customer",
   };
 }
 
@@ -1274,7 +1274,7 @@ async function ensureOAuthSignupIntent(
   user: SupabaseUser,
   requestedRole: string,
 ): Promise<SupabaseUser> {
-  const role = requestedRole === "vendor" ? "vendor" : "customer";
+  const role = ["vendor", "admin", "super_admin"].includes(requestedRole) ? requestedRole : "customer";
   if (user.user_metadata?.["signup_intent"] === role) return user;
 
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;

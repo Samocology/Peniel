@@ -111,7 +111,7 @@ async function buildPresignedUrl(
   return `${endpoint}?${queryParams.toString()}&X-Amz-Signature=${signature}`;
 }
 
-function safeObjectKey(ownerId: string, purpose: string, filename: string): string {
+function safeObjectKey(ownerId: string, purpose: string, filename: string, vendorId?: string): string {
   const ext =
     filename
       .split(".")
@@ -119,7 +119,8 @@ function safeObjectKey(ownerId: string, purpose: string, filename: string): stri
       ?.toLowerCase()
       .replace(/[^a-z0-9]/g, "") ?? "bin";
   const random = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  return `${purpose}/${ownerId.slice(0, 8)}/${random}.${ext}`;
+  const scope = vendorId ? `vendors/${vendorId.slice(0, 8)}` : `users/${ownerId.slice(0, 8)}`;
+  return `${purpose}/${scope}/${random}.${ext}`;
 }
 
 // POST /api/storage/upload-url
@@ -151,12 +152,37 @@ async function requestUploadUrl(request: Request, env: R2Env): Promise<Response>
     return json({ ok: false, error: "File type not allowed." }, 400);
   if (vendorId && !isUuid(vendorId)) return json({ ok: false, error: "Invalid vendorId." }, 400);
 
+  // When a vendorId is supplied, verify the caller is a member/owner of that vendor.
+  if (vendorId) {
+    const anonKey = env.SUPABASE_ANON_KEY;
+    const url = env.SUPABASE_URL?.replace(/\/+$/, "");
+    if (url && anonKey) {
+      const checkResp = await fetch(
+        `${url}/rest/v1/vendors?id=eq.${encodeURIComponent(vendorId)}&select=id`,
+        {
+          headers: {
+            apikey: anonKey,
+            authorization: `Bearer ${identity.accessToken}`,
+          },
+        },
+      );
+      if (!checkResp.ok) {
+        return json({ ok: false, error: "Could not verify vendor access." }, 502);
+      }
+      const checkPayload = await checkResp.json().catch(() => null);
+      const rows = Array.isArray(checkPayload) ? checkPayload : [];
+      if (rows.length === 0) {
+        return json({ ok: false, error: "You do not have access to this vendor." }, 403);
+      }
+    }
+  }
+
   const isPrivate = purpose === "verification-doc";
   const bucket = isPrivate
     ? (env.R2_BUCKET_PRIVATE ?? env.R2_BUCKET_PUBLIC!)
     : env.R2_BUCKET_PUBLIC!;
   const maxBytes = isPrivate ? MAX_PRIVATE_BYTES : MAX_PUBLIC_BYTES;
-  const objectKey = safeObjectKey(identity.id, purpose, filename);
+  const objectKey = safeObjectKey(identity.id, purpose, filename, vendorId ?? undefined);
 
   const uploadUrl = await buildPresignedUrl(
     env,

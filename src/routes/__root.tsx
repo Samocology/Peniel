@@ -170,12 +170,12 @@ function RootComponent() {
       .then((result) => {
         if (!active) return;
         const authed = result.ok && result.data.authenticated === true;
-        setSessionValidated(true);
         if (authed && result.data.user) {
           app.signIn(result.data.user.name, result.data.user.email, result.data.user.role ?? "customer");
         } else if (!authed && state.user) {
           void app.signOut().catch(() => {});
         }
+        setSessionValidated(true);
       })
       .catch(() => {
         setSessionValidated(true);
@@ -201,7 +201,7 @@ function RootComponent() {
 
   useEffect(() => {
     if (!sessionValidated) return;
-    if (isProtected && !authenticated) {
+    if (isProtected && !authenticated && !isAuth) {
       void navigate({
         to: isAdminRoute ? "/admin/login" : "/auth",
         search: { mode: "login", returnTo: pathname },
@@ -215,6 +215,11 @@ function RootComponent() {
     // Authenticated admin visiting the login page → go to admin dashboard
     if (pathname === "/admin/login" && authenticated && isAdmin) {
       void navigate({ to: "/admin", replace: true });
+      return;
+    }
+    // Authenticated non-admin on admin login → go home (no admin access)
+    if (pathname === "/admin/login" && authenticated && !isAdmin) {
+      void navigate({ to: "/", replace: true });
       return;
     }
     // Role-aware redirect: vendors landing on home go to their dashboard

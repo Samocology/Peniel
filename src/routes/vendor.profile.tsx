@@ -17,7 +17,7 @@ import { useCurrentVendor } from "@/lib/peniel-store";
 import { vendorsApi, type VendorRecord } from "@/lib/api-client";
 
 const R2_PUBLIC_URL =
-  import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+  import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
 
 function buildR2Url(objectKey: string | undefined): string | undefined {
   if (!objectKey || typeof objectKey !== "string") return undefined;

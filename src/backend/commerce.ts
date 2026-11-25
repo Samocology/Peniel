@@ -256,7 +256,8 @@ async function createVendor(request: Request, env: BackendEnv, identity: Identit
   });
   let payload = await databasePayload(response);
   if (response.ok) {
-    return json({ ok: true, data: { vendorId: payload, status: "pending_review" } }, 201);
+    const vendorId = typeof payload === "string" ? payload : (payload as Record<string, unknown>)?.["id"] ?? payload;
+    return json({ ok: true, data: { vendorId: String(vendorId), status: "active" } }, 201);
   }
 
   const rpcFailed = response.status === 404;
@@ -316,7 +317,7 @@ async function createVendor(request: Request, env: BackendEnv, identity: Identit
     return json({ ok: false, error: "Could not create your storefront." }, 500);
   }
 
-  const [memberResp, storefrontResp, applicationResp] = await Promise.all([
+  const results = await Promise.allSettled([
     databaseRequest(
       env,
       "vendor_members",
@@ -348,16 +349,22 @@ async function createVendor(request: Request, env: BackendEnv, identity: Identit
       true,
     ),
   ]);
-  for (const r of [memberResp, storefrontResp, applicationResp]) {
-    if (!r.ok) {
-      const detail = await databasePayload(r);
-      console.error("Fallback vendor setup step failed", r.status, detail);
+
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      const r = result.value;
+      if (!r.ok) {
+        const detail = await databasePayload(r);
+        console.error("Fallback vendor setup step failed", r.status, detail);
+      } else {
+        await r.body?.cancel();
+      }
     } else {
-      await r.body?.cancel();
+      console.error("Fallback vendor setup step rejected", result.reason);
     }
   }
 
-  return json({ ok: true, data: { vendorId, status: "pending_review" } }, 201);
+  return json({ ok: true, data: { vendorId, status: "active" } }, 201);
 }
 
 async function getVendorProducts(request: Request, env: BackendEnv, identity?: Identity) {

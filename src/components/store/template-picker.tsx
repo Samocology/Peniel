@@ -2,8 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { Check, Eye, Lock, Sparkles } from "lucide-react";
 import { useState } from "react";
 import type { Vendor } from "@/lib/data";
-import { defaultTemplateFor, templatesFor, type StoreTemplate } from "@/lib/templates";
+import { defaultTemplateFor, getTemplate, templatesFor, type StoreTemplate } from "@/lib/templates";
 import { app, canPickStorefront, useApp } from "@/lib/peniel-store";
+import { vendorsApi } from "@/lib/api-client";
 
 function Thumb({ tpl }: { tpl: StoreTemplate }) {
   const t = tpl.theme;
@@ -42,7 +43,7 @@ function Thumb({ tpl }: { tpl: StoreTemplate }) {
 }
 
 /** Storefront design chooser used in onboarding and store settings. */
-export function TemplatePicker({ vendor }: { vendor: Vendor }) {
+export function TemplatePicker({ vendor, vendorId }: { vendor: Vendor; vendorId: string | undefined }) {
   const st = useApp();
   const s = st.accounts[vendor.slug] ?? { plan: "starter" as const, picks: 0, choice: undefined };
   const current = s.choice ?? defaultTemplateFor(vendor).id;
@@ -51,14 +52,31 @@ export function TemplatePicker({ vendor }: { vendor: Vendor }) {
   const [msg, setMsg] = useState<string | null>(null);
   const list = templatesFor(vendor.type);
 
-  const pick = (id: string) => {
+  const pick = async (id: string) => {
     if (id === current) return;
     const ok = app.chooseStorefront(id);
-    setMsg(
-      ok
-        ? "Storefront updated. Customers now see the new design."
-        : "Free plan includes one storefront choice. Upgrade to switch again.",
-    );
+    if (!ok) {
+      setMsg("Free plan includes one storefront choice. Upgrade to switch again.");
+      return;
+    }
+    // Persist the template choice to the backend when we know the vendor's database id.
+    if (vendorId) {
+      const tpl = getTemplate(id);
+      const layout =
+        tpl?.layout &&
+        ["cinematic","builder","editorial","gallery","playful","reservation","grid"].includes(tpl.layout)
+          ? tpl.layout
+          : "grid";
+      const result = await vendorsApi.updateStorefront(vendorId, {
+        templateId: id,
+        layout,
+      });
+      if (!result.ok) {
+        setMsg("Saved locally but backend sync failed. Try again.");
+        return;
+      }
+    }
+    setMsg("Storefront updated. Customers now see the new design.");
   };
 
   return (

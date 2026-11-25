@@ -5,7 +5,7 @@ import { TemplatePicker } from "@/components/store/template-picker";
 import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, PartyPopper, Store } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { categories, naira, type BusinessType } from "@/lib/data";
-import { defaultTemplateFor } from "@/lib/templates";
+import { defaultTemplateFor, getTemplate, templatesFor } from "@/lib/templates";
 import { toast } from "sonner";
 import { useState, useCallback } from "react";
 import { vendorsApi, storageApi } from "@/lib/api-client";
@@ -104,18 +104,17 @@ function Onboarding() {
 
   const uploadImage = useCallback(
     async (file: File, purpose: "store-logo" | "store-cover"): Promise<string | null> => {
-      if (!vendor) {
-        toast.error("Vendor context not loaded");
-        return null;
-      }
       const uploadResult = await storageApi.getUploadUrl({
         purpose,
         contentType: file.type,
         filename: file.name,
-        vendorId: vendor.id,
       });
-      if (!uploadResult.ok || !uploadResult.data) {
-        toast.error(uploadResult.error || "Failed to get upload URL");
+      if (!uploadResult.ok) {
+        toast.error("Failed to get upload URL");
+        return null;
+      }
+      if (!uploadResult.data) {
+        toast.error("Failed to get upload URL");
         return null;
       }
       const { uploadUrl, objectKey } = uploadResult.data;
@@ -126,7 +125,7 @@ function Onboarding() {
       }
       return objectKey;
     },
-    [vendor],
+    [],
   );
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -202,20 +201,27 @@ function Onboarding() {
     // Build fulfillment-specific data
     const fulfillmentData: Record<string, unknown> = {};
     if (businessFulfilment === "order") {
-      fulfillmentData.delivery = delivery;
-      fulfillmentData.fulfilment_options = fulfilmentOptions;
-      fulfillmentData.prep_time = prepTime;
+      fulfillmentData["delivery"] = delivery;
+      fulfillmentData["fulfilment_options"] = fulfilmentOptions;
+      fulfillmentData["prep_time"] = prepTime;
     } else if (businessFulfilment === "booking") {
-      fulfillmentData.hours = hours;
-      fulfillmentData.service_options = delivery;
+      fulfillmentData["hours"] = hours;
+      fulfillmentData["service_options"] = delivery;
     } else if (businessFulfilment === "reservation") {
-      fulfillmentData.hours = hours;
-      fulfillmentData.guest_info = delivery;
+      fulfillmentData["hours"] = hours;
+      fulfillmentData["guest_info"] = delivery;
     }
 
     setSavingVendor(true);
     try {
-const selectedTemplate = account.choice ?? defaultTemplateFor(base).id;
+    const selectedTemplateId = account.choice ?? defaultTemplateFor(base).id;
+    const selectedTemplate = getTemplate(selectedTemplateId);
+    // Resolve layout: signature templates carry their own layout; composed ones default to grid.
+    const layout =
+      selectedTemplate?.layout &&
+      ["cinematic","builder","editorial","gallery","playful","reservation","grid"].includes(selectedTemplate.layout)
+        ? selectedTemplate.layout
+        : "grid";
     const response = await vendorsApi.create({
       name: businessName,
       slug: businessSlug,
@@ -225,8 +231,8 @@ const selectedTemplate = account.choice ?? defaultTemplateFor(base).id;
       location: [city, region].filter(Boolean).join(", "),
       address,
       fulfilment: businessFulfilment,
-      templateId: selectedTemplate,
-      layout: selectedTemplate,
+      templateId: selectedTemplateId,
+      layout,
     });
       if (!response.ok) {
         throw new Error(response.error ?? "Could not submit your storefront for review.");
@@ -255,10 +261,10 @@ const selectedTemplate = account.choice ?? defaultTemplateFor(base).id;
         phone: "",
         email: "",
         ...(logoKey
-          ? { logo: `${import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${logoKey}` }
+          ? { logo: `${import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${logoKey}` }
           : {}),
         ...(coverKey
-          ? { cover: `${import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${coverKey}` }
+          ? { cover: `${import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${coverKey}` }
           : {}),
         verified: false,
         featured: false,
@@ -268,7 +274,7 @@ const selectedTemplate = account.choice ?? defaultTemplateFor(base).id;
         products: validProducts.map((p, i) => ({
           id: `temp-${i}`,
           name: p.name,
-          description: "",
+          desc: "",
           group: "General",
           price: p.price,
           stock: null,
@@ -281,15 +287,11 @@ const selectedTemplate = account.choice ?? defaultTemplateFor(base).id;
             ? delivery
             : businessFulfilment === "booking"
               ? delivery
-              : undefined,
+              : "",
         hours:
           businessFulfilment === "booking" || businessFulfilment === "reservation"
             ? hours
-            : undefined,
-        prep_time: businessFulfilment === "order" ? prepTime : undefined,
-        fulfilment_options: businessFulfilment === "order" ? fulfilmentOptions : undefined,
-        service_options: businessFulfilment === "booking" ? delivery : undefined,
-        guest_info: businessFulfilment === "reservation" ? delivery : undefined,
+            : "",
       });
       setVendorSubmitted(true);
       toast.success("Storefront submitted for review.");
@@ -513,7 +515,7 @@ const selectedTemplate = account.choice ?? defaultTemplateFor(base).id;
                   <label className="relative h-32 sm:h-40 overflow-hidden rounded-xl border border-dashed border-border bg-muted/30 cursor-pointer">
                     {uploadKey ? (
                       <img
-                        src={`${import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${uploadKey}`}
+                        src={`${import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${uploadKey}`}
                         alt=""
                         className="size-full object-cover"
                         onError={(e) => {
@@ -931,5 +933,5 @@ const selectedTemplate = account.choice ?? defaultTemplateFor(base).id;
 
 function CurrentPicker() {
   const { base } = useCurrentVendor();
-  return <TemplatePicker vendor={base} />;
+  return <TemplatePicker vendor={base} vendorId={undefined} />;
 }

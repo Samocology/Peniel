@@ -303,7 +303,7 @@ export type AuthUser = {
   id: string;
   email: string;
   name: string;
-  role?: "customer" | "vendor";
+  role?: "customer" | "vendor" | "admin" | "super_admin";
 };
 
 export const authApi = {

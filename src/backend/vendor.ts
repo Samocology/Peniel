@@ -61,6 +61,17 @@ async function requireIdentity(request: Request, env: BackendEnv) {
   return { identity };
 }
 
+/** Verify the authenticated identity owns or is a member of the given vendor. */
+async function assertVendorOwnership(env: BackendEnv, identity: Identity, vendorId: string): Promise<Response | null> {
+  const r = await db(env, `vendors?id=eq.${vendorId}&select=id`, identity.accessToken);
+  if (!r.ok) return dbErr(r.status, await payload(r));
+  const rows = await payload(r);
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return json({ ok: false, error: "You do not have access to this vendor." }, 403);
+  }
+  return null;
+}
+
 // GET /api/vendor/orders?vendor_id=...
 async function getVendorOrders(request: Request, env: BackendEnv, identity: Identity) {
   const url = new URL(request.url);
@@ -238,6 +249,10 @@ async function updateStorefront(request: Request, env: BackendEnv, identity: Ide
   const url = new URL(request.url);
   const vendorId = url.searchParams.get("vendor_id") ?? "";
   if (!isUuid(vendorId)) return json({ ok: false, error: "Valid vendor_id required." }, 400);
+
+  const ownership = await assertVendorOwnership(env, identity, vendorId);
+  if (ownership) return ownership;
+
   const input = await readJsonObject(request, 32_000);
   if (!input) return json({ ok: false, error: "Valid JSON required." }, 400);
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -259,11 +274,16 @@ async function updateStorefront(request: Request, env: BackendEnv, identity: Ide
     patch["cover_object_key"] = input["cover_object_key"].slice(0, 200);
   const r = await db(env, `storefronts?vendor_id=eq.${vendorId}`, identity.accessToken, {
     method: "PATCH",
+    headers: { prefer: "return=representation" },
     body: JSON.stringify(patch),
   });
   const p = await payload(r);
   if (!r.ok) return dbErr(r.status, p);
-  return json({ ok: true, data: p });
+  const updated = Array.isArray(p) ? p : p ? [p] : [];
+  if (updated.length === 0) {
+    return json({ ok: false, error: "Storefront not found or no changes applied." }, 404);
+  }
+  return json({ ok: true, data: updated });
 }
 
 // PATCH /api/vendor/profile?vendor_id=...
@@ -271,6 +291,10 @@ async function updateVendorProfile(request: Request, env: BackendEnv, identity: 
   const url = new URL(request.url);
   const vendorId = url.searchParams.get("vendor_id") ?? "";
   if (!isUuid(vendorId)) return json({ ok: false, error: "Valid vendor_id required." }, 400);
+
+  const ownership = await assertVendorOwnership(env, identity, vendorId);
+  if (ownership) return ownership;
+
   const input = await readJsonObject(request, 16_000);
   if (!input) return json({ ok: false, error: "Valid JSON required." }, 400);
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -290,31 +314,47 @@ async function updateVendorProfile(request: Request, env: BackendEnv, identity: 
     const normalized = normalizePhone(input["whatsappNumber"]);
     if (normalized) patch["whatsapp_number"] = normalized;
   }
-  if (typeof input["logo_object_key"] === "string" || typeof input["cover_object_key"] === "string") {
-    const storefrontPatch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (typeof input["logo_object_key"] === "string")
-      storefrontPatch["logo_object_key"] = input["logo_object_key"].slice(0, 200);
-    if (typeof input["cover_object_key"] === "string")
-      storefrontPatch["cover_object_key"] = input["cover_object_key"].slice(0, 200);
+  const storefrontUpdates: Record<string, unknown> = {};
+  let hasStorefrontUpdate = false;
+  if (typeof input["logo_object_key"] === "string") {
+    storefrontUpdates["logo_object_key"] = input["logo_object_key"].slice(0, 200);
+    hasStorefrontUpdate = true;
+  }
+  if (typeof input["cover_object_key"] === "string") {
+    storefrontUpdates["cover_object_key"] = input["cover_object_key"].slice(0, 200);
+    hasStorefrontUpdate = true;
+  }
+  if (hasStorefrontUpdate) {
+    storefrontUpdates["updated_at"] = new Date().toISOString();
     const sr = await db(
       env,
       `storefronts?vendor_id=eq.${vendorId}`,
       identity.accessToken,
       {
         method: "PATCH",
-        body: JSON.stringify(storefrontPatch),
+        headers: { prefer: "return=representation" },
+        body: JSON.stringify(storefrontUpdates),
       },
     );
     const sp = await payload(sr);
     if (!sr.ok) return dbErr(sr.status, sp);
+    const updatedSf = Array.isArray(sp) ? sp : sp ? [sp] : [];
+    if (updatedSf.length === 0) {
+      return json({ ok: false, error: "Storefront not found for this vendor." }, 404);
+    }
   }
   const r = await db(env, `vendors?id=eq.${vendorId}`, identity.accessToken, {
     method: "PATCH",
+    headers: { prefer: "return=representation" },
     body: JSON.stringify(patch),
   });
   const p = await payload(r);
   if (!r.ok) return dbErr(r.status, p);
-  return json({ ok: true, data: p });
+  const updated = Array.isArray(p) ? p : p ? [p] : [];
+  if (updated.length === 0) {
+    return json({ ok: false, error: "Vendor not found or no changes applied." }, 404);
+  }
+  return json({ ok: true, data: updated });
 }
 
 // GET /api/vendor/reviews?vendor_id=...

@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { useEffect, useState } from "react";
 import {
   getVendor,
   type Vendor,
@@ -8,7 +7,6 @@ import {
   type StoreLayout,
   type BusinessType,
 } from "@/lib/data";
-import { fetchBackendVendor } from "@/lib/backend-catalog";
 import { defaultTemplateFor, getTemplate } from "@/lib/templates";
 import { mergeVendor, useApp } from "@/lib/peniel-store";
 import { StoreFooter, StoreTopBar } from "@/components/store/store-kit";
@@ -36,7 +34,7 @@ const layouts: StoreLayout[] = [
 ];
 
 const R2_PUBLIC_URL =
-  import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+  import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
 
 function buildR2Url(objectKey: string | undefined): string | undefined {
   if (!objectKey || typeof objectKey !== "string") return undefined;
@@ -142,7 +140,18 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
     cover: coverUrl ?? fallback.cover,
     ...(logoUrl ? { logo: logoUrl } : {}),
     monogram,
-    theme: theme ? { ...fallback.theme, ...theme } : fallback.theme,
+    theme: theme
+      ? {
+          bg: theme.bg ?? fallback.theme.bg,
+          ink: theme.ink ?? fallback.theme.ink,
+          accent: theme.accent ?? fallback.theme.accent,
+          accentInk: theme.accentInk ?? fallback.theme.accentInk,
+          soft: theme.soft ?? fallback.theme.soft,
+          line: theme.line ?? fallback.theme.line,
+          radius: theme.radius ?? fallback.theme.radius,
+          heading: theme.heading ?? fallback.theme.heading,
+        }
+      : fallback.theme,
     verified: false,
     featured: false,
     rating: 0,
@@ -158,12 +167,11 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
 
 export const Route = createFileRoute("/store/$slug")({
   validateSearch: z.object({ t: z.string().optional() }),
-  loader: async ({ params, request }) => {
+  loader: async ({ params }) => {
     // Try fetching live vendor data from the backend first so that
     // uploaded logos, cover images, and updated details are shown.
     try {
-      const baseUrl = new URL(request.url).origin;
-      const response = await fetch(`${baseUrl}/api/vendors?slug=${params.slug}`, {
+      const response = await fetch(`/api/vendors?slug=${params.slug}`, {
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
       });
@@ -213,50 +221,30 @@ function StorePage() {
   const { t: previewId } = Route.useSearch();
   const s = useApp();
 
-  // Check custom vendors from the app store as fallback
+  // Check custom vendors from the app store as fallback (e.g. newly onboarded vendors)
   const customVendor = s.customVendors?.find((v) => v.slug === slug);
-  const baseFromStore = customVendor ?? baseFromLoader;
+  const storeBase = customVendor ?? baseFromLoader;
 
-  const [remoteVendor, setRemoteVendor] = useState(baseFromStore);
-  const [remoteLookupDone, setRemoteLookupDone] = useState(false);
-  useEffect(() => {
-    let active = true;
-    setRemoteVendor(baseFromStore);
-    setRemoteLookupDone(false);
-    void fetchBackendVendor(slug)
-      .then((result) => {
-        if (active && result) setRemoteVendor(result);
-      })
-      .catch((error) => {
-        console.error("Could not load live storefront", error);
-      })
-      .finally(() => {
-        if (active) setRemoteLookupDone(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, [slug, baseFromStore]);
-
-  const storeBase = remoteVendor;
   if (!storeBase) {
     return (
       <div className="min-h-screen bg-background">
         <main className="mx-auto max-w-2xl px-4 py-24 text-center">
-          <h1 className="text-2xl font-bold">
-            {remoteLookupDone ? "Store not found" : "Loading storefront…"}
-          </h1>
+          <h1 className="text-2xl font-bold">Loading storefront…</h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            {remoteLookupDone
-              ? "This storefront is unavailable or has not been published."
-              : "Please wait while we load the store."}
+            Please wait while we load the store.
           </p>
         </main>
       </div>
     );
   }
+
   const acc = s.accounts[storeBase.slug];
-  const tpl = getTemplate(previewId) ?? getTemplate(acc?.choice) ?? defaultTemplateFor(storeBase);
+
+  // Template selection priority: preview param → saved choice → storefront layout → default for type
+  const tpl =
+    getTemplate(previewId) ??
+    (acc?.choice ? getTemplate(acc.choice) : undefined) ??
+    defaultTemplateFor(storeBase);
   const vendor = { ...mergeVendor(storeBase, acc), theme: tpl.theme };
   const published = acc?.profile.published !== false;
   const paused = acc?.profile.paused === true;
@@ -265,7 +253,7 @@ function StorePage() {
       ? acc?.profile.acceptingOrders !== false
       : acc?.profile.acceptingBookings !== false;
 
-  const L = tpl.layout;
+  const L = storeBase.layout;
   const body =
     tpl.kind === "composed" ? (
       <ComposedStore vendor={vendor} tpl={tpl} />

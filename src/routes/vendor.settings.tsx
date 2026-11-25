@@ -23,8 +23,9 @@ import { vendorNav } from "@/components/dash/vendor-nav";
 import { app, useCurrentVendor } from "@/lib/peniel-store";
 import { vendorsApi, storageApi, type VendorRecord } from "@/lib/api-client";
 import { TemplatePicker } from "@/components/store/template-picker";
+import { getTemplate } from "@/lib/templates";
 
-const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_MEDIA_URL ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+const R2_PUBLIC_URL = import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
 
 function buildR2Url(objectKey: string | undefined): string | undefined {
   if (!objectKey || typeof objectKey !== "string") return undefined;
@@ -239,8 +240,12 @@ function VendorSettings() {
       filename: file.name,
       vendorId: liveVendor.id,
     });
-    if (!uploadResult.ok || !uploadResult.data) {
-      toast.error(uploadResult.error || "Failed to get upload URL");
+    if (!uploadResult.ok) {
+      toast.error("Failed to get upload URL");
+      return null;
+    }
+    if (!uploadResult.data) {
+      toast.error("Failed to get upload URL");
       return null;
     }
     const { uploadUrl, objectKey } = uploadResult.data;
@@ -566,30 +571,36 @@ function VendorSettings() {
               </div>
 
               <div className="mt-5 flex justify-end border-t border-border/70 pt-4">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!liveVendor) {
-                      toast.error("Your storefront could not be loaded. Please sign in again.");
-                      return;
-                    }
-                    const account = app.account(liveVendor.slug);
-                    const selectedTemplate = account?.choice;
-                    const result = await vendorsApi.updateStorefront(liveVendor.id, {
-                      theme: { brandColor },
-                      ...(selectedTemplate ? { templateId: selectedTemplate, layout: selectedTemplate } : {}),
-                    });
-                    if (result.ok) {
-                      toast.success("Brand identity saved. Customers will see the update.");
-                    } else {
-                      toast.error(result.error || "Could not save brand identity.");
-                    }
-                  }}
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-[0.98]"
-                >
-                  <Check className="size-3.5" />
-                  Save branding
-                </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!liveVendor) {
+                        toast.error("Your storefront could not be loaded. Please sign in again.");
+                        return;
+                      }
+                      const account = app.account(liveVendor.slug);
+                      const selectedTemplate = account?.choice;
+                      const tpl = selectedTemplate ? getTemplate(selectedTemplate) : undefined;
+                      const layout =
+                        tpl?.layout &&
+                        ["cinematic","builder","editorial","gallery","playful","reservation","grid"].includes(tpl.layout)
+                          ? tpl.layout
+                          : "grid";
+                      const result = await vendorsApi.updateStorefront(liveVendor.id, {
+                        theme: { accent: brandColor },
+                        ...(selectedTemplate ? { templateId: selectedTemplate, layout } : {}),
+                      });
+                      if (result.ok) {
+                        toast.success("Brand identity saved. Customers will see the update.");
+                      } else {
+                        toast.error(result.error || "Could not save brand identity.");
+                      }
+                    }}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-[0.98]"
+                  >
+                    <Check className="size-3.5" />
+                    Save branding
+                  </button>
               </div>
             </Panel>
 
@@ -600,7 +611,7 @@ function VendorSettings() {
                 title="Choose your storefront layout"
                 description="Select a presentation that best suits your business."
               />
-              <TemplatePicker vendor={base} />
+              <TemplatePicker vendor={base} vendorId={liveVendor?.id ?? undefined} />
             </Panel>
 
             {/* Opening hours */}

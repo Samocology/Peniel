@@ -101,7 +101,7 @@ type State = {
   customer: { name: string; city: string };
   addresses?: CustomerAddress[];
   supportTickets?: SupportTicket[];
-  user?: { name: string; email: string; role: "customer" | "vendor" } | undefined;
+  user?: { name: string; email: string; role: "customer" | "vendor" | "admin" | "super_admin" } | undefined;
   accounts: Record<string, Account>;
   adminSettings: AdminSettings;
   cart: CartItem[];
@@ -496,7 +496,7 @@ async function restoreAuthSession() {
       error?: string;
       data?: {
         authenticated?: boolean;
-        user?: { id: string; email?: string; name?: string; role?: "customer" | "vendor" } | null;
+        user?: { id: string; email?: string; name?: string; role?: "customer" | "vendor" | "admin" | "super_admin" } | null;
       };
     };
 
@@ -761,7 +761,7 @@ export const app = {
         ? s.favorites.filter((x) => x !== slug)
         : [...s.favorites, slug],
     })),
-  signIn: (name: string, email: string, role: "customer" | "vendor") => {
+  signIn: (name: string, email: string, role: "customer" | "vendor" | "admin" | "super_admin") => {
     authRequestSequence += 1;
     set((s) => ({ ...s, user: { name, email, role }, customer: { ...s.customer, name } }));
   },
