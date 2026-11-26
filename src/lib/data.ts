@@ -368,6 +368,7 @@ export const vendors: Vendor[] = [
   },
   {
     slug: "glamour-beauty-lounge",
+    status: "active",
     name: "Glamour Beauty Lounge",
     tagline: "Relax. Refresh. Glow.",
     about:
@@ -632,6 +633,7 @@ export const vendors: Vendor[] = [
   },
   {
     slug: "eko-heights-hotel",
+    status: "active",
     name: "Eko Heights Hotel",
     tagline: "Rest above the city.",
     about:

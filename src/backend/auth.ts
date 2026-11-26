@@ -308,7 +308,7 @@ async function createSupabaseUser(
       email_confirm: false,
       user_metadata: {
         full_name: name,
-        signup_intent: ["vendor", "admin", "super_admin"].includes(intentRole) ? String(intentRole) : "customer",
+        signup_intent: ["vendor", "admin", "super_admin"].includes(String(intentRole)) ? String(intentRole) : "customer",
       },
     }),
   });
@@ -587,15 +587,32 @@ async function supabaseRequest(
   });
 }
 
-function userResponse(user: SupabaseUser | undefined) {
+async function userResponse(user: SupabaseUser | undefined, config?: { url: string; key: string }) {
   if (!user?.id) return null;
   const metadataName = user.user_metadata?.["full_name"];
   const signupIntent = user.user_metadata?.["signup_intent"];
+  let role =
+    typeof signupIntent === "string" && ["vendor", "admin", "super_admin"].includes(signupIntent)
+      ? signupIntent
+      : "customer";
+  if (config) {
+    try {
+      const response = await fetch(`${config.url}/rest/v1/profiles?id=eq.${user.id}&select=role`, {
+        headers: { apikey: config.key, authorization: `Bearer ${config.key}` },
+      });
+      const rows = await response.json();
+      if (Array.isArray(rows) && rows[0]?.role) {
+        role = rows[0].role;
+      }
+    } catch {
+      // fall back to signup_intent
+    }
+  }
   return {
     id: user.id,
     email: user.email ?? "",
     name: typeof metadataName === "string" ? metadataName : "",
-    role: typeof signupIntent === "string" && ["vendor", "admin", "super_admin"].includes(signupIntent) ? signupIntent : "customer",
+    role,
   };
 }
 
@@ -698,7 +715,7 @@ async function handleSignup(
         authenticated: false,
         needsOtp: true,
         codeSent: true,
-        user: userResponse(created.user),
+        user: await userResponse(created.user, config),
       },
     },
     201,
@@ -1403,7 +1420,7 @@ async function handleOAuthCallback(
   }
   const sessionUser = await ensureOAuthSignupIntent(env, config, payload.user, oauthRole ?? "customer");
   const session = { ...payload, user: sessionUser };
-  const resolvedRole = userResponse(sessionUser)?.role ?? "customer";
+  const resolvedRole = (await userResponse(sessionUser, config))?.role ?? "customer";
 
   const base = env.APP_BASE_URL ?? new URL(request.url).origin;
   const destination = resolvedRole === "vendor" ? "/vendor/onboarding" : "/";

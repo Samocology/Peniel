@@ -63,10 +63,13 @@ function MessagesPage() {
   }, []);
 
   useEffect(() => {
-    if (v) {
-      navigate({ search: { t: v }, replace: true });
+    if (v && conversations.length > 0) {
+      const conv = conversations.find((c) => c.vendorSlug === v);
+      if (conv) {
+        navigate({ search: { t: conv.id }, replace: true });
+      }
     }
-  }, [v, navigate]);
+  }, [v, conversations, navigate]);
 
   const activeThreadId = t;
   const threadsWithMessages = useMemo(
