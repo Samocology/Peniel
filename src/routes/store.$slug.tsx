@@ -86,6 +86,16 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
   const logoUrl = buildR2Url(storefront?.["logo_object_key"] as string);
   const theme = extractTheme(storefront);
 
+  const openingHours = storefront && typeof storefront === "object" ? storefront["opening_hours"] : undefined;
+  const hours =
+    typeof openingHours === "string"
+      ? openingHours
+      : openingHours && typeof openingHours === "object" && typeof openingHours["text"] === "string"
+        ? openingHours["text"]
+        : typeof value["hours"] === "string"
+          ? value["hours"]
+          : "";
+
   const products = Array.isArray(value["products"])
     ? value["products"]
         .map((p) => {
@@ -137,8 +147,8 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
         ? category["name"]
         : fallback.categoryLabel,
     layout,
-    cover: coverUrl ?? fallback.cover,
-    ...(logoUrl ? { logo: logoUrl } : {}),
+    cover: coverUrl ?? "",
+    ...(logoUrl ? { logo: logoUrl } : { logo: "" }),
     monogram,
     theme: theme
       ? {
@@ -157,8 +167,9 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
     rating: 0,
     reviews: 0,
     orders: "New on Peniel",
-    location: typeof value["location"] === "string" ? value["location"] : fallback.location,
+    location: typeof value["location"] === "string" ? value["location"] : "",
     phone: typeof value["phone"] === "string" ? value["phone"] : "",
+    hours,
     fulfilment,
     groups: [...new Set(products.map((product) => product.group))],
     products,

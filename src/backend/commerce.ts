@@ -141,7 +141,7 @@ async function getPublicVendors(request: Request, env: BackendEnv) {
   const url = new URL(request.url);
   const slug = url.searchParams.get("slug")?.trim().toLowerCase();
   const select =
-    "id,slug,name,description,business_type,location,phone,fulfilment,categories(slug,name),storefronts(template_id,layout,theme,logo_object_key,cover_object_key),products(id,name,description,group_name,price_minor,currency,attributes),reviews(rating)";
+    "id,slug,name,description,business_type,location,phone,fulfilment,categories(slug,name),storefronts(template_id,layout,theme,logo_object_key,cover_object_key,opening_hours),products(id,name,description,group_name,price_minor,currency,attributes),reviews(rating)";
   const queryParams = new URLSearchParams({
     select,
     status: "eq.active",
