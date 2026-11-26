@@ -764,7 +764,7 @@ async function handleLogin(request: Request, config: { url: string; key: string 
   const session = payload;
 
   return withSessionCookies(
-    json({ ok: true, data: { authenticated: true, user: userResponse(session.user) } }),
+    json({ ok: true, data: { authenticated: true, user: await userResponse(session.user, config) } }),
     session,
     request,
   );
@@ -860,7 +860,7 @@ async function handleSession(request: Request, config: { url: string; key: strin
   if (accessToken) {
     const user = await fetchCurrentUser(config, accessToken);
     if (user) {
-      return json({ ok: true, data: { authenticated: true, user: userResponse(user) } });
+      return json({ ok: true, data: { authenticated: true, user: await userResponse(user, config) } });
     }
   }
 
@@ -868,7 +868,7 @@ async function handleSession(request: Request, config: { url: string; key: strin
     const session = await refreshSession(config, refreshToken);
     if (session?.access_token && session.refresh_token && session.user) {
       return withSessionCookies(
-        json({ ok: true, data: { authenticated: true, user: userResponse(session.user) } }),
+        json({ ok: true, data: { authenticated: true, user: await userResponse(session.user, config) } }),
         session,
         request,
       );
