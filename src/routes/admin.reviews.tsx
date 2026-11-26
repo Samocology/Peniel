@@ -41,10 +41,10 @@ function AdminReviews() {
   const [filter, setFilter] = useState<Filter>("All");
   const { data: reviews = [], loading, error } = useAdminReviews();
 
-  const flaggedCount = reviews.filter((r) => r.moderation_status === "flagged").length;
-  const pendingCount = reviews.filter((r) => r.moderation_status === "pending").length;
+  const flaggedCount = (reviews ?? []).filter((r) => r.moderation_status === "flagged").length;
+  const pendingCount = (reviews ?? []).filter((r) => r.moderation_status === "pending").length;
 
-  const filteredReviews = reviews.filter((review) => {
+  const filteredReviews = (reviews ?? []).filter((review) => {
     const matchesQuery =
       `${review.body} ${review.vendors?.name ?? ""} ${review.profiles?.full_name ?? ""}`
         .toLowerCase()
@@ -117,7 +117,7 @@ function AdminReviews() {
         <StatCard label="Flagged for review" value={flaggedCount.toLocaleString()} tone="gold" />
         <StatCard
           label="Removed this month"
-          value={reviews.filter((r) => r.moderation_status === "hidden").length.toLocaleString()}
+          value={(reviews ?? []).filter((r) => r.moderation_status === "hidden").length.toLocaleString()}
         />
         <StatCard label="Platform average" value="4.6" />
       </div>
@@ -304,13 +304,13 @@ function AdminReviews() {
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Kept</span>
                 <span className="font-semibold text-success tabular-nums">
-                  {reviews.filter((r) => r.moderation_status === "published").length}
+                  {(reviews ?? []).filter((r) => r.moderation_status === "published").length}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Removed</span>
                 <span className="font-semibold text-muted-foreground tabular-nums">
-                  {reviews.filter((r) => r.moderation_status === "hidden").length}
+                  {(reviews ?? []).filter((r) => r.moderation_status === "hidden").length}
                 </span>
               </div>
             </div>

@@ -41,7 +41,7 @@ function AdminVerification() {
 
   const visibleApplications = useMemo(
     () =>
-      applications.filter(
+      (applications ?? []).filter(
         (a) => filter === "All" || a.status.toLowerCase() === filter.toLowerCase(),
       ),
     [applications, filter],

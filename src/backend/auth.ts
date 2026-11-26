@@ -587,7 +587,7 @@ async function supabaseRequest(
   });
 }
 
-async function userResponse(user: SupabaseUser | undefined, config?: { url: string; key: string }) {
+async function userResponse(user: SupabaseUser | undefined, config?: { url: string; key: string }, accessToken?: string) {
   if (!user?.id) return null;
   const metadataName = user.user_metadata?.["full_name"];
   const signupIntent = user.user_metadata?.["signup_intent"];
@@ -595,10 +595,13 @@ async function userResponse(user: SupabaseUser | undefined, config?: { url: stri
     typeof signupIntent === "string" && ["vendor", "admin", "super_admin"].includes(signupIntent)
       ? signupIntent
       : "customer";
-  if (config) {
+  if (config && user?.id) {
     try {
       const response = await fetch(`${config.url}/rest/v1/profiles?id=eq.${user.id}&select=role`, {
-        headers: { apikey: config.key, authorization: `Bearer ${config.key}` },
+        headers: {
+          apikey: config.key,
+          authorization: `Bearer ${accessToken ?? config.key}`,
+        },
       });
       const rows = await response.json();
       if (Array.isArray(rows) && rows[0]?.role) {
@@ -764,7 +767,7 @@ async function handleLogin(request: Request, config: { url: string; key: string 
   const session = payload;
 
   return withSessionCookies(
-    json({ ok: true, data: { authenticated: true, user: await userResponse(session.user, config) } }),
+    json({ ok: true, data: { authenticated: true, user: await userResponse(session.user, config, session.access_token) } }),
     session,
     request,
   );
@@ -860,7 +863,7 @@ async function handleSession(request: Request, config: { url: string; key: strin
   if (accessToken) {
     const user = await fetchCurrentUser(config, accessToken);
     if (user) {
-      return json({ ok: true, data: { authenticated: true, user: await userResponse(user, config) } });
+      return json({ ok: true, data: { authenticated: true, user: await userResponse(user, config, accessToken) } });
     }
   }
 
@@ -868,7 +871,7 @@ async function handleSession(request: Request, config: { url: string; key: strin
     const session = await refreshSession(config, refreshToken);
     if (session?.access_token && session.refresh_token && session.user) {
       return withSessionCookies(
-        json({ ok: true, data: { authenticated: true, user: await userResponse(session.user, config) } }),
+        json({ ok: true, data: { authenticated: true, user: await userResponse(session.user, config, session.access_token) } }),
         session,
         request,
       );
@@ -1420,7 +1423,7 @@ async function handleOAuthCallback(
   }
   const sessionUser = await ensureOAuthSignupIntent(env, config, payload.user, oauthRole ?? "customer");
   const session = { ...payload, user: sessionUser };
-  const resolvedRole = (await userResponse(sessionUser, config))?.role ?? "customer";
+  const resolvedRole = (await userResponse(sessionUser, config, payload.access_token))?.role ?? "customer";
 
   const base = env.APP_BASE_URL ?? new URL(request.url).origin;
   const destination = resolvedRole === "vendor" ? "/vendor/onboarding" : "/";

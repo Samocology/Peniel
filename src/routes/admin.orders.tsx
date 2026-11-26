@@ -86,7 +86,7 @@ function AdminOrders() {
   const { data: orders = [], loading, error } = useAdminOrders();
 
   const visibleOrders = useMemo(
-    () => orders.filter((o) => filter === "All" || o.status.toLowerCase() === filter.toLowerCase()),
+    () => (orders ?? []).filter((o) => filter === "All" || o.status.toLowerCase() === filter.toLowerCase()),
     [orders, filter],
   );
 
@@ -163,7 +163,7 @@ function AdminOrders() {
             />
             <OrderMetric
               label="Delivered"
-              value={orders.filter((o) => o.status === "delivered").length.toLocaleString()}
+              value={(orders ?? []).filter((o) => o.status === "delivered").length.toLocaleString()}
               description="Orders completed successfully"
               icon={Clock3}
             />
@@ -177,7 +177,7 @@ function AdminOrders() {
             />
             <OrderMetric
               label="Cancelled"
-              value={orders.filter((o) => o.status === "cancelled").length.toLocaleString()}
+              value={(orders ?? []).filter((o) => o.status === "cancelled").length.toLocaleString()}
               description="Cancelled transactions"
               icon={XCircle}
             />
@@ -229,7 +229,7 @@ function AdminOrders() {
               <div className="max-w-full overflow-x-auto">
                 <DataTable
                   head={["Reference", "Customer", "Status", "Total", ""]}
-                  rows={visibleOrders.map((o) => [
+                  rows={(visibleOrders ?? []).map((o) => [
                     <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
                       {o.reference}
                     </span>,

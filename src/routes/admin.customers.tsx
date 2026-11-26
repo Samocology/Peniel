@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search, Users, UserCheck, MapPin, ArrowUpRight, X, Building2 } from "lucide-react";
+import { Search, Users, UserCheck, MapPin, ArrowUpRight, X, Building2, Phone, Calendar } from "lucide-react";
 import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { adminNav } from "@/components/dash/vendor-nav";
 import { adminApi, type AdminCustomer } from "@/lib/api-client";
@@ -34,12 +34,13 @@ function getInitials(name: string) {
 
 function AdminCustomers() {
   const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<AdminCustomer | null>(null);
   const { data: customers = [], loading, error } = useAdminCustomers();
 
   const visibleCustomers = useMemo(() => {
     const search = query.trim().toLowerCase();
 
-    return customers.filter(
+    return (customers ?? []).filter(
       (customer) =>
         customer.full_name.toLowerCase().includes(search) ||
         (customer.phone ?? "").toLowerCase().includes(search),
@@ -129,7 +130,7 @@ function AdminCustomers() {
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-muted-foreground">Active customers</p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight">
-                    {customers.filter((c) => c.role === "customer").length.toLocaleString()}
+                    {(customers ?? []).filter((c) => c.role === "customer").length.toLocaleString()}
                   </p>
                 </div>
                 <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-success/10 text-success">
@@ -146,7 +147,7 @@ function AdminCustomers() {
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-muted-foreground">Suspended accounts</p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight">
-                    {customers.filter((c) => c.suspended_at).length.toLocaleString()}
+                    {(customers ?? []).filter((c) => c.suspended_at).length.toLocaleString()}
                   </p>
                 </div>
                 <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
@@ -162,7 +163,12 @@ function AdminCustomers() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-muted-foreground">New this month</p>
-                  <p className="mt-2 text-2xl font-semibold tracking-tight">—</p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight">
+                    {(customers ?? []).filter((c) => {
+                      const created = new Date(c.created_at).getTime();
+                      return Date.now() - created < 30 * 24 * 60 * 60 * 1000;
+                    }).length.toLocaleString()}
+                  </p>
                 </div>
                 <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
                   <ArrowUpRight size={17} />
@@ -226,7 +232,7 @@ function AdminCustomers() {
               <div className="max-w-full overflow-x-auto">
                 <DataTable
                   head={["Customer", "Phone", "Role", "Status", "Joined", ""]}
-                  rows={visibleCustomers.map((customer) => [
+                  rows={(visibleCustomers ?? []).map((customer) => [
                     <div className="flex min-w-[150px] items-center gap-2.5">
                       <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-border bg-muted/70 text-[11px] font-bold text-foreground">
                         {getInitials(customer.full_name)}
@@ -265,7 +271,7 @@ function AdminCustomers() {
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => toast.info("Customer detail view not yet connected.")}
+                        onClick={() => setSelected(customer)}
                         className="text-xs font-semibold text-primary transition hover:underline"
                       >
                         View details
@@ -298,6 +304,96 @@ function AdminCustomers() {
             )}
           </div>
         </Panel>
+
+        {selected && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+              onClick={() => setSelected(null)}
+            >
+              <div
+                className="w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="relative bg-gradient-to-br from-primary/15 via-primary/5 to-transparent px-6 py-6">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  >
+                    <X size={16} />
+                  </button>
+                  <div className="flex items-center gap-4">
+                    <div className="grid size-14 place-items-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-lg">
+                      {getInitials(selected.full_name)}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-lg font-semibold tracking-tight">
+                        {selected.full_name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">{selected.role}</p>
+                      <span
+                        className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          selected.suspended_at
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-emerald-500/10 text-emerald-600"
+                        }`}
+                      >
+                        <span className="size-1.5 rounded-full bg-current" />
+                        {selected.suspended_at ? "Suspended" : "Active"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="px-6 py-5">
+                  <dl className="space-y-3 text-sm">
+                    <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2.5">
+                      <dt className="flex items-center gap-2 text-muted-foreground">
+                        <Phone size={14} />
+                        Phone
+                      </dt>
+                      <dd className="font-medium">{selected.phone ?? "—"}</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2.5">
+                      <dt className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar size={14} />
+                        Joined
+                      </dt>
+                      <dd className="font-medium">
+                        {new Date(selected.created_at).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2.5">
+                      <dt className="flex items-center gap-2 text-muted-foreground">
+                        <Users size={14} />
+                        Account ID
+                      </dt>
+                      <dd className="truncate font-mono text-xs font-medium">
+                        {selected.id.slice(0, 12)}…
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+
+                {/* Footer */}
+                <div className="border-t border-border/60 bg-muted/20 px-6 py-4">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
         <div className="flex items-center justify-center gap-2 pb-2 text-[10px] text-muted-foreground">
           <Users size={13} />

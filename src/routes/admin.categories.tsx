@@ -50,14 +50,14 @@ function AdminCategories() {
 
   const visibleCategories = useMemo(
     () =>
-      categories.filter((category) =>
+      (categories ?? []).filter((category) =>
         `${category.name} ${category.slug}`.toLowerCase().includes(query.trim().toLowerCase()),
       ),
     [categories, query],
   );
 
-  const liveCount = categories.filter((c) => c.active).length;
-  const draftCount = categories.filter((c) => !c.active).length;
+  const liveCount = (categories ?? []).filter((c) => c.active).length;
+  const draftCount = (categories ?? []).filter((c) => !c.active).length;
 
   const handleToggle = async (category: AdminCategory) => {
     const result = await adminApi.updateSetting(category.id, !category.active);

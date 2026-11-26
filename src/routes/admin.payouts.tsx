@@ -66,7 +66,7 @@ function AdminPayouts() {
 
   const visiblePayouts = useMemo(
     () =>
-      payouts.filter((p) => filter === "All" || p.status.toLowerCase() === filter.toLowerCase()),
+      (payouts ?? []).filter((p) => filter === "All" || p.status.toLowerCase() === filter.toLowerCase()),
     [payouts, filter],
   );
 
@@ -125,7 +125,7 @@ function AdminPayouts() {
     );
   }
 
-  const awaitingRelease = visiblePayouts.filter((p) => p.status === "processing").length;
+  const awaitingRelease = (visiblePayouts ?? []).filter((p) => p.status === "processing").length;
 
   return (
     <DashShell
@@ -164,7 +164,7 @@ function AdminPayouts() {
             <PayoutMetric label="Next batch" value="6:00 PM WAT" tone="gold" />
             <PayoutMetric
               label="Failed transfers"
-              value={visiblePayouts.filter((p) => p.status === "failed").length.toLocaleString()}
+              value={(visiblePayouts ?? []).filter((p) => p.status === "failed").length.toLocaleString()}
             />
           </div>
         </section>

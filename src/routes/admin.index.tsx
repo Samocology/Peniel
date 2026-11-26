@@ -389,7 +389,7 @@ function AdminOverview() {
               {latestOrders.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No orders recorded yet.</p>
               ) : (
-                latestOrders.map((order) => (
+                (latestOrders ?? []).map((order) => (
                   <div
                     key={order.id}
                     className="rounded-xl border border-border/80 bg-background/70 p-3"
@@ -427,7 +427,7 @@ function AdminOverview() {
                           <span className="text-xs text-muted-foreground">—</span>,
                         ],
                       ]
-                    : latestOrders.map((o) => [
+                    : (latestOrders ?? []).map((o) => [
                         <span className="font-mono text-[11px] text-muted-foreground">
                           {o.reference}
                         </span>,
@@ -457,7 +457,7 @@ function AdminOverview() {
               {newestVendors.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No vendors recorded yet.</p>
               ) : (
-                newestVendors.map((vendor) => (
+                (newestVendors ?? []).map((vendor) => (
                   <Link
                     key={vendor.slug}
                     to="/admin/vendors"
@@ -500,7 +500,7 @@ function AdminOverview() {
                           <span className="text-xs text-muted-foreground">—</span>,
                         ],
                       ]
-                    : newestVendors.map((v) => [
+                    : (newestVendors ?? []).map((v) => [
                         <Link
                           to="/admin/vendors"
                           className="font-medium transition-colors hover:text-primary"

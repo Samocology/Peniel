@@ -85,8 +85,9 @@ function AdminVendors() {
 
   const visibleVendors = useMemo(() => {
     const search = query.trim().toLowerCase();
+    const list = vendors ?? [];
 
-    return vendors.filter((vendor) => {
+    return list.filter((vendor) => {
       const matchesQuery = [vendor.name, vendor.business_type, vendor.location].some((value) =>
         value.toLowerCase().includes(search),
       );

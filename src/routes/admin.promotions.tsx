@@ -53,17 +53,17 @@ function AdminPromotions() {
   const [campaignSearch, setCampaignSearch] = useState("");
   const { data: promotions = [], loading, error } = useAdminPromotions();
 
-  const activeCount = promotions.filter((c) => c.active).length;
-  const scheduledCount = promotions.filter((c) => !c.active).length;
-  const totalUses = promotions.reduce((sum, c) => sum + (c.current_uses ?? 0), 0);
-  const totalVolume = promotions.reduce(
+  const activeCount = (promotions ?? []).filter((c) => c.active).length;
+  const scheduledCount = (promotions ?? []).filter((c) => !c.active).length;
+  const totalUses = (promotions ?? []).reduce((sum, c) => sum + (c.current_uses ?? 0), 0);
+  const totalVolume = (promotions ?? []).reduce(
     (sum, c) => sum + (c.discount_value ?? 0) * (c.current_uses ?? 0),
     0,
   );
 
   const visiblePromotions = useMemo(
     () =>
-      promotions.filter((campaign) =>
+      (promotions ?? []).filter((campaign) =>
         `${campaign.code} ${campaign.id}`.toLowerCase().includes(campaignSearch.toLowerCase()),
       ),
     [promotions, campaignSearch],
@@ -72,7 +72,7 @@ function AdminPromotions() {
   const toggleFeatured = (slug: string) => {
     const isFeatured = featuredSlugs.includes(slug);
     if (isFeatured) {
-      setFeaturedSlugs((current) => current.filter((item) => item !== slug));
+      setFeaturedSlugs((current) => (current ?? []).filter((item) => item !== slug));
       toast.success("Business removed from featured placements.");
       return;
     }

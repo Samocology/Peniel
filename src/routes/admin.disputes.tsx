@@ -46,7 +46,7 @@ function AdminDisputes() {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const { data: disputes = [], loading, error } = useAdminDisputes();
 
-  const openCases = disputes.filter((d) => d.status !== "resolved" && d.status !== "closed");
+  const openCases = (disputes ?? []).filter((d) => d.status !== "resolved" && d.status !== "closed");
   const heldValue = openCases.reduce((total, item) => total + 0, 0);
 
   const handleResolution = async (
@@ -135,7 +135,7 @@ function AdminDisputes() {
         <StatCard label="Value currently held" value={naira(heldValue / 100)} tone="gold" />
         <StatCard
           label="Resolved this month"
-          value={disputes.filter((d) => d.status === "resolved").length.toLocaleString()}
+          value={(disputes ?? []).filter((d) => d.status === "resolved").length.toLocaleString()}
         />
         <StatCard label="Average resolution" value="1.1 days" />
       </div>
@@ -161,7 +161,7 @@ function AdminDisputes() {
             <div className="min-w-[850px]">
               <DataTable
                 head={["Case reference", "Vendor", "Subject", "Status", "Created", ""]}
-                rows={disputes.map((d) => [
+                rows={(disputes ?? []).map((d) => [
                   <span className="font-mono text-xs font-semibold text-foreground">{d.id}</span>,
                   <span className="font-medium text-foreground">
                     {d.vendors?.name ?? "Vendor"}

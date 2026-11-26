@@ -43,7 +43,7 @@ function AdminTransactions() {
 
   const visibleRows = useMemo(
     () =>
-      transactions.filter((t) =>
+      (transactions ?? []).filter((t) =>
         `${t.reference} ${t.provider_transaction_id ?? ""}`
           .toLowerCase()
           .includes(query.trim().toLowerCase()),
