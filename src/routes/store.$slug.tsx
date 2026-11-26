@@ -114,6 +114,9 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
             price: typeof prod["price_minor"] === "number" ? prod["price_minor"] / 100 : 0,
             group: typeof prod["group_name"] === "string" ? prod["group_name"] : "General",
             ...(meta ? { meta } : {}),
+            ...(Array.isArray((prod["attributes"] as Record<string, unknown>)?.["sizes"])
+              ? { sizes: (prod["attributes"] as Record<string, unknown>)["sizes"] as string[] }
+              : {}),
           };
         })
         .filter((p): p is Product => p !== null && p.id !== "")

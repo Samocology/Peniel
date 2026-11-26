@@ -124,6 +124,8 @@ export type Product = {
   tag?: string;
   meta?: string;
   group: string;
+  sizes?: string[];
+  images?: string[];
 };
 
 export type Vendor = {
