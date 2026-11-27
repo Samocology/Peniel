@@ -243,6 +243,7 @@ function Landing() {
                       vendor={vendors[0]!}
                       seed={index}
                       label={p.name}
+                      image={p.images?.[0]}
                       className="mb-2 h-14 w-full rounded-lg"
                     />
                     <p className="truncate text-[11px] font-semibold">{p.name}</p>

@@ -135,7 +135,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
 
   return (
     <div
-      className="min-h-screen overflow-hidden antialiased selection:bg-[#E5EDE3] selection:text-[#142D21]"
+      className="storefront-page storefront-signature-builder min-h-screen overflow-hidden antialiased selection:bg-[#E5EDE3] selection:text-[#142D21]"
       style={{
         background: palette.cream,
         color: palette.ink,
@@ -143,7 +143,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
     >
       {/* Announcement bar */}
       <div
-        className="px-4 py-3 text-center text-[9px] font-semibold tracking-[0.16em] sm:text-[11px]"
+        className="px-4 pb-3 pt-20 text-center text-[9px] font-semibold tracking-[0.16em] sm:pb-3 sm:pt-24 sm:text-[11px]"
         style={{
           background: palette.forestDark,
           color: "#F7F5EC",
@@ -244,14 +244,34 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
           />
 
           <div className="relative overflow-hidden rounded-[1.8rem] shadow-2xl shadow-[#142D21]/10">
-            <img
-              src={vendor.cover}
-              alt={`${vendor.name} farm-fresh ingredients`}
-              width={1200}
-              height={1400}
-              fetchPriority="high"
-              className="h-[360px] w-full object-cover sm:h-[500px] lg:h-[590px]"
-            />
+            {vendor.cover ? (
+              <img
+                src={vendor.cover}
+                alt={`${vendor.name} farm-fresh ingredients`}
+                width={1200}
+                height={1400}
+                fetchPriority="high"
+                className="h-[360px] w-full object-cover sm:h-[500px] lg:h-[590px]"
+              />
+            ) : (
+              <div
+                className="flex h-[360px] w-full items-center justify-center sm:h-[500px] lg:h-[590px]"
+                style={{
+                  background: `radial-gradient(circle at 70% 20%, ${palette.accent}55, transparent 42%), linear-gradient(145deg, ${palette.sage}, ${palette.cream})`,
+                }}
+              >
+                <span
+                  className="grid size-24 place-items-center rounded-[2rem] border text-3xl font-semibold"
+                  style={{
+                    color: palette.forest,
+                    borderColor: palette.line,
+                    background: palette.paper,
+                  }}
+                >
+                  {vendor.monogram}
+                </span>
+              </div>
+            )}
 
             <div
               className="absolute inset-0"
@@ -300,6 +320,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
 
       {/* Benefits strip */}
       <section
+        id="why-us"
         className="border-y"
         style={{
           borderColor: palette.line,
@@ -748,7 +769,10 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
       </section>
 
       {/* Product catalog */}
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
+      <section
+        id="catalogue"
+        className="mx-auto max-w-7xl scroll-mt-24 px-5 py-16 sm:px-8 sm:py-24"
+      >
         <div className="space-y-20">
           {categories.map((category) => {
             const group = vendor.groups.find(
@@ -801,6 +825,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
                           vendor={vendor}
                           seed={i}
                           label={p.name}
+                          image={p.images?.[0]}
                           className="aspect-[4/3] w-full transition-transform duration-500 group-hover:scale-105"
                         />
 
@@ -1028,6 +1053,7 @@ export function BuilderStore({ vendor }: { vendor: Vendor }) {
 
       {!user && (
         <footer
+          id="visit"
           className="border-t"
           style={{
             borderColor: palette.line,

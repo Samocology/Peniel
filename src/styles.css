@@ -267,3 +267,272 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+
+/* Storefront presentation layer — scoped to public store experiences. */
+.storefront-page,
+.storefront-product-page {
+  isolation: isolate;
+  width: 100%;
+  min-width: 0;
+}
+
+.store-topbar {
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+}
+
+.store-topbar-action {
+  min-width: 2.25rem;
+}
+
+.store-hero {
+  position: relative;
+}
+
+.store-hero h1 {
+  text-wrap: balance;
+}
+
+.store-hero p {
+  text-wrap: pretty;
+}
+
+.store-hero-banner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.store-hero-banner > div:first-child img {
+  object-position: center;
+}
+
+.store-hero-centered > .group,
+.store-hero-magazine .group,
+.store-hero-minimal .group {
+  box-shadow: 0 24px 70px -42px rgba(0, 0, 0, 0.38);
+}
+
+.store-product-card {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.035),
+    0 12px 30px -24px rgba(0, 0, 0, 0.2);
+  transform: translateZ(0);
+}
+
+.store-product-card:focus-visible,
+.store-topbar a:focus-visible,
+.store-topbar button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.store-product-media {
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  isolation: isolate;
+}
+
+.store-item-image {
+  transition:
+    transform 0.65s cubic-bezier(0.2, 0.75, 0.25, 1),
+    filter 0.3s ease;
+}
+
+.store-image-placeholder {
+  min-width: 0;
+  min-height: 5rem;
+}
+
+.store-cover-placeholder {
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.store-category-food .store-product-card:hover .store-item-image {
+  filter: saturate(1.08);
+}
+
+.store-category-fashion .store-product-card .store-product-copy {
+  text-align: center;
+}
+
+.store-category-beauty .store-product-card {
+  box-shadow: 0 12px 34px -28px rgba(80, 40, 55, 0.35);
+}
+
+.store-category-electronics .store-product-card {
+  box-shadow: 0 8px 28px -24px rgba(20, 35, 65, 0.35);
+}
+
+.store-brand-story {
+  position: relative;
+}
+
+.store-composed-footer {
+  border-top: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.store-footer a,
+.store-composed-footer a {
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 420px) {
+  .store-topbar .store-topbar-action {
+    min-width: 2.15rem;
+  }
+
+  .store-topbar > div {
+    gap: 0.45rem;
+  }
+
+  .store-topbar > div > div:first-child {
+    gap: 0.45rem;
+  }
+
+  .store-hero h1 {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storefront-page *,
+  .storefront-product-page * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Distinct art direction for individual composed storefront identities. */
+.store-template-lagos-noir .store-hero-split .store-product-card,
+.store-template-midnight-lounge .store-product-card {
+  box-shadow: 0 18px 48px -34px rgba(0, 0, 0, 0.72);
+}
+
+.store-template-palm-wine .store-hero-centered > .group {
+  border-radius: 0.35rem;
+  outline: 1px solid currentColor;
+  outline-offset: 7px;
+}
+
+.store-template-neon-market .store-hero-poster > div > div {
+  border-radius: 0.35rem;
+}
+
+.store-template-ankara-bloom .store-hero-magazine .group {
+  border-radius: 48% 48% 1.25rem 1.25rem;
+}
+
+.store-template-soft-spa .store-hero-minimal .group {
+  border-radius: 48% 48% 1.5rem 1.5rem;
+}
+
+.store-template-street-chop .store-hero-marquee + section .group {
+  border-radius: 0.25rem;
+  box-shadow: 12px 12px 0 currentColor;
+}
+
+.store-template-garden-fresh .store-hero-split .group > div {
+  border-radius: 46% 46% 1.75rem 1.75rem;
+}
+
+.store-template-burger-barn .store-hero-poster > div {
+  border-radius: 0.75rem;
+  box-shadow: 0 24px 60px -38px rgba(0, 0, 0, 0.75);
+}
+
+.store-template-royal-indigo .store-hero-banner h1,
+.store-template-ocean-breeze .store-hero-banner h1 {
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.24);
+}
+
+.store-template-blush-boutique .store-product-card,
+.store-template-mint-fresh .store-product-card {
+  box-shadow: 0 18px 44px -34px rgba(80, 30, 55, 0.3);
+}
+
+.store-template-concrete .store-product-card {
+  border-radius: 0 !important;
+  box-shadow: 5px 5px 0 currentColor;
+}
+
+.store-template-safari-lodge .store-hero-magazine .group,
+.store-template-kola-nut .store-hero-magazine .group {
+  border-radius: 48% 48% 0.75rem 0.75rem;
+}
+
+.store-template-gadget-lab .store-product-card {
+  border-radius: 0.8rem;
+  box-shadow: 0 16px 38px -34px rgba(15, 23, 42, 0.55);
+}
+
+.store-template-harmattan .store-product-card {
+  border-radius: 0.15rem !important;
+}
+
+.store-template-party-jollof .store-hero-marquee > div:first-child {
+  letter-spacing: 0.28em;
+}
+
+.store-template-gold-coast .store-product-card {
+  box-shadow: 0 14px 34px -30px rgba(100, 75, 20, 0.4);
+}
+
+.store-template-afro-beat .store-product-card {
+  border-radius: 0.35rem !important;
+  box-shadow: 5px 5px 0 rgba(255, 61, 127, 0.2);
+}
+
+.storefront-signature-builder > section,
+.storefront-signature-reservation > section {
+  scroll-margin-top: 5.5rem;
+}
+
+.storefront-signature-builder img,
+.storefront-signature-reservation img {
+  max-width: 100%;
+}
+
+.storefront-signature-builder a:focus-visible,
+.storefront-signature-builder button:focus-visible,
+.storefront-signature-reservation a:focus-visible,
+.storefront-signature-reservation button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .storefront-signature-builder h1,
+  .storefront-signature-reservation h1 {
+    overflow-wrap: anywhere;
+  }
+}
+
+.store-marquee-track {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  animation: marquee 34s linear infinite;
+  will-change: transform;
+}
+
+.store-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+.store-template-fresh-crate .store-hero-split .group {
+  border-radius: 1.25rem 5rem 1.25rem 5rem;
+}
+
+.store-template-cocoa-house .store-hero-poster > div {
+  box-shadow: 0 28px 70px -42px rgba(0, 0, 0, 0.8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-marquee-track {
+    animation: none;
+  }
+}

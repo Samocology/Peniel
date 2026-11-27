@@ -105,7 +105,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
 
   return (
     <div
-      className="overflow-hidden"
+      className="storefront-page storefront-signature-reservation overflow-hidden"
       style={{
         background: t.bg,
         color: t.ink,
@@ -113,13 +113,30 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
     >
       {/* HERO */}
       <section className="relative isolate min-h-[570px] overflow-hidden bg-[#101814] sm:min-h-[620px] lg:min-h-[660px]">
-        <img
-          src={vendor.cover}
-          alt={vendor.name}
-          className="absolute inset-0 -z-20 h-full w-full object-cover"
-          width={2000}
-          height={1200}
-        />
+        {vendor.cover ? (
+          <img
+            src={vendor.cover}
+            alt={vendor.name}
+            className="absolute inset-0 -z-20 h-full w-full object-cover"
+            width={2000}
+            height={1200}
+            fetchPriority="high"
+          />
+        ) : (
+          <div
+            className="absolute inset-0 -z-20 flex items-center justify-center"
+            style={{
+              background: `radial-gradient(circle at 70% 25%, ${t.accent}55, transparent 38%), linear-gradient(135deg, ${t.soft}, #101814)`,
+            }}
+          >
+            <span
+              className="grid size-28 place-items-center rounded-[2rem] border border-white/20 bg-white/10 text-4xl font-semibold text-white/80 backdrop-blur"
+              style={{ fontFamily: t.heading }}
+            >
+              {vendor.monogram}
+            </span>
+          </div>
+        )}
 
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#101814]/95 via-[#101814]/65 to-[#101814]/10" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#101814]/75 via-transparent to-[#101814]/15" />
@@ -595,6 +612,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                       vendor={vendor}
                       seed={i}
                       label={p.name}
+                      image={p.images?.[0]}
                       className="h-56 w-full transition-transform duration-700 group-hover:scale-105 sm:h-64"
                     />
 
@@ -702,6 +720,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
                     vendor={vendor}
                     seed={roomProducts.length + i}
                     label={p.name}
+                    image={p.images?.[0]}
                     className="h-full min-h-40 w-full transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
@@ -797,11 +816,27 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
           </div>
 
           <div className="relative min-h-[340px] overflow-hidden sm:min-h-[430px]">
-            <img
-              src={vendor.cover}
-              alt={`${vendor.name} property`}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-105"
-            />
+            {vendor.cover ? (
+              <img
+                src={vendor.cover}
+                alt={`${vendor.name} property`}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+              />
+            ) : (
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  background: `radial-gradient(circle at 70% 20%, ${t.accent}55, transparent 42%), linear-gradient(145deg, ${t.soft}, #101814)`,
+                }}
+              >
+                <span
+                  className="grid size-24 place-items-center rounded-[2rem] border border-white/20 bg-white/10 text-3xl font-semibold text-white/80"
+                  style={{ fontFamily: t.heading }}
+                >
+                  {vendor.monogram}
+                </span>
+              </div>
+            )}
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 

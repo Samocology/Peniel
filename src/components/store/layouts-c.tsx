@@ -34,12 +34,13 @@ const category = (v: Vendor) => {
   return "general";
 };
 
-const cta = (v: Vendor) =>
-  v.fulfilment === "order"
-    ? "Explore collection"
-    : v.fulfilment === "booking"
-      ? "Book an appointment"
-      : "Reserve a room";
+const cta = (v: Vendor) => {
+  const type = category(v);
+  if (type === "food") return "Explore menu";
+  if (type === "beauty") return "Book an appointment";
+  if (type === "hospitality") return "Reserve a room";
+  return v.fulfilment === "order" ? "Explore collection" : "Discover more";
+};
 
 function Eyebrow({ children, color }: { children: ReactNode; color: string }) {
   return (
@@ -113,6 +114,44 @@ function Button({
   );
 }
 
+function HeroProof({ vendor: v }: { vendor: Vendor }) {
+  const th = v.theme;
+  const hasReviews = Number(v.reviews) > 0 && Number(v.rating) > 0;
+  const hasOrders = Boolean(v.orders?.trim()) && !/^0(?:\s|$)/.test(v.orders.trim());
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-xs sm:text-sm">
+      {v.verified && (
+        <span className="inline-flex items-center gap-2 font-medium">
+          <ShieldCheck className="size-4" style={{ color: th.accent }} />
+          Verified business
+        </span>
+      )}
+      <a href="#reviews" className="inline-flex items-center gap-2 transition-opacity hover:opacity-70">
+        {hasReviews ? (
+          <>
+            <Star className="size-4" fill={th.accent} stroke={th.accent} />
+            <span className="font-semibold tabular-nums">{Number(v.rating).toFixed(1)}</span>
+            <span className="opacity-60">({v.reviews} {Number(v.reviews) === 1 ? "review" : "reviews"})</span>
+          </>
+        ) : (
+          <>
+            <Star className="size-4" stroke={th.accent} />
+            <span className="font-medium">New on Peniel</span>
+            <span className="opacity-60">· Be the first to review</span>
+          </>
+        )}
+      </a>
+      {hasOrders && (
+        <span className="inline-flex items-center gap-2 opacity-75">
+          <PackageCheck className="size-4" style={{ color: th.accent }} />
+          {v.orders}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function StoreMeta({ vendor }: { vendor: Vendor }) {
   const th = vendor.theme;
 
@@ -146,23 +185,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
     />
   );
 
-  const stats = (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-xs">
-      {v.verified && (
-        <span className="inline-flex items-center gap-1.5">
-          <ShieldCheck className="size-4" style={{ color: th.accent }} />
-          Verified store
-        </span>
-      )}
-
-      <span className="inline-flex items-center gap-1.5">
-        <Star className="size-3.5" fill={th.accent} stroke={th.accent} />
-        {v.rating} ({v.reviews} reviews)
-      </span>
-
-      <span className="opacity-60">{v.orders}</span>
-    </div>
-  );
+  const stats = <HeroProof vendor={v} />;
 
   switch (tpl.hero) {
     case "centered":
@@ -184,6 +207,10 @@ function HeroBlock({ vendor: v, tpl }: P) {
           <p className="mx-auto mt-5 max-w-xl text-sm leading-8 opacity-60 sm:text-base">
             {v.tagline}
           </p>
+
+          <div className="mt-6 flex justify-center">
+            <HeroProof vendor={v} />
+          </div>
 
           <div className="mt-6 flex justify-center">
             <StoreBadges vendor={v} />
@@ -228,10 +255,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <Button vendor={v}>{cta(v)}</Button>
-                <div className="flex items-center gap-3 text-sm opacity-60">
-                  <Star className="size-4" fill={th.accent} stroke={th.accent} />
-                  <span>{v.rating} · {v.reviews} reviews</span>
-                </div>
+                <HeroProof vendor={v} />
               </div>
 
               <div className="mt-12 flex items-center gap-6 border-t pt-6" style={{ borderColor: `${th.line}60` }}>
@@ -260,14 +284,8 @@ function HeroBlock({ vendor: v, tpl }: P) {
 
                 <p className="mt-4 max-w-md text-base font-medium leading-relaxed opacity-80 sm:text-lg">{v.tagline}</p>
 
-                <div className="mt-6 flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2 text-sm font-bold">
-                    <Star className="size-4" fill={th.accent} stroke={th.accent} />
-                    <span>{v.rating}</span>
-                    <span className="opacity-50">({v.reviews})</span>
-                  </div>
-                  <div className="h-4 w-px opacity-30" style={{ background: th.ink }} />
-                  <span className="text-sm font-bold opacity-60">{v.orders}</span>
+                <div className="mt-6">
+                  <HeroProof vendor={v} />
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-3">
@@ -312,6 +330,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
             <div className="flex flex-col items-start gap-5 md:items-end">
               <StoreBadges vendor={v} />
               <Button vendor={v}>{cta(v)}</Button>
+              <HeroProof vendor={v} />
             </div>
           </div>
 
@@ -348,6 +367,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
               <p className="text-2xl leading-tight" style={{ fontFamily: th.heading }}>
                 {v.tagline}
               </p>
+              <HeroProof vendor={v} />
               <StoreBadges vendor={v} />
               <Button vendor={v}>{cta(v)}</Button>
             </div>
@@ -382,6 +402,9 @@ function HeroBlock({ vendor: v, tpl }: P) {
                 {v.name}
               </Heading>
               <p className="mt-5 max-w-md text-sm leading-8 opacity-65">{v.tagline}</p>
+              <div className="mt-6">
+                <HeroProof vendor={v} />
+              </div>
               <div className="mt-7">
                 <StoreBadges vendor={v} />
               </div>
@@ -415,17 +438,14 @@ function HeroBlock({ vendor: v, tpl }: P) {
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Button vendor={v}>{cta(v)}</Button>
-              <Button vendor={v} ghost href="#catalogue">
-                View menu
+              <Button vendor={v} ghost href={`/messages?v=${v.slug}`}>
+                Chat with us
               </Button>
             </div>
 
             <div className="mt-10 flex flex-wrap items-center gap-6 border-t pt-6" style={{ borderColor: th.line }}>
               <StoreBadges vendor={v} />
-              <div className="flex items-center gap-2 text-sm opacity-60">
-                <Star className="size-4" fill={th.accent} stroke={th.accent} />
-                <span>{v.rating} ({v.reviews})</span>
-              </div>
+              <HeroProof vendor={v} />
             </div>
           </div>
 
@@ -436,29 +456,25 @@ function HeroBlock({ vendor: v, tpl }: P) {
             </div>
 
             <div
-              className="absolute -bottom-6 -left-4 rounded-2xl border p-4 backdrop-blur-sm sm:-left-8 sm:w-[280px]"
+              className="absolute -bottom-6 -left-4 w-[min(88%,320px)] rounded-2xl border p-4 shadow-xl backdrop-blur-md sm:-left-8"
               style={{
-                background: `${th.bg}f0`,
+                background: `${th.bg}f2`,
                 borderColor: th.line,
               }}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-widest opacity-50">
-                    Customer rating
-                  </p>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums">
-                    {v.rating}
-                    <span className="ml-1 text-xs opacity-45">/ 5.0</span>
-                  </p>
-                </div>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Star key={n} className="size-3" fill={th.accent} stroke={th.accent} />
-                  ))}
+              <div className="flex items-start gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ background: th.soft, color: th.accent }}>
+                  <Clock className="size-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.16em] opacity-50">Opening hours</p>
+                  <p className="mt-1 text-xs font-semibold leading-5">{v.hours}</p>
                 </div>
               </div>
-              <p className="mt-2 text-[10px] opacity-50">Based on {v.reviews} customer reviews</p>
+              <div className="mt-3 flex items-start gap-3 border-t pt-3" style={{ borderColor: th.line }}>
+                <MapPin className="mt-0.5 size-4 shrink-0" style={{ color: th.accent }} />
+                <p className="text-xs leading-5 opacity-70">{v.location}</p>
+              </div>
             </div>
           </div>
         </section>
@@ -512,6 +528,7 @@ function ProductCard({
           vendor={v}
           seed={index}
           label={p.name}
+          image={p.images?.[0]}
           className={[
             tall || fashion ? "aspect-[3/4]" : "aspect-[4/3]",
             "w-full transition-transform duration-700 group-hover:scale-[1.04]",
@@ -629,6 +646,7 @@ function CatalogBlock({ vendor: v, tpl }: P) {
                             vendor={v}
                             seed={i + groupIndex * 3}
                             label={p.name}
+                            image={p.images?.[0]}
                             className="aspect-[16/10] w-full sm:aspect-square"
                           />
                         </div>
@@ -823,7 +841,7 @@ function CatalogBlock({ vendor: v, tpl }: P) {
                 borderColor: th.line,
               }}
             >
-              <ItemArt vendor={v} seed={i} label={p.name} className="aspect-square rounded-xl" />
+              <ItemArt vendor={v} seed={i} label={p.name} image={p.images?.[0]} className="aspect-square rounded-xl" />
               <p className="mt-3 truncate text-center text-sm font-medium">{p.name}</p>
               <p className="mt-1 text-center text-sm font-bold" style={{ color: th.accent }}>
                 {naira(p.price)}

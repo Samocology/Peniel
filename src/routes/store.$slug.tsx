@@ -34,7 +34,8 @@ const layouts: StoreLayout[] = [
 ];
 
 const R2_PUBLIC_URL =
-  import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+  import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ??
+  "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
 
 function buildR2Url(objectKey: string | undefined): string | undefined {
   if (!objectKey || typeof objectKey !== "string") return undefined;
@@ -74,7 +75,12 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
     fulfilmentValue === "order"
       ? fulfilmentValue
       : fallback.fulfilment;
-  const storefront = Array.isArray(value["storefronts"]) ? value["storefronts"][0] : undefined;
+  const rawStorefront = value["storefronts"];
+  const storefront = Array.isArray(rawStorefront)
+    ? rawStorefront[0]
+    : rawStorefront && typeof rawStorefront === "object"
+      ? rawStorefront
+      : undefined;
   const layoutValue =
     storefront && typeof storefront === "object" ? storefront["layout"] : undefined;
   const layout = layouts.includes(layoutValue as StoreLayout)
@@ -86,7 +92,8 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
   const logoUrl = buildR2Url(storefront?.["logo_object_key"] as string);
   const theme = extractTheme(storefront);
 
-  const openingHours = storefront && typeof storefront === "object" ? storefront["opening_hours"] : undefined;
+  const openingHours =
+    storefront && typeof storefront === "object" ? storefront["opening_hours"] : undefined;
   const hours =
     typeof openingHours === "string"
       ? openingHours
@@ -101,12 +108,18 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
         .map((p) => {
           if (!p || typeof p !== "object") return null;
           const prod = p as Record<string, unknown>;
-          const meta =
-            prod["attributes"] &&
-            typeof prod["attributes"] === "object" &&
-            typeof (prod["attributes"] as Record<string, unknown>)["meta"] === "string"
-              ? (prod["attributes"] as Record<string, unknown>)["meta"]
+          const attributes =
+            prod["attributes"] && typeof prod["attributes"] === "object"
+              ? (prod["attributes"] as Record<string, unknown>)
               : undefined;
+          const meta = typeof attributes?.["meta"] === "string" ? attributes["meta"] : undefined;
+          const imageKey =
+            typeof attributes?.["image_object_key"] === "string"
+              ? attributes["image_object_key"]
+              : undefined;
+          const imageUrl =
+            typeof attributes?.["image_url"] === "string" ? attributes["image_url"] : undefined;
+          const productImage = imageKey ? buildR2Url(imageKey) : imageUrl;
           return {
             id: typeof prod["id"] === "string" ? prod["id"] : "",
             name: typeof prod["name"] === "string" ? prod["name"] : "",
@@ -114,8 +127,9 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
             price: typeof prod["price_minor"] === "number" ? prod["price_minor"] / 100 : 0,
             group: typeof prod["group_name"] === "string" ? prod["group_name"] : "General",
             ...(meta ? { meta } : {}),
-            ...(Array.isArray((prod["attributes"] as Record<string, unknown>)?.["sizes"])
-              ? { sizes: (prod["attributes"] as Record<string, unknown>)["sizes"] as string[] }
+            ...(productImage ? { images: [productImage] } : {}),
+            ...(Array.isArray(attributes?.["sizes"])
+              ? { sizes: attributes["sizes"] as string[] }
               : {}),
           };
         })
@@ -245,9 +259,7 @@ function StorePage() {
       <div className="min-h-screen bg-background">
         <main className="mx-auto max-w-2xl px-4 py-24 text-center">
           <h1 className="text-2xl font-bold">Loading storefront…</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Please wait while we load the store.
-          </p>
+          <p className="mt-3 text-sm text-muted-foreground">Please wait while we load the store.</p>
         </main>
       </div>
     );
@@ -269,6 +281,15 @@ function StorePage() {
       : acc?.profile.acceptingBookings !== false;
 
   const L = storeBase.layout;
+  const topBarMode =
+    tpl.kind === "composed"
+      ? "standard"
+      : L === "builder"
+        ? "builder"
+        : L === "reservation"
+          ? "hotel"
+          : "standard";
+  const usesReservationLayout = tpl.kind === "signature" && L === "reservation";
   const body =
     tpl.kind === "composed" ? (
       <ComposedStore vendor={vendor} tpl={tpl} />
@@ -297,7 +318,7 @@ function StorePage() {
           Previewing “{tpl.name}” design - choose it in onboarding or Store settings
         </div>
       )}
-      <StoreTopBar vendor={vendor} />
+      <StoreTopBar vendor={vendor} mode={topBarMode} />
       {!published ? (
         <main className="mx-auto max-w-2xl px-4 py-24 text-center">
           <h1 className="text-2xl font-bold">This storefront is unavailable</h1>
@@ -320,7 +341,7 @@ function StorePage() {
           {body}
         </>
       )}
-      <StoreFooter vendor={vendor} />
+      {usesReservationLayout && <StoreFooter vendor={vendor} />}
     </div>
   );
 }

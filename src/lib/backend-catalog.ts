@@ -133,6 +133,22 @@ function mapProduct(value: unknown): Product | null {
       ? attributes["meta"]
       : undefined;
 
+  // Extract product image from attributes (image_object_key or image_url)
+  let productImage: string | undefined;
+  if (isRecord(attributes)) {
+    const imageKey = typeof attributes["image_object_key"] === "string"
+      ? attributes["image_object_key"]
+      : undefined;
+    const imageUrl = typeof attributes["image_url"] === "string"
+      ? attributes["image_url"]
+      : undefined;
+    if (imageKey) {
+      productImage = buildR2Url(imageKey);
+    } else if (imageUrl) {
+      productImage = imageUrl;
+    }
+  }
+
   return {
     id,
     name,
@@ -140,6 +156,7 @@ function mapProduct(value: unknown): Product | null {
     price: priceMinor / 100,
     group: groupName,
     ...(meta ? { meta } : {}),
+    ...(productImage ? { images: [productImage] } : {}),
   };
 }
 

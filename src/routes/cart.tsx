@@ -63,6 +63,8 @@ function CartPage() {
               {groups.map((slug) => {
                 const lines = cartLines.filter((l) => l.vendorSlug === slug);
                 const first = lines[0]!;
+                const cartVendor =
+                  getVendor(slug) ?? s.customVendors?.find((vendor) => vendor.slug === slug);
                 return (
                   <div key={slug} className="rounded-2xl border border-border bg-card">
                     <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5">
@@ -86,11 +88,20 @@ function CartPage() {
                           key={l.id}
                           className="grid grid-cols-[64px_minmax(0,1fr)] gap-3 p-4 sm:gap-4 sm:p-5 sm:grid-cols-[72px_minmax(0,1fr)_auto]"
                         >
-                          {getVendor(l.vendorSlug) ? (
+                          {cartVendor ? (
                             <ItemArt
-                              vendor={getVendor(l.vendorSlug)!}
+                              vendor={cartVendor}
                               seed={index}
                               label={l.item}
+                              image={
+                                [
+                                  ...(cartVendor.products ?? []),
+                                  ...(s.accounts[l.vendorSlug]?.products ?? []),
+                                ].find(
+                                  (product) =>
+                                    product.id === l.productId || product.name === l.item,
+                                )?.images?.[0]
+                              }
                               className="size-16 shrink-0 rounded-xl sm:size-18"
                             />
                           ) : (

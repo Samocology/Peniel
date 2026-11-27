@@ -129,6 +129,8 @@ export type Product = {
 };
 
 export type Vendor = {
+  /** Backend vendor identifier used by vendor-scoped APIs. */
+  id?: string;
   slug: string;
   name: string;
   tagline: string;

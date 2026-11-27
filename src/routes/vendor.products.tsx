@@ -51,14 +51,31 @@ function VendorProducts() {
   const ownedVendor = myVendors.data?.find((item) => item.slug === base.slug);
   const liveProducts = useVendorProducts(ownedVendor?.id ?? null);
   const useBackend = myVendors.loading || myVendors.error !== null || ownedVendor !== undefined;
-  const backendProducts = (liveProducts.data ?? []).map((product) => ({
-    id: product.id,
-    name: product.name,
-    desc: product.description,
-    price: product.price_minor / 100,
-    group: product.group_name,
-    ...(typeof product.attributes["meta"] === "string" ? { meta: product.attributes["meta"] } : {}),
-  }));
+  const backendProducts = (liveProducts.data ?? []).map((product) => {
+    const imageKey =
+      typeof product.attributes["image_object_key"] === "string"
+        ? product.attributes["image_object_key"]
+        : undefined;
+    const imageUrl =
+      typeof product.attributes["image_url"] === "string"
+        ? product.attributes["image_url"]
+        : undefined;
+    const publicMediaUrl =
+      import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ??
+      "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev";
+    const image = imageKey ? `${publicMediaUrl}/${imageKey}` : imageUrl;
+    return {
+      id: product.id,
+      name: product.name,
+      desc: product.description,
+      price: product.price_minor / 100,
+      group: product.group_name,
+      ...(image ? { images: [image] } : {}),
+      ...(typeof product.attributes["meta"] === "string"
+        ? { meta: product.attributes["meta"] }
+        : {}),
+    };
+  });
 
   const vendor = {
     ...base,
@@ -392,6 +409,7 @@ function VendorProducts() {
                           vendor={vendor}
                           seed={originalIndex}
                           label={product.name}
+                          image={product.images?.[0]}
                           className="size-14 shrink-0 rounded-xl"
                         />
 
@@ -478,6 +496,7 @@ function VendorProducts() {
                                 vendor={vendor}
                                 seed={originalIndex}
                                 label={product.name}
+                                image={product.images?.[0]}
                                 className="size-10 shrink-0 rounded-lg"
                               />
                               <span className="min-w-0">
