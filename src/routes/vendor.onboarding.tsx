@@ -8,7 +8,7 @@ import { categories, naira, type BusinessType } from "@/lib/data";
 import { defaultTemplateFor, getTemplate, templatesFor } from "@/lib/templates";
 import { toast } from "sonner";
 import { useState, useCallback } from "react";
-import { vendorsApi, storageApi } from "@/lib/api-client";
+import { vendorsApi, productsApi, storageApi } from "@/lib/api-client";
 
 const steps = [
   "Business name",
@@ -64,6 +64,7 @@ const categoryTypes: Record<string, BusinessType> = {
 
 function Onboarding() {
   const { step } = Route.useSearch();
+  const pct = Math.round((step / steps.length) * 100);
   const { vendor, account, base } = useCurrentVendor();
   const [businessName, setBusinessName] = useState("");
   const [businessSlug, setBusinessSlug] = useState("");
@@ -80,9 +81,9 @@ function Onboarding() {
   const [coverKey, setCoverKey] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
-  const [products, setProducts] = useState<Array<{ id: string; name: string; price: string }>>([
-    { id: "1", name: "", price: "" },
-    { id: "2", name: "", price: "" },
+  const [products, setProducts] = useState<Array<{ id: string; name: string; price: string; images: string[] }>>([
+    { id: "1", name: "", price: "", images: [] },
+    { id: "2", name: "", price: "", images: [] },
   ]);
 
   const [delivery, setDelivery] = useState("");
@@ -91,7 +92,7 @@ function Onboarding() {
   const [fulfilmentOptions, setFulfilmentOptions] = useState("Delivery and pickup");
 
   const addProduct = () => {
-    setProducts((prev) => [...prev, { id: Date.now().toString(), name: "", price: "" }]);
+    setProducts((prev) => [...prev, { id: Date.now().toString(), name: "", price: "", images: [] }]);
   };
 
   const removeProduct = (id: string) => {
@@ -100,6 +101,18 @@ function Onboarding() {
 
   const updateProduct = (id: string, field: "name" | "price", value: string) => {
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+  };
+
+  const addProductImage = (id: string, objectKey: string) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, images: [...p.images, objectKey] } : p)),
+    );
+  };
+
+  const removeProductImage = (id: string, objectKey: string) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, images: p.images.filter((k) => k !== objectKey) } : p)),
+    );
   };
 
   const uploadImage = useCallback(
@@ -168,7 +181,34 @@ function Onboarding() {
     }
   };
 
-  const pct = Math.round((step / steps.length) * 100);
+  const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
+
+  const handleProductImageUpload = async (
+    productId: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+    setUploadingProductId(productId);
+    try {
+      const objectKey = await uploadImage(file, "store-cover");
+      if (objectKey) {
+        addProductImage(productId, objectKey);
+        toast.success("Image added");
+      }
+    } finally {
+      setUploadingProductId(null);
+      e.target.value = "";
+    }
+  };
   const selectedCategory = categories.findIndex((category) => category.slug === categorySlug);
   const canSubmit =
     businessName.trim().length >= 2 &&
@@ -196,6 +236,7 @@ function Onboarding() {
       .map((p) => ({
         name: p.name.trim(),
         price: Number(p.price),
+        images: p.images,
       }));
 
     // Build fulfillment-specific data
@@ -245,6 +286,31 @@ function Onboarding() {
         if (coverKey) {
           await vendorsApi.updateStorefront(createdVendorId, { cover_object_key: coverKey });
         }
+        // Persist products to backend
+        const failedProducts: string[] = [];
+        for (const p of validProducts) {
+          try {
+            const productResponse = await productsApi.create({
+              vendorId: createdVendorId,
+              name: p.name,
+              description: "",
+              group: "General",
+              price: p.price,
+              published: true,
+              attributes: p.images.length > 0
+                ? { image_object_key: p.images[0], gallery_object_keys: p.images.slice(1) }
+                : {},
+            });
+            if (!productResponse.ok) {
+              failedProducts.push(p.name);
+            }
+          } catch {
+            failedProducts.push(p.name);
+          }
+        }
+        if (failedProducts.length > 0) {
+          toast.error(`Some products could not be saved: ${failedProducts.join(", ")}. You can add them manually from your dashboard.`);
+        }
       }
       const selectedCategoryInfo = categories.find((item) => item.slug === categorySlug);
       app.addCustomVendor({
@@ -279,7 +345,7 @@ function Onboarding() {
           price: p.price,
           stock: null,
           published: true,
-          attributes: {},
+          attributes: p.images.length > 0 ? { image_object_key: p.images[0], gallery_object_keys: p.images.slice(1) } : {},
         })),
         groups: [],
         delivery:
@@ -590,7 +656,7 @@ function Onboarding() {
               {products.map((product) => (
                 <div
                   key={product.id}
-                  className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_140px_40px]"
+                  className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_140px_auto_40px]"
                 >
                   <input
                     className={field}
@@ -608,6 +674,46 @@ function Onboarding() {
                     onChange={(e) => updateProduct(product.id, "price", e.target.value)}
                     placeholder="Price (₦)"
                   />
+                  <div className="flex items-center gap-2">
+                    <label className="flex size-10 cursor-pointer items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 transition hover:border-primary/40">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleProductImageUpload(product.id, e)}
+                        disabled={uploadingProductId === product.id}
+                      />
+                      {uploadingProductId === product.id ? (
+                        <span className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      ) : (
+                        <svg className="size-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="17 8 12 3 7 8" />
+                          <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                      )}
+                    </label>
+                    {product.images.length > 0 && (
+                      <div className="flex gap-1">
+                        {product.images.slice(0, 3).map((key) => (
+                          <div key={key} className="relative size-10 overflow-hidden rounded-lg border border-border">
+                            <img
+                              src={`${import.meta.env["VITE_R2_PUBLIC_MEDIA_URL"] ?? "https://pub-d473c936045541be8e8ec4972efdf0ea.r2.dev"}/${key}`}
+                              alt=""
+                              className="size-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeProductImage(product.id, key)}
+                              className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-destructive text-[8px] text-white"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   {products.length > 1 && (
                     <button
                       type="button"

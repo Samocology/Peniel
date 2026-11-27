@@ -11,7 +11,7 @@ export const Route = createFileRoute("/verify-otp")({
   validateSearch: z.object({
     email: z.string().email().optional(),
     returnTo: z.string().optional(),
-    role: z.enum(["customer", "vendor"]).optional(),
+    role: z.enum(["customer", "vendor", "admin", "super_admin"]).optional(),
     type: z.enum(["signup", "reset"]).optional(),
   }),
   head: () => ({

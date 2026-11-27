@@ -171,26 +171,26 @@ function AdminVendors() {
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
             <VendorMetric
               label="Total active vendors"
-              value={vendors.filter((v) => v.status === "active").length.toLocaleString()}
+              value={(vendors ?? []).filter((v) => v.status === "active").length.toLocaleString()}
               description="Businesses on Peniel"
               icon={Store}
               accent
             />
             <VendorMetric
               label="Verified businesses"
-              value={vendors.filter((v) => v.status === "verified").length.toLocaleString()}
+              value={(vendors ?? []).filter((v) => v.status === "verified").length.toLocaleString()}
               description="Successfully verified accounts"
               icon={BadgeCheck}
             />
             <VendorMetric
               label="Awaiting review"
-              value={vendors.filter((v) => v.status === "pending_review").length.toLocaleString()}
+              value={(vendors ?? []).filter((v) => v.status === "pending_review").length.toLocaleString()}
               description="Applications requiring attention"
               icon={Clock3}
             />
             <VendorMetric
               label="Suspended accounts"
-              value={vendors.filter((v) => v.status === "suspended").length.toLocaleString()}
+              value={(vendors ?? []).filter((v) => v.status === "suspended").length.toLocaleString()}
               description="Currently restricted businesses"
               icon={ShieldAlert}
             />

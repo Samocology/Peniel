@@ -6,7 +6,7 @@ import { DashShell, DataTable, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard, StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
-import { app, useCurrentVendor } from "@/lib/peniel-store";
+import { app, useCurrentVendor, type OrderStatus } from "@/lib/peniel-store";
 import { useVendorId, minorToNaira } from "@/lib/vendor-hooks";
 import { payoutsApi, type VendorBalance, type PayoutRecord } from "@/lib/api-client";
 

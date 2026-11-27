@@ -196,6 +196,27 @@ export const templates: StoreTemplate[] = [
     theme: t("#ffd23f", "#111", "#e4002b", "#fff", "#ffe580", "0px", f.bebas),
   },
   {
+    id: "garden-fresh",
+    name: "Garden Fresh",
+    vibe: "Light, organic, split-background cards",
+    bestFor: ["restaurant", "fresh-food"],
+    kind: "composed",
+    hero: "split",
+    catalog: "cards",
+    theme: t("#f5faf5", "#1a2e1a", "#2e7d32", "#fff", "#e8f5e9", "16px", f.grotesk),
+  },
+  {
+    id: "burger-barn",
+    name: "Burger Barn",
+    vibe: "Dark header, high-contrast, bold type",
+    bestFor: ["restaurant"],
+    kind: "composed",
+    hero: "poster",
+    catalog: "bento",
+    caps: true,
+    theme: t("#1a1a1a", "#fff", "#ff5722", "#fff", "#2a2a2a", "8px", f.archivo, true),
+  },
+  {
     id: "royal-indigo",
     name: "Royal Indigo",
     vibe: "Adire indigo with gold accents",
@@ -358,6 +379,14 @@ export function getTemplate(id: string | undefined) {
 
 /** Default storefront a vendor gets before choosing one. */
 export function defaultTemplateFor(vendor: Vendor) {
+  // Prefer category-appropriate composed templates first
+  const categoryTemplates = templatesFor(vendor.type);
+  if (categoryTemplates.length > 0) {
+    // Use vendor.layout as a hint if it maps to a template
+    const byLayout = categoryTemplates.find((x) => x.layout === vendor.layout);
+    if (byLayout) return byLayout;
+    return categoryTemplates[0]!;
+  }
   return templates.find((x) => x.layout === vendor.layout) ?? templates[0]!;
 }
 

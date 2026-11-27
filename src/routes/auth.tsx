@@ -27,7 +27,7 @@ import { authApi } from "@/lib/api-client";
 export const Route = createFileRoute("/auth")({
   validateSearch: z.object({
     mode: z.enum(["login", "signup"]).catch("login"),
-    role: z.enum(["customer", "vendor"]).optional(),
+    role: z.enum(["customer", "vendor", "admin", "super_admin"]).optional(),
     returnTo: z.string().optional(),
     email: z.string().email().optional(),
   }),

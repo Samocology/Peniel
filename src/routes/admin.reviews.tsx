@@ -293,7 +293,7 @@ function AdminReviews() {
                 <div
                   className={`h-full rounded-full bg-primary transition-all`}
                   style={{
-                    width: `${reviews.length ? ((reviews.length - pendingCount) / reviews.length) * 100 : 0}%`,
+                    width: `${(reviews ?? []).length ? (((reviews ?? []).length - pendingCount) / (reviews ?? []).length) * 100 : 0}%`,
                   }}
                 />
               </div>

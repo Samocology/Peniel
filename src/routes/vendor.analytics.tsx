@@ -45,27 +45,13 @@ function VendorAnalytics() {
 
   const useLive = liveAnalytics.data !== null;
 
-  const demoOrders = state.orders.filter((o) => o.vendorSlug === vendor.slug);
-  const demoCompleted = demoOrders.filter((o) => o.status === "Delivered");
-  const demoRevenue = demoOrders
-    .filter((o) => o.status !== "Cancelled")
-    .reduce((s, o) => s + o.total, 0);
-  const demoAverage = demoCompleted.length
-    ? Math.round(demoCompleted.reduce((s, o) => s + o.total, 0) / demoCompleted.length)
+  const revenue = useLive ? liveAnalytics.data!.totalRevenue / 100 : 0;
+  const completedRevenue = useLive ? liveAnalytics.data!.netRevenue / 100 : 0;
+  const orders: { status: string; mode: string; total: number }[] = [];
+  const completed: { status: string; mode: string; total: number }[] = [];
+  const average = useLive && liveAnalytics.data!.completedOrders > 0
+    ? Math.round(liveAnalytics.data!.netRevenue / 100 / liveAnalytics.data!.completedOrders)
     : 0;
-
-  const orders = demoOrders;
-  const completed = demoCompleted;
-
-  const revenue = useLive ? liveAnalytics.data!.totalRevenue / 100 : demoRevenue;
-  const completedRevenue = useLive
-    ? liveAnalytics.data!.netRevenue / 100
-    : demoCompleted.reduce((s, o) => s + o.total, 0);
-  const average = useLive
-    ? liveAnalytics.data!.completedOrders > 0
-      ? Math.round(liveAnalytics.data!.netRevenue / 100 / liveAnalytics.data!.completedOrders)
-      : 0
-    : demoAverage;
 
   const statusCounts: OrderStatus[] = [
     "New",

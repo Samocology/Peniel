@@ -201,64 +201,95 @@ function HeroBlock({ vendor: v, tpl }: P) {
 
     case "banner":
       return (
-        <section className="relative isolate min-h-[540px] overflow-hidden sm:min-h-[690px]">
-          <div className="absolute inset-0">{heroImage}</div>
+        <section className="relative isolate min-h-[70vh] overflow-hidden sm:min-h-[85vh]">
+          <div className="absolute inset-0 scale-105">{heroImage}</div>
 
           <div
             className="absolute inset-0"
             style={{
-              background: `linear-gradient(90deg, ${th.bg} 0%, ${th.bg}ee 32%, ${th.bg}75 70%, ${th.bg}25 100%)`,
+              background: `linear-gradient(180deg, ${th.bg}15 0%, ${th.bg}60 40%, ${th.bg}cc 70%, ${th.bg} 100%)`,
             }}
           />
 
-          <div className="relative mx-auto flex min-h-[540px] max-w-6xl items-end px-5 py-16 sm:min-h-[690px] sm:px-6 sm:py-24">
-            <div className="max-w-2xl">
-              <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
+          <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 30% 50%, ${th.accent}15 0%, transparent 60%)` }} />
 
-              <Heading vendor={v} tpl={tpl} className="mt-6 text-5xl sm:text-7xl">
+          <div className="relative mx-auto flex min-h-[70vh] max-w-7xl flex-col justify-end px-6 py-20 sm:min-h-[85vh] sm:px-8 sm:py-28">
+            <div className="max-w-3xl">
+              <div className="mb-6 inline-flex items-center gap-3 rounded-full border px-4 py-2 text-xs font-medium backdrop-blur-sm" style={{ borderColor: `${th.accent}40`, background: `${th.bg}60` }}>
+                <span className="size-2 rounded-full" style={{ background: th.accent }} />
+                <span className="opacity-80">{v.categoryLabel}</span>
+              </div>
+
+              <Heading vendor={v} tpl={tpl} className="text-6xl font-light tracking-[-0.04em] sm:text-8xl md:text-9xl">
                 {v.name}
               </Heading>
 
-              <p className="mt-6 max-w-lg text-sm leading-8 opacity-75 sm:text-base">{v.tagline}</p>
+              <p className="mt-6 max-w-xl text-base leading-relaxed opacity-70 sm:text-lg">{v.tagline}</p>
 
-              <div className="mt-7">
-                <StoreBadges vendor={v} />
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                <Button vendor={v}>{cta(v)}</Button>
+                <div className="flex items-center gap-3 text-sm opacity-60">
+                  <Star className="size-4" fill={th.accent} stroke={th.accent} />
+                  <span>{v.rating} · {v.reviews} reviews</span>
+                </div>
               </div>
 
-              <div className="mt-8">
-                <Button vendor={v}>{cta(v)}</Button>
+              <div className="mt-12 flex items-center gap-6 border-t pt-6" style={{ borderColor: `${th.line}60` }}>
+                <StoreBadges vendor={v} />
               </div>
             </div>
           </div>
+
+          <div className="absolute bottom-0 left-0 right-0 h-24" style={{ background: `linear-gradient(to top, ${th.bg}, transparent)` }} />
         </section>
       );
 
     case "poster":
       return (
-        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
-          <div
-            className="grid overflow-hidden rounded-2xl md:grid-cols-[1fr_0.95fr]"
-            style={{ background: th.soft, color: th.ink }}
-          >
-            <div className="flex flex-col justify-center p-7 sm:p-12">
-              <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
+        <section className="relative overflow-hidden" style={{ background: th.bg }}>
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+            <div className="grid items-stretch gap-0 overflow-hidden rounded-3xl md:grid-cols-[1.1fr_0.9fr]" style={{ background: th.soft }}>
+              <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-16">
+                <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-wider" style={{ background: th.accent, color: th.accentInk }}>
+                  {v.categoryLabel}
+                </div>
 
-              <Heading vendor={v} tpl={tpl} className="mt-5 text-5xl sm:text-7xl">
-                {v.name}
-              </Heading>
+                <Heading vendor={v} tpl={tpl} className="text-5xl font-black uppercase tracking-tight sm:text-7xl lg:text-8xl">
+                  {v.name}
+                </Heading>
 
-              <p className="mt-5 max-w-md text-sm leading-8 opacity-65">{v.tagline}</p>
+                <p className="mt-4 max-w-md text-base font-medium leading-relaxed opacity-80 sm:text-lg">{v.tagline}</p>
 
-              <div className="mt-7">
-                <StoreBadges vendor={v} />
+                <div className="mt-6 flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2 text-sm font-bold">
+                    <Star className="size-4" fill={th.accent} stroke={th.accent} />
+                    <span>{v.rating}</span>
+                    <span className="opacity-50">({v.reviews})</span>
+                  </div>
+                  <div className="h-4 w-px opacity-30" style={{ background: th.ink }} />
+                  <span className="text-sm font-bold opacity-60">{v.orders}</span>
+                </div>
+
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Button vendor={v}>{cta(v)}</Button>
+                  <Button vendor={v} ghost href="#catalogue">
+                    Full menu
+                  </Button>
+                </div>
+
+                <div className="mt-8 border-t pt-5" style={{ borderColor: th.line }}>
+                  <StoreBadges vendor={v} />
+                </div>
               </div>
 
-              <div className="mt-8">
-                <Button vendor={v}>{cta(v)}</Button>
+              <div className="group relative min-h-[320px] overflow-hidden md:min-h-[500px]">
+                {heroImage}
+                <div className="absolute inset-0" style={{ background: `linear-gradient(to right, ${th.soft} 0%, transparent 30%)` }} />
+                <div className="absolute bottom-4 right-4 rounded-2xl px-4 py-2 text-xs font-black uppercase tracking-wider" style={{ background: th.accent, color: th.accentInk }}>
+                  Order now
+                </div>
               </div>
             </div>
-
-            <div className="group min-h-[300px] overflow-hidden md:min-h-[540px]">{heroImage}</div>
           </div>
         </section>
       );
@@ -369,44 +400,45 @@ function HeroBlock({ vendor: v, tpl }: P) {
     case "split":
     default:
       return (
-        <section className="mx-auto grid max-w-6xl items-center gap-9 px-4 pb-16 pt-10 sm:px-6 sm:pb-24 sm:pt-16 md:grid-cols-[0.9fr_1.1fr] md:gap-14">
+        <section className="mx-auto grid max-w-7xl items-center gap-12 px-6 pb-20 pt-12 sm:px-8 sm:pb-28 sm:pt-16 md:grid-cols-2 md:gap-20 md:pt-20">
           <div className="order-2 md:order-1">
-            <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold" style={{ background: th.soft, color: th.accent }}>
+              <span className="size-1.5 rounded-full" style={{ background: th.accent }} />
+              {v.categoryLabel}
+            </div>
 
-            <Heading vendor={v} tpl={tpl} className="mt-5 max-w-xl text-[clamp(2.7rem,7vw,5.5rem)]">
+            <Heading vendor={v} tpl={tpl} className="max-w-xl text-[clamp(2.5rem,6vw,5rem)] font-semibold leading-[1.05] tracking-[-0.03em]">
               {v.name}
             </Heading>
 
-            <p className="mt-5 max-w-md text-sm leading-8 opacity-65 sm:text-base">{v.tagline}</p>
-
-            <div className="mt-6">
-              <StoreBadges vendor={v} />
-            </div>
+            <p className="mt-6 max-w-lg text-base leading-relaxed opacity-60 sm:text-lg">{v.tagline}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Button vendor={v}>{cta(v)}</Button>
-              <Button vendor={v} ghost href="#about">
-                About us
+              <Button vendor={v} ghost href="#catalogue">
+                View menu
               </Button>
             </div>
 
-            <div className="mt-9 border-t pt-5" style={{ borderColor: th.line }}>
-              <StoreMeta vendor={v} />
+            <div className="mt-10 flex flex-wrap items-center gap-6 border-t pt-6" style={{ borderColor: th.line }}>
+              <StoreBadges vendor={v} />
+              <div className="flex items-center gap-2 text-sm opacity-60">
+                <Star className="size-4" fill={th.accent} stroke={th.accent} />
+                <span>{v.rating} ({v.reviews})</span>
+              </div>
             </div>
           </div>
 
           <div className="group relative order-1 md:order-2">
-            <div
-              className="aspect-[5/4] overflow-hidden rounded-2xl sm:aspect-[4/5] md:aspect-[5/6]"
-              style={{ background: th.soft }}
-            >
-              {heroImage}
+            <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem]" style={{ background: th.soft }}>
+              <div className="aspect-[4/5] sm:aspect-[3/4]">{heroImage}</div>
+              <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${th.bg}40, transparent 40%)` }} />
             </div>
 
             <div
-              className="absolute -bottom-5 left-4 right-4 rounded-2xl border p-4 sm:left-auto sm:right-5 sm:w-[260px]"
+              className="absolute -bottom-6 -left-4 rounded-2xl border p-4 backdrop-blur-sm sm:-left-8 sm:w-[280px]"
               style={{
-                background: th.bg,
+                background: `${th.bg}f0`,
                 borderColor: th.line,
               }}
             >
@@ -441,21 +473,35 @@ function ProductCard({
   product: p,
   index,
   tall = false,
+  tpl,
 }: {
   vendor: Vendor;
   product: Product;
   index: number;
   tall?: boolean;
+  tpl?: StoreTemplate;
 }) {
   const th = v.theme;
   const fashion = category(v) === "fashion";
   const electronics = category(v) === "electronics";
 
+  const isCinematic = tpl?.id === "cinematic";
+  const isGardenFresh = tpl?.id === "garden-fresh";
+  const isBurgerBarn = tpl?.id === "burger-barn";
+
+  const cardClass = isCinematic
+    ? "group block overflow-hidden rounded-3xl border transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+    : isGardenFresh
+      ? "group block overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+      : isBurgerBarn
+        ? "group block overflow-hidden rounded-xl border-2 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
+        : "group block overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl";
+
   return (
     <ItemLink
       vendor={v}
       product={p}
-      className="group block overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      className={cardClass}
       style={{
         borderColor: th.line,
         background: th.bg,
@@ -792,7 +838,7 @@ function CatalogBlock({ vendor: v, tpl }: P) {
       return (
         <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-5 sm:gap-y-8 md:grid-cols-3 lg:grid-cols-4">
           {items.map((p, i) => (
-            <ProductCard key={p.id} vendor={v} product={p} index={i} tall={type === "fashion"} />
+            <ProductCard key={p.id} vendor={v} product={p} index={i} tall={type === "fashion"} tpl={tpl} />
           ))}
         </div>
       );
@@ -940,6 +986,9 @@ export function ComposedStore({ vendor, tpl }: P) {
   const v = vendor;
   const th = v.theme;
   const type = category(v);
+  const isCinematic = tpl.id === "cinematic";
+  const isGardenFresh = tpl.id === "garden-fresh";
+  const isBurgerBarn = tpl.id === "burger-barn";
 
   const catalogueTitle =
     type === "electronics"
@@ -990,7 +1039,7 @@ export function ComposedStore({ vendor, tpl }: P) {
 
   return (
     <div
-      className="min-h-screen overflow-x-hidden antialiased"
+      className={`min-h-screen overflow-x-hidden antialiased ${isCinematic ? "tpl-cinematic cinematic" : isGardenFresh ? "tpl-garden garden" : isBurgerBarn ? "tpl-burger burger" : ""}`}
       style={{
         background: th.bg,
         color: th.ink,
@@ -1003,7 +1052,15 @@ export function ComposedStore({ vendor, tpl }: P) {
       {/* Catalogue */}
       <section
         id="catalogue"
-        className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24"
+        className={
+          isCinematic
+            ? "mx-auto max-w-7xl scroll-mt-24 px-6 py-24 sm:px-8 sm:py-32"
+            : isGardenFresh
+              ? "mx-auto max-w-6xl scroll-mt-24 px-6 py-20 sm:px-8 sm:py-28"
+              : isBurgerBarn
+                ? "mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20"
+                : "mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-24"
+        }
       >
         <div className="mb-9 flex flex-col gap-5 sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl">

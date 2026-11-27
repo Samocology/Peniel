@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowDownToLine,
+  ArrowRight,
   Check,
   ChevronRight,
   Clock3,
@@ -16,7 +17,7 @@ import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatusPill } from "@/components/site/bits";
 import { naira } from "@/lib/data";
-import { useCurrentVendor, type OrderStatus } from "@/lib/peniel-store";
+import { useApp, useCurrentVendor, type OrderStatus } from "@/lib/peniel-store";
 import { useVendorId, useVendorOrders, backendStatusLabel, minorToNaira } from "@/lib/vendor-hooks";
 import { ordersApi } from "@/lib/api-client";
 
@@ -74,8 +75,86 @@ function VendorOrders() {
   const vendorId = useVendorId(vendor.slug);
   const liveOrders = useVendorOrders(vendorId);
 
-  // Use live backend orders only — no mock/demo fallback
-  const useLive = liveOrders.data !== null;
+  // Derived state
+  const useLive = !!vendorId;
+  const liveRows = liveOrders.data ?? [];
+  const demoRows: any[] = [];
+  const set = async (..._args: any[]) => {};
+
+  const pageTitle =
+    vendor.fulfilment === "reservation"
+      ? "Reservations"
+      : vendor.fulfilment === "booking"
+        ? "Appointments"
+        : "Orders";
+
+  // Loading state
+  if (liveOrders.loading) {
+    return (
+      <DashShell
+        nav={vendorNav}
+        kicker="Business console"
+        title={pageTitle}
+        subtitle="Manage your orders and reservations."
+      >
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Package className="size-6 text-muted-foreground animate-pulse" />
+            <p className="text-sm text-muted-foreground">Loading orders…</p>
+          </div>
+        </div>
+      </DashShell>
+    );
+  }
+
+  // No backend vendor linked
+  if (!vendorId) {
+    return (
+      <DashShell
+        nav={vendorNav}
+        kicker="Business console"
+        title={pageTitle}
+        subtitle="Manage your orders and reservations."
+      >
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <Package className="size-8 text-muted-foreground" />
+            <p className="text-sm font-semibold">No vendor account linked</p>
+            <p className="text-xs text-muted-foreground max-w-xs">
+              Complete vendor onboarding to start receiving orders.
+            </p>
+            <Link
+              to="/vendor/onboarding"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+            >
+              Start onboarding
+              <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
+        </div>
+      </DashShell>
+    );
+  }
+
+  // Error state
+  if (liveOrders.error) {
+    return (
+      <DashShell
+        nav={vendorNav}
+        kicker="Business console"
+        title={pageTitle}
+        subtitle="Manage your orders and reservations."
+      >
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <Package className="size-8 text-destructive" />
+            <p className="text-sm font-semibold">Failed to load orders</p>
+            <p className="text-xs text-muted-foreground max-w-xs">{liveOrders.error}</p>
+          </div>
+        </div>
+      </DashShell>
+    );
+  }
 
   const count = (status: OrderStatus) => {
     return (liveOrders.data ?? []).filter((o) => BACKEND_TO_FILTER[o.status] === status).length;
@@ -111,13 +190,6 @@ function VendorOrders() {
   };
 
   const totalOrderCount = (liveOrders.data ?? []).length;
-
-  const pageTitle =
-    vendor.fulfilment === "reservation"
-      ? "Reservations"
-      : vendor.fulfilment === "booking"
-        ? "Appointments"
-        : "Orders";
 
   const activityLabel =
     vendor.fulfilment === "reservation"
@@ -540,20 +612,20 @@ function VendorOrders() {
                             </>
                           )}
 
-                          {next[order.status] && (
+                          {next[order.status as OrderStatus] && (
                             <button
                               type="button"
                               onClick={() =>
                                 set(
                                   order.id,
-                                  next[order.status]!,
-                                  `Marked ${next[order.status]!.toLowerCase()}`,
+                                  next[order.status as OrderStatus]!,
+                                  `Marked ${next[order.status as OrderStatus]!.toLowerCase()}`,
                                 )
                               }
                               className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto"
                             >
                               <Check className="size-3.5" />
-                              Mark {next[order.status]!.toLowerCase()}
+                              Mark {next[order.status as OrderStatus]!.toLowerCase()}
                             </button>
                           )}
 

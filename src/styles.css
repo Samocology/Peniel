@@ -193,3 +193,77 @@
     transform: translateX(-50%);
   }
 }
+
+/* ── Cinematic restaurant template ─────────────────────────────────────── */
+.tpl-cinematic {
+  --cinematic-hero-min-height: 80vh;
+}
+.tpl-cinematic .cinematic-hero {
+  min-height: 80vh;
+  position: relative;
+}
+.tpl-cinematic .cinematic-hero h1 {
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+.tpl-cinematic .cinematic-product-card {
+  border-radius: 2rem;
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.tpl-cinematic .cinematic-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+.tpl-cinematic .cinematic-product-card img {
+  transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.tpl-cinematic .cinematic-product-card:hover img {
+  transform: scale(1.05);
+}
+
+/* ── Garden Fresh restaurant template ──────────────────────────────────── */
+.tpl-garden {
+  --garden-accent: #2d6a4f;
+}
+.tpl-garden .garden-hero {
+  position: relative;
+}
+.tpl-garden .garden-product-card {
+  border-radius: 1.5rem;
+  transition: all 0.3s ease;
+}
+.tpl-garden .garden-product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(45, 106, 79, 0.1);
+}
+.tpl-garden .garden-product-card img {
+  transition: transform 0.5s ease;
+}
+.tpl-garden .garden-product-card:hover img {
+  transform: scale(1.03);
+}
+
+/* ── Burger Barn restaurant template ──────────────────────────────────── */
+.tpl-burger .burger-hero {
+  position: relative;
+}
+.tpl-burger .burger-product-card {
+  border-radius: 1.25rem;
+  transition: all 0.2s ease;
+}
+.tpl-burger .burger-product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+}
+.tpl-burger .burger-product-card img {
+  transition: transform 0.4s ease;
+}
+.tpl-burger .burger-product-card:hover img {
+  transform: scale(1.08);
+}
+.tpl-burger .burger-cta {
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}

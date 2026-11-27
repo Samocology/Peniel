@@ -128,6 +128,65 @@ function VendorOverview() {
   const itemLabel =
     vendor.type === "beauty" ? "service" : vendor.type === "hotel" ? "room" : "item";
 
+  // Category-specific dashboard configuration
+  const dashboardConfig = {
+    restaurant: {
+      primaryStat: "Open orders",
+      secondaryStat: "Menu items",
+      tertiaryStat: "Revenue today",
+      accent: "primary",
+      layout: "orders-first",
+    },
+    hotel: {
+      primaryStat: "Available rooms",
+      secondaryStat: "Reservations",
+      tertiaryStat: "Occupancy",
+      accent: "primary",
+      layout: "rooms-first",
+    },
+    fashion: {
+      primaryStat: "Products",
+      secondaryStat: "Orders",
+      tertiaryStat: "Revenue",
+      accent: "primary",
+      layout: "products-first",
+    },
+    beauty: {
+      primaryStat: "Services",
+      secondaryStat: "Appointments",
+      tertiaryStat: "Revenue",
+      accent: "primary",
+      layout: "services-first",
+    },
+    bakery: {
+      primaryStat: "Menu items",
+      secondaryStat: "Orders",
+      tertiaryStat: "Revenue",
+      accent: "primary",
+      layout: "orders-first",
+    },
+    electronics: {
+      primaryStat: "Products",
+      secondaryStat: "Orders",
+      tertiaryStat: "Revenue",
+      accent: "primary",
+      layout: "products-first",
+    },
+    "fresh-food": {
+      primaryStat: "Products",
+      secondaryStat: "Orders",
+      tertiaryStat: "Revenue",
+      accent: "primary",
+      layout: "products-first",
+    },
+  }[vendor.type] ?? {
+    primaryStat: "Products",
+    secondaryStat: "Orders",
+    tertiaryStat: "Revenue",
+    accent: "primary",
+    layout: "products-first",
+  };
+
   const activityLabel =
     vendor.fulfilment === "reservation"
       ? "reservations"

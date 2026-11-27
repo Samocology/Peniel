@@ -102,9 +102,9 @@ function AdminVerification() {
     );
   }
 
-  const pending = applications.filter((a) => a.status === "pending").length;
-  const approved = applications.filter((a) => a.status === "approved").length;
-  const rejected = applications.filter((a) => a.status === "rejected").length;
+  const pending = (applications ?? []).filter((a) => a.status === "pending").length;
+  const approved = (applications ?? []).filter((a) => a.status === "approved").length;
+  const rejected = (applications ?? []).filter((a) => a.status === "rejected").length;
 
   return (
     <DashShell
@@ -125,7 +125,7 @@ function AdminVerification() {
           title="Application queue"
           action={
             <span className="text-xs font-medium text-muted-foreground">
-              {applications.length} sample applications
+              {(applications ?? []).length} sample applications
             </span>
           }
         >

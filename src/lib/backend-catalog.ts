@@ -237,10 +237,9 @@ export function mapBackendVendor(value: unknown): Vendor | null {
     name,
 
     tagline:
-      description.split(/[.!?]/, 1)[0]?.trim() ||
-      fallback.tagline,
+      description.split(/[.!?]/, 1)[0]?.trim() || "",
 
-    about: description || fallback.about,
+    about: description || "",
 
     type: businessType,
 
@@ -254,7 +253,7 @@ export function mapBackendVendor(value: unknown): Vendor | null {
 
     // No demo logo or cover should be shown for a different vendor.
     ...(logoUrl ? { logo: logoUrl } : {}),
-    cover: coverUrl ?? fallback.cover,
+    cover: coverUrl ?? "",
 
     ...(logoKey ? { logo_object_key: logoKey } : {}),
     ...(coverKey ? { cover_object_key: coverKey } : {}),

@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SectionHeading, VendorCard } from "@/components/site/bits";
-import { categories, vendors } from "@/lib/data";
+import { categories, vendors, type BusinessType, type Vendor } from "@/lib/data";
 import { searchVendors } from "@/lib/discovery";
 import { getMarketplaceLocationLabel } from "@/lib/location";
 import { app, useApp } from "@/lib/peniel-store";
@@ -629,11 +629,14 @@ function CustomerHome() {
             ...vendors[0],
             slug: v.slug,
             name: v.name,
+            type: v.business_type as BusinessType,
+            status: v.status,
             tagline: v.description.split(/[.!?]/, 1)[0]?.trim() || v.description,
             about: v.description,
             categoryLabel: v.categories?.name ?? v.business_type,
+            categorySlug: v.categories?.slug ?? "",
             location: v.location,
-            cover: coverUrl ?? vendors[0].cover,
+            cover: coverUrl ?? vendors[0]?.cover ?? "",
             logo: logoUrl,
             monogram,
             verified: false,
@@ -643,7 +646,7 @@ function CustomerHome() {
           };
         })
         .sort((a, b) => b.rating - a.rating || b.reviews - a.reviews);
-      setLiveVendors(mapped);
+      setLiveVendors(mapped as Vendor[]);
     });
     return () => {
       active = false;

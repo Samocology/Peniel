@@ -731,6 +731,14 @@ export type AdminAnalytics = {
   totalOrders: number;
   completedOrders: number;
   gmvMinor: number;
+  cityData: { city: string; percentage: number }[];
+  health: {
+    fulfillmentRate: number;
+    disputeRate: number;
+    failedPaymentRate: number;
+    averageRating: number;
+    verifiedVendors: number;
+  };
 };
 
 export type AdminSetting = {

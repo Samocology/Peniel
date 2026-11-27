@@ -3,6 +3,7 @@ import { BadgeCheck, Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { naira, type Vendor } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import defaultCover from "@/assets/cover-bakery.jpg";
 
 export function Stars({ value, className }: { value: number; className?: string }) {
   return (
@@ -50,10 +51,13 @@ export function VendorCard({ vendor, compact = false }: { vendor: Vendor; compac
     >
       <div className="relative aspect-[16/10] overflow-hidden">
         <img
-          src={vendor.cover}
+          src={vendor.cover || defaultCover}
           alt={vendor.name}
           loading="lazy"
           className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = defaultCover;
+          }}
         />
         <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           {vendor.verified && (

@@ -117,9 +117,9 @@ function AdminTransactions() {
     );
   }
 
-  const volume = transactions.reduce((s, t) => s + t.amount_minor, 0);
+  const volume = (transactions ?? []).reduce((s, t) => s + t.amount_minor, 0);
   const platformFees = Math.round(volume * 0.02);
-  const completed = transactions.filter((t) => t.status === "completed").length;
+  const completed = (transactions ?? []).filter((t) => t.status === "completed").length;
 
   return (
     <DashShell
@@ -196,7 +196,7 @@ function AdminTransactions() {
                     <span
                       className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${tx.status === "completed" ? "bg-success/10 text-success" : tx.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}
                     >
-                      {tx.status.replace(/\b\w/g, (c) => c.toUpperCase())}
+                      {tx.status.replace(/\b\w/g, (c: string) => c.toUpperCase())}
                     </span>,
                     <span className="text-xs text-muted-foreground">
                       {tx.verified_at ? new Date(tx.verified_at).toLocaleDateString() : "—"}
@@ -224,7 +224,7 @@ function AdminTransactions() {
           )}
           <div className="mt-4 flex flex-col gap-1 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
-              Showing {visibleRows.length} of {transactions.length} transactions
+              Showing {visibleRows.length} of {(transactions ?? []).length} transactions
             </p>
             <p className="text-xs text-muted-foreground">Transaction fees calculated at 2%</p>
           </div>

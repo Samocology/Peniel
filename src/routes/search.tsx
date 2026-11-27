@@ -230,6 +230,7 @@ function SearchPage() {
                 phone: vendor.phone ?? "",
                 email: "",
                 fulfilment: vendor.fulfilment as "order" | "booking" | "reservation",
+                status: vendor.status ?? "active",
                 theme: {
                   bg: "#ffffff",
                   ink: "#0f172a",

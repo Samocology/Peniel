@@ -747,6 +747,7 @@ return () => {
 
 
   const [locationError, setLocationError] = useState("");
+  const [locationQuery, setLocationQuery] = useState("");
 
 
 
@@ -1153,7 +1154,8 @@ return () => {
 
 
 
-  const topRated = [...visibleVendors].sort((a, b) => b.rating - a.rating).slice(0, 4);
+  const locationFilteredVendors = locationQuery.trim() ? visibleVendors.filter((v) => (v.location ?? "").toLowerCase().includes(locationQuery.trim().toLowerCase())) : visibleVendors;
+  const topRated = [...locationFilteredVendors].sort((a, b) => b.rating - a.rating).slice(0, 4);
 
 
 
@@ -1289,7 +1291,7 @@ return () => {
 
         <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 hide-scrollbar sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0">
 
-          {visibleVendors
+          {locationFilteredVendors
 
             .filter((v) => v.featured)
 
@@ -1463,7 +1465,7 @@ return () => {
 
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
 
-                  {visibleVendors.length}
+                  {locationFilteredVendors.length}
 
                 </span>
 
@@ -1478,6 +1480,10 @@ return () => {
                 {locationError && ` · ${locationError}`}
 
               </p>
+              <div className="mt-2 flex items-center gap-2">
+                <input type="text" placeholder="Search by city, state or area..." value={locationQuery} onChange={(e) => setLocationQuery(e.target.value)} className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-xs" />
+                {locationQuery && <button type="button" onClick={() => setLocationQuery("")} className="text-xs text-muted-foreground hover:text-foreground">Clear</button>}
+              </div>
 
             </div>
 
@@ -1817,7 +1823,7 @@ return () => {
 
               </div>
 
-            ) : visibleVendors.length === 0 ? (
+            ) : locationFilteredVendors.length === 0 ? (
 
               <div className="col-span-full rounded-2xl border border-dashed border-border bg-card px-5 py-10 text-center sm:px-6 sm:py-12">
 
@@ -1835,7 +1841,7 @@ return () => {
 
             ) : (
 
-              visibleVendors.map((v) => {
+              locationFilteredVendors.map((v) => {
 
                 const gridView = (
 
@@ -2141,7 +2147,7 @@ return () => {
 
             <p>
 
-              Showing 1-{visibleVendors.length} of {visibleVendors.length}+ businesses
+              Showing 1-{locationFilteredVendors.length} of {locationFilteredVendors.length}+ businesses
 
             </p>
 

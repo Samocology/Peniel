@@ -80,6 +80,7 @@ function NewProduct() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [details, setDetails] = useState("");
+  const [sizes, setSizes] = useState<string[]>([]);
   const [group, setGroup] = useState(vendor.groups[0] ?? "General");
   const [publishing, setPublishing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -259,7 +260,7 @@ function NewProduct() {
     setImages((prev) => {
       const newImages = [...prev];
       const [removed] = newImages.splice(fromIndex, 1);
-      newImages.splice(toIndex, 0, removed);
+      if (removed) newImages.splice(toIndex, 0, removed);
       return newImages.map((img, idx) => ({ ...img, isMain: idx === 0 }));
     });
   }, []);
@@ -340,6 +341,7 @@ function NewProduct() {
           published: true,
           attributes: {
             ...(details.trim() ? { meta: details.trim() } : {}),
+            ...(sizes.length > 0 ? { sizes } : {}),
             ...(mainImage.objectKey ? { image_object_key: mainImage.objectKey } : {}),
             ...(additionalImages.length > 0 ? { gallery_object_keys: additionalImages } : {}),
           },
@@ -368,6 +370,7 @@ function NewProduct() {
         group: savedProduct.group_name || group.trim() || "General",
         price: savedProduct.price_minor / 100,
         ...(details.trim() ? { meta: details.trim() } : {}),
+        ...(sizes.length > 0 ? { sizes } : {}),
       });
       toast.success(`${productName} saved to your ${itemLabel} catalogue`);
       void navigate({ to: "/vendor/products" });
@@ -726,6 +729,33 @@ function NewProduct() {
                 <p className="mt-1.5 text-[11px] text-muted-foreground">
                   Choose where this item belongs in your catalogue.
                 </p>
+              </div>
+
+              <div className="sm:col-span-2 space-y-1.5">
+                <label className={label}>
+                  Available sizes
+                  <span className="ml-1.5 font-normal text-muted-foreground">(Optional)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {["XS", "S", "M", "L", "XL", "XXL", "One Size"].map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() =>
+                        setSizes((prev) =>
+                          prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size],
+                        )
+                      }
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                        sizes.includes(size)
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card hover:border-primary/30"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="sm:col-span-2">
