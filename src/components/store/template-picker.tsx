@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Check, Eye, Lock, Sparkles } from "lucide-react";
 import { useState } from "react";
 import type { Vendor } from "@/lib/data";
-import { defaultTemplateFor, getTemplate, templatesFor, type StoreTemplate } from "@/lib/templates";
+import { defaultTemplateFor, getTemplate, templatesForVendor, type StoreTemplate } from "@/lib/templates";
 import { app, canPickStorefront, useApp } from "@/lib/peniel-store";
 import { vendorsApi } from "@/lib/api-client";
 
@@ -46,11 +46,11 @@ function Thumb({ tpl }: { tpl: StoreTemplate }) {
 export function TemplatePicker({ vendor, vendorId }: { vendor: Vendor; vendorId: string | undefined }) {
   const st = useApp();
   const s = st.accounts[vendor.slug] ?? { plan: "starter" as const, picks: 0, choice: undefined };
-  const current = s.choice ?? defaultTemplateFor(vendor).id;
+  const current = vendor.templateId ?? s.choice ?? defaultTemplateFor(vendor).id;
   const picks = s.picks;
   const unlocked = canPickStorefront(s.plan, picks);
   const [msg, setMsg] = useState<string | null>(null);
-  const list = templatesFor(vendor.type);
+  const list = templatesForVendor(vendor);
 
   const pick = async (id: string) => {
     if (id === current) return;

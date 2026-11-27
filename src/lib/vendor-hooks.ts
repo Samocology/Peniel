@@ -48,6 +48,11 @@ function useRealtimeSubscription<T>(
   onChange: (payload: { new: T; old: T; eventType: string }) => void,
 ) {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  // Keep the latest callback in a ref so the channel subscribes once per
+  // (vendor, table, filter) instead of tearing down and re-subscribing on
+  // every render. This keeps realtime updates reliable.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     if (!vendorId || typeof window === "undefined" || !supabase) return;
@@ -65,7 +70,7 @@ function useRealtimeSubscription<T>(
           filter,
         },
         (payload) => {
-          onChange({
+          onChangeRef.current({
             new: payload.new as T,
             old: payload.old as T,
             eventType: payload.eventType,
@@ -82,7 +87,7 @@ function useRealtimeSubscription<T>(
         channelRef.current = null;
       }
     };
-  }, [vendorId, table, filter, onChange]);
+  }, [vendorId, table, filter]);
 }
 
 /** Fetch the authenticated user's vendor records from the backend. */

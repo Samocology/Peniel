@@ -166,6 +166,9 @@ export function mapBackendVendor(value: unknown): Vendor | null {
   const slug = getString(value, "slug");
   if (!slug) return null;
 
+  // Preserve the real backend vendor ID for vendor-scoped review APIs.
+  const id = getString(value, "id");
+
   // Keep demo data only as a structural fallback for fields not supplied
   // by the backend. Never use its logo or cover for another vendor.
   const demo = getVendor(slug);
@@ -250,6 +253,8 @@ export function mapBackendVendor(value: unknown): Vendor | null {
   return {
     ...fallback,
 
+    // Preserve the real backend vendor ID for vendor-scoped review APIs.
+    ...(id ? { id } : {}),
     slug,
     name,
 

@@ -270,6 +270,7 @@ function StorePage() {
   // Template selection priority: preview param → saved choice → storefront layout → default for type
   const tpl =
     getTemplate(previewId) ??
+    (storeBase.templateId ? getTemplate(storeBase.templateId) : undefined) ??
     (acc?.choice ? getTemplate(acc.choice) : undefined) ??
     defaultTemplateFor(storeBase);
   const vendor = { ...mergeVendor(storeBase, acc), theme: tpl.theme };
@@ -284,11 +285,9 @@ function StorePage() {
   const topBarMode =
     tpl.kind === "composed"
       ? "standard"
-      : L === "builder"
-        ? "builder"
-        : L === "reservation"
-          ? "hotel"
-          : "standard";
+      : L === "reservation"
+        ? "hotel"
+        : "standard";
   const usesReservationLayout = tpl.kind === "signature" && L === "reservation";
   const body =
     tpl.kind === "composed" ? (

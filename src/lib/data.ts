@@ -139,6 +139,8 @@ export type Vendor = {
   categorySlug: string;
   categoryLabel: string;
   layout: StoreLayout;
+  /** Persisted storefront template selected by the vendor (may be composed). */
+  templateId?: string | undefined;
   cover: string;
   logo?: string;
   logo_object_key?: string;

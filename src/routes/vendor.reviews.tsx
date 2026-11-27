@@ -1,13 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Award, MessageSquare, ShieldCheck, Star, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { DashShell, Panel } from "@/components/dash/shell";
 import { vendorNav } from "@/components/dash/vendor-nav";
 import { StatCard } from "@/components/site/bits";
 import { reviews } from "@/lib/data";
-import { reviewsApi, type ReviewRecord } from "@/lib/api-client";
-import { useVendorId, useMyVendors } from "@/lib/vendor-hooks";
+import { useVendorId, useVendorReviews } from "@/lib/vendor-hooks";
 import { useCurrentVendor } from "@/lib/peniel-store";
 
 export const Route = createFileRoute("/vendor/reviews")({
@@ -31,24 +29,10 @@ export const Route = createFileRoute("/vendor/reviews")({
 function VendorReviews() {
   const { vendor } = useCurrentVendor();
   const vendorId = useVendorId(vendor.slug);
-  const [liveReviews, setLiveReviews] = useState<ReviewRecord[]>([]);
-  const [liveLoading, setLiveLoading] = useState(true);
-
-  useEffect(() => {
-    if (!vendorId) {
-      setLiveLoading(false);
-      return;
-    }
-    let active = true;
-    reviewsApi.vendor(vendorId).then((result) => {
-      if (!active) return;
-      if (result.ok) setLiveReviews(result.data);
-      setLiveLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [vendorId]);
+  // Live reviews with realtime updates — new, edited or moderated reviews
+  // appear here without a manual refresh.
+  const { data, loading: liveLoading } = useVendorReviews(vendorId);
+  const liveReviews = data ?? [];
 
   const useLive = !liveLoading && liveReviews.length > 0;
   const recentReviews = useLive

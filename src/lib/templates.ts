@@ -377,17 +377,41 @@ export function getTemplate(id: string | undefined) {
   return templates.find((x) => x.id === id);
 }
 
+/** Category-specific storefront choices for marketplace categories that share a broad business type. */
+const categoryTemplateIds: Record<string, string[]> = {
+  restaurants: ["cinematic", "builder", "lagos-noir", "palm-wine", "street-chop", "garden-fresh", "burger-barn", "safari-lodge", "cocoa-house", "party-jollof", "midnight-lounge", "afro-beat"],
+  bars: ["midnight-lounge", "lagos-noir", "afro-beat", "cocoa-house"],
+  grocery: ["fresh-crate", "garden-fresh", "mint-fresh", "kola-nut"],
+  "fresh-food": ["builder", "garden-fresh", "fresh-crate", "mint-fresh", "kola-nut"],
+  fashion: ["gallery", "lagos-noir", "neon-market", "ankara-bloom", "royal-indigo", "harmattan", "kola-nut", "afro-beat"],
+  beauty: ["editorial", "gallery", "soft-spa", "ankara-bloom", "blush-boutique", "ocean-breeze", "mint-fresh"],
+  salons: ["editorial", "soft-spa", "gallery", "blush-boutique", "ocean-breeze"],
+  bakeries: ["playful", "cocoa-house", "blush-boutique", "street-chop", "party-jollof", "gold-coast"],
+  bakery: ["playful", "cocoa-house", "blush-boutique", "street-chop", "party-jollof", "gold-coast"],
+  electronics: ["grid", "gadget-lab", "neon-market", "concrete", "afro-beat"],
+  gifts: ["gold-coast", "blush-boutique", "ankara-bloom", "ocean-breeze"],
+  hotels: ["reservation", "cinematic", "safari-lodge", "ocean-breeze", "royal-indigo", "gold-coast"],
+  hotel: ["reservation", "cinematic", "safari-lodge", "ocean-breeze", "royal-indigo", "gold-coast"],
+  "home-services": ["concrete", "gadget-lab", "soft-spa"],
+  events: ["afro-beat", "neon-market", "midnight-lounge", "lagos-noir"],
+};
+
+/** Return the templates most relevant to the vendor's exact marketplace category. */
+export function templatesForVendor(vendor: Vendor) {
+  const ids = categoryTemplateIds[vendor.categorySlug.toLowerCase()];
+  if (!ids?.length) return templatesFor(vendor.type);
+  const categoryTemplates = ids
+    .map((id) => templates.find((template) => template.id === id))
+    .filter((template): template is StoreTemplate => Boolean(template));
+  return categoryTemplates.length ? categoryTemplates : templatesFor(vendor.type);
+}
+
 /** Default storefront a vendor gets before choosing one. */
 export function defaultTemplateFor(vendor: Vendor) {
-  // Prefer category-appropriate composed templates first
-  const categoryTemplates = templatesFor(vendor.type);
-  if (categoryTemplates.length > 0) {
-    // Use vendor.layout as a hint if it maps to a template
-    const byLayout = categoryTemplates.find((x) => x.layout === vendor.layout);
-    if (byLayout) return byLayout;
-    return categoryTemplates[0]!;
-  }
-  return templates.find((x) => x.layout === vendor.layout) ?? templates[0]!;
+  const categoryTemplates = templatesForVendor(vendor);
+  const byLayout = categoryTemplates.find((template) => template.layout === vendor.layout);
+  if (byLayout) return byLayout;
+  return categoryTemplates[0] ?? templates.find((template) => template.layout === vendor.layout) ?? templates[0]!;
 }
 
 export function templatesFor(type: BusinessType) {
