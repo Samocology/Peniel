@@ -22,6 +22,41 @@ export function Verified({ label = "Verified" }: { label?: string }) {
   );
 }
 
+export function VendorLogo({
+  vendor,
+  size = "md",
+}: {
+  vendor: Vendor;
+  size?: "sm" | "md" | "lg";
+}) {
+  const sizeClasses = {
+    sm: "size-7",
+    md: "size-9",
+    lg: "size-12",
+  };
+  const textSizes = {
+    sm: "text-[8px]",
+    md: "text-[10px]",
+    lg: "text-sm",
+  };
+  const th = vendor.theme;
+  return vendor.logo ? (
+    <img
+      src={vendor.logo}
+      alt=""
+      className={cn("shrink-0 rounded-full border object-cover", sizeClasses[size])}
+      style={{ borderColor: th.line }}
+    />
+  ) : (
+    <span
+      className={cn("shrink-0 grid place-items-center rounded-full border font-bold", sizeClasses[size], textSizes[size])}
+      style={{ background: th.accent, color: th.accentInk, borderColor: th.line, fontFamily: th.heading }}
+    >
+      {vendor.monogram}
+    </span>
+  );
+}
+
 export function SectionHeading({
   title,
   subtitle,
@@ -43,6 +78,7 @@ export function SectionHeading({
 }
 
 export function VendorCard({ vendor, compact = false }: { vendor: Vendor; compact?: boolean }) {
+  const th = vendor.theme;
   return (
     <Link
       to="/store/$slug"
@@ -71,6 +107,9 @@ export function VendorCard({ vendor, compact = false }: { vendor: Vendor; compac
             </span>
           )}
         </div>
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between">
+          <VendorLogo vendor={vendor} size="sm" />
+        </div>
       </div>
       <div className="p-3.5">
         <div className="flex items-start justify-between gap-2">
@@ -86,8 +125,8 @@ export function VendorCard({ vendor, compact = false }: { vendor: Vendor; compac
               {vendor.fulfilment === "order"
                 ? "Accepts orders"
                 : vendor.fulfilment === "booking"
-                  ? "Book appointment"
-                  : "Reserve room"}
+                ? "Book appointment"
+                : "Reserve room"}
             </span>
             <span className="rounded-md bg-muted px-2 py-1">{vendor.reviews} reviews</span>
           </div>

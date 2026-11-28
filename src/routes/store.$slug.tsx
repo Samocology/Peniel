@@ -10,9 +10,27 @@ import {
 import { defaultTemplateFor, getTemplate } from "@/lib/templates";
 import { mergeVendor, useApp } from "@/lib/peniel-store";
 import { StoreFooter, StoreTopBar } from "@/components/store/store-kit";
-import { BuilderStore } from "@/components/store/layouts-a";
+import {
+  BuilderStore,
+  CinematicStore,
+  GalleryStore,
+  PlayfulStore,
+  GridStore,
+  EditorialStore,
+} from "@/components/store/layouts-a";
 import { ReservationStore } from "@/components/store/layouts-b";
 import { ComposedStore } from "@/components/store/layouts-c";
+import {
+  StoreHeroSkeleton,
+  BuilderHeroSkeleton,
+  EditorialHeroSkeleton,
+  GalleryHeroSkeleton,
+  PlayfulHeroSkeleton,
+  GridHeroSkeleton,
+  ReservationHeroSkeleton,
+  CatalogueSkeleton,
+  ComposedHeroSkeleton,
+} from "@/components/store/store-skeletons";
 
 const businessTypes: BusinessType[] = [
   "restaurant",
@@ -194,16 +212,47 @@ function mapBackendVendorForLoader(value: Record<string, unknown>): Vendor {
   };
 }
 
+function StoreSkeleton() {
+  const { slug } = Route.useParams();
+  const staticVendor = getVendor(slug);
+  const theme = staticVendor?.theme ?? {
+    bg: "#ffffff",
+    ink: "#111827",
+    accent: "#2563eb",
+    accentInk: "#ffffff",
+    soft: "#f3f4f6",
+    line: "rgba(0,0,0,0.1)",
+    radius: "0.75rem",
+    heading: "var(--font-display)",
+  };
+
+  return (
+    <div className="min-h-screen" style={{ background: theme.bg, color: theme.ink }}>
+      <StoreTopBar vendor={{ ...theme, name: "Store", slug, verified: false } as any} mode="standard" />
+      <StoreHeroSkeleton theme={theme} />
+      <CatalogueSkeleton theme={theme} />
+      <footer className="border-t px-5 py-8 text-center text-[11px] opacity-55" style={{ borderColor: theme.line }}>
+        © {new Date().getFullYear()} Peniel.
+      </footer>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/store/$slug")({
   validateSearch: z.object({ t: z.string().optional() }),
   loader: async ({ params }) => {
     // Try fetching live vendor data from the backend first so that
     // uploaded logos, cover images, and updated details are shown.
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
       const response = await fetch(`/api/vendors?slug=${params.slug}`, {
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (response.ok) {
         const result = await response.json();
         if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
@@ -212,7 +261,11 @@ export const Route = createFileRoute("/store/$slug")({
         }
       }
     } catch (error) {
-      console.error("Could not load vendor from backend in loader:", error);
+      if (error instanceof DOMException && error.name === "AbortError") {
+        console.log("Vendor API timeout, falling back to static data");
+      } else {
+        console.error("Could not load vendor from backend in loader:", error);
+      }
     }
 
     // Fall back to static data if the backend is unavailable
@@ -242,6 +295,7 @@ export const Route = createFileRoute("/store/$slug")({
     };
   },
   component: StorePage,
+  pendingComponent: StoreSkeleton,
 });
 
 function StorePage() {
@@ -256,10 +310,11 @@ function StorePage() {
 
   if (!storeBase) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen" style={{ background: "#ffffff", color: "#111827" }}>
+        <StoreTopBar vendor={{ name: "Store", slug, theme: { bg: "#fff", ink: "#111", accent: "#2563eb", accentInk: "#fff", soft: "#f3f4f6", line: "rgba(0,0,0,0.1)", radius: "0.75rem", heading: "var(--font-display)" }, verified: false } as any} mode="standard" />
         <main className="mx-auto max-w-2xl px-4 py-24 text-center">
-          <h1 className="text-2xl font-bold">Loading storefront…</h1>
-          <p className="mt-3 text-sm text-muted-foreground">Please wait while we load the store.</p>
+          <h1 className="text-2xl font-bold">Store unavailable</h1>
+          <p className="mt-3 text-sm opacity-60">This storefront could not be found.</p>
         </main>
       </div>
     );
@@ -293,19 +348,19 @@ function StorePage() {
     tpl.kind === "composed" ? (
       <ComposedStore vendor={vendor} tpl={tpl} />
     ) : L === "cinematic" ? (
-      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "banner", catalog: "cards" }} />
+      <CinematicStore vendor={vendor} />
     ) : L === "builder" ? (
       <BuilderStore vendor={vendor} />
     ) : L === "editorial" ? (
-      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "centered", catalog: "list" }} />
+      <EditorialStore vendor={vendor} />
     ) : L === "gallery" ? (
-      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "magazine", catalog: "masonry" }} />
+      <GalleryStore vendor={vendor} />
     ) : L === "playful" ? (
-      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "centered", catalog: "polaroid" }} />
+      <PlayfulStore vendor={vendor} />
     ) : L === "reservation" ? (
       <ReservationStore vendor={vendor} />
     ) : L === "grid" ? (
-      <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "poster", catalog: "cards" }} />
+      <GridStore vendor={vendor} />
     ) : (
       <ComposedStore vendor={vendor} tpl={{ ...tpl, hero: "poster", catalog: "bento" }} />
     );

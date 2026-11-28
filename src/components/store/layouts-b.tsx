@@ -126,7 +126,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
           <div
             className="absolute inset-0 -z-20 flex items-center justify-center"
             style={{
-              background: `radial-gradient(circle at 70% 25%, ${t.accent}55, transparent 38%), linear-gradient(135deg, ${t.soft}, #101814)`,
+              background: `radial-gradient(circle at 70% 25%, ${t.accent}45, transparent 38%), linear-gradient(135deg, ${t.soft}, #101814)`,
             }}
           >
             <span
@@ -146,31 +146,40 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
             <div className="flex flex-wrap items-center gap-3">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[10px] font-semibold tracking-[0.17em] text-white/90 uppercase backdrop-blur-md">
                 <Sparkles className="size-3.5 text-amber-300" />
-                Hospitality & accommodation
+                {vendor.categoryLabel || "Hospitality & accommodation"}
               </span>
 
-              <span className="flex items-center gap-1.5 text-xs text-white/85">
-                <Star className="size-3.5 fill-amber-300 text-amber-300" />
-                <strong className="text-white">{vendor.rating.toFixed(1)}</strong>
-                {vendor.reviews} guest reviews
-              </span>
+              {Number(vendor.reviews) > 0 && Number(vendor.rating) > 0 ? (
+                <span className="flex items-center gap-1.5 text-sm text-white/85">
+                  <Star className="size-4 fill-amber-300 text-amber-300" />
+                  <strong className="text-white">{Number(vendor.rating).toFixed(1)}</strong>
+                  <span className="text-white/70">{vendor.reviews} {vendor.reviews === 1 ? "guest review" : "guest reviews"}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-medium text-white/85 backdrop-blur-md">
+                  <span className="size-1.5 rounded-full" style={{ background: t.accent }} />
+                  New on Peniel
+                </span>
+              )}
             </div>
 
-            <p className="mt-9 text-[10px] font-semibold tracking-[0.28em] text-white/60 uppercase">
-              An exceptional stay awaits
-            </p>
+            {vendor.tagline && (
+              <p className="mt-8 text-[10px] font-semibold tracking-[0.28em] text-white/60 uppercase">
+                {vendor.tagline}
+              </p>
+            )}
 
-            <h1 className="mt-4 max-w-2xl text-[clamp(3.2rem,7vw,6.4rem)] font-medium leading-[0.94] tracking-[-0.065em]">
-              Rest well.
-              <br />
-              <span className="font-normal text-white/65">Stay beautifully.</span>
+            <h1 className="mt-4 max-w-2xl text-[clamp(3rem,6.5vw,5.5rem)] font-medium leading-[0.96] tracking-[-0.04em]" style={{ fontFamily: t.heading }}>
+              {vendor.name}
             </h1>
 
-            <p className="mt-7 max-w-xl text-sm leading-7 text-white/75 sm:text-base sm:leading-8">
-              {vendor.about}
-            </p>
+            {vendor.about && (
+              <p className="mt-6 max-w-xl text-sm leading-7 text-white/75 sm:text-base sm:leading-8">
+                {vendor.about}
+              </p>
+            )}
 
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-3">
               <a
                 href="#hotel-rooms"
                 className="inline-flex min-h-12 items-center justify-center gap-3 px-6 py-3 text-xs font-bold transition hover:-translate-y-0.5 hover:opacity-90 sm:text-sm"
@@ -193,12 +202,12 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
               </a>
             </div>
 
-            <div className="mt-10 flex flex-wrap gap-x-7 gap-y-4 border-t border-white/20 pt-6">
+            <div className="mt-9 flex flex-wrap gap-x-7 gap-y-4 border-t border-white/20 pt-6">
               {[
-                { icon: BedDouble, label: "42 rooms & suites" },
+                { icon: BedDouble, label: "Rooms & suites" },
                 { icon: Coffee, label: "Breakfast included" },
                 { icon: Wifi, label: "High-speed Wi-Fi" },
-                { icon: MapPin, label: "Victoria Island, Lagos" },
+                { icon: MapPin, label: vendor.location.split(",")[0] },
               ].map(({ icon: Icon, label }) => (
                 <span
                   key={label}
@@ -214,7 +223,7 @@ export function ReservationStore({ vendor }: { vendor: Vendor }) {
 
         <div className="absolute bottom-5 right-6 hidden items-center gap-3 text-[9px] font-semibold tracking-[0.2em] text-white/50 uppercase lg:flex">
           <span className="h-px w-12 bg-white/40" />
-          Discover your next stay
+          Discover {vendor.name}
         </div>
       </section>
 

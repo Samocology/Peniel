@@ -213,7 +213,7 @@ function HeroBlock({ vendor: v, tpl }: P) {
     <img
       src={v.cover}
       alt={`${v.name} storefront`}
-      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
       width={1600}
       height={1400}
       fetchPriority="high"
@@ -222,15 +222,15 @@ function HeroBlock({ vendor: v, tpl }: P) {
     <div
       className="store-cover-placeholder flex h-full w-full items-center justify-center"
       style={{
-        background: `radial-gradient(circle at 70% 20%, ${th.accent}35, transparent 42%), linear-gradient(145deg, ${th.soft}, ${th.bg})`,
+        background: `radial-gradient(circle at 70% 20%, ${th.accent}25, transparent 42%), linear-gradient(145deg, ${th.soft}, ${th.bg})`,
       }}
     >
       <span
         className="grid size-24 place-items-center rounded-[2rem] border text-3xl font-semibold"
         style={{
           color: th.accent,
-          borderColor: `${th.accent}35`,
-          background: `${th.bg}aa`,
+          borderColor: `${th.accent}25`,
+          background: `${th.bg}cc`,
           fontFamily: th.heading,
         }}
       >
@@ -239,121 +239,173 @@ function HeroBlock({ vendor: v, tpl }: P) {
     </div>
   );
 
+  const hasReviews = Number(v.reviews) > 0 && Number(v.rating) > 0;
+  const rating = Number(v.rating);
+  const reviewCount = Number(v.reviews);
+
   switch (tpl.hero) {
-    case "centered":
+    /* CENTERED – clean, balanced, editorial feel */
+    case "centered": {
       return (
-        <section className="store-hero store-hero-centered mx-auto max-w-6xl px-4 pb-14 pt-24 text-center sm:px-6 sm:pb-24 sm:pt-28">
-          <div
-            className="mx-auto mb-6 grid size-16 place-items-center rounded-2xl text-xl font-bold"
-            style={{ background: th.soft, color: th.accent }}
-          >
-            {v.monogram}
+        <section className="store-hero store-hero-centered mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28 lg:py-32">
+          <div className="mx-auto mb-8 grid size-14 place-items-center rounded-2xl" style={{ background: th.accent, color: th.accentInk }}>
+            {v.logo ? (
+              <img src={v.logo} alt="" className="h-10 w-auto object-contain" />
+            ) : (
+              <span style={{ fontFamily: th.heading }}>{v.monogram}</span>
+            )}
           </div>
 
           <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
 
-          <Heading vendor={v} tpl={tpl} className="mx-auto mt-5 max-w-4xl text-5xl sm:text-7xl">
+          <Heading vendor={v} tpl={tpl} className="mx-auto mt-6 max-w-4xl text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
             {v.name}
           </Heading>
 
-          <p className="mx-auto mt-5 max-w-xl text-sm leading-8 opacity-60 sm:text-base">
-            {v.tagline}
-          </p>
+          {v.tagline && (
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed opacity-70 sm:text-lg">
+              {v.tagline}
+            </p>
+          )}
 
-          <div className="mt-6 flex justify-center">
-            <HeroProof vendor={v} />
-          </div>
-
-          <div className="mt-6 flex justify-center">
-            <HeroVerified vendor={v} />
-          </div>
-
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="inline-flex min-h-10 items-center gap-2 rounded-full border px-4 py-2 text-sm"
+                style={{ borderColor: th.line, background: `${th.soft}cc` }}
+              >
+                <Star className="size-4 shrink-0" fill={hasReviews ? th.accent : "none"} stroke={th.accent} />
+                {hasReviews ? (
+                  <>
+                    <span className="font-semibold tabular-nums">{rating.toFixed(1)}</span>
+                    <span className="opacity-60">{reviewCount} {reviewCount === 1 ? "review" : "reviews"}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-medium">New on Peniel</span>
+                    <span className="opacity-60">· Be the first to review</span>
+                  </>
+                )}
+              </div>
+              {v.verified && (
+                <HeroVerified vendor={v} />
+              )}
+            </div>
             <Button vendor={v}>{cta(v)}</Button>
           </div>
 
-          <div className="group mt-12 overflow-hidden rounded-2xl" style={{ background: th.soft }}>
-            <div className="aspect-[16/9] max-h-[580px]">{heroImage}</div>
+          <div className="group mt-12 overflow-hidden rounded-[1.5rem]">
+            <div className="aspect-[16/9] max-h-[520px]">{heroImage}</div>
           </div>
         </section>
       );
+    }
 
-    case "banner":
+    /* BANNER – immersive, full-width, cinematic */
+    case "banner": {
       return (
-        <section className="store-hero store-hero-banner relative isolate min-h-[72vh] overflow-hidden pt-16 sm:min-h-[86vh]">
-          <div className="absolute inset-0 scale-105">{heroImage}</div>
+        <section className="store-hero store-hero-banner relative isolate min-h-[65vh] overflow-hidden sm:min-h-[75vh]">
+          <div className="absolute inset-0 -z-10 scale-[1.02]">{heroImage}</div>
 
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 -z-10"
             style={{
-              background: `linear-gradient(180deg, ${th.bg}15 0%, ${th.bg}60 40%, ${th.bg}cc 70%, ${th.bg} 100%)`,
+              background: `linear-gradient(180deg, ${th.bg}10 0%, ${th.bg}40 35%, ${th.bg}85 65%, ${th.bg} 100%)`,
             }}
           />
 
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 -z-10"
             style={{
-              background: `radial-gradient(ellipse at 30% 50%, ${th.accent}15 0%, transparent 60%)`,
+              background: `radial-gradient(ellipse at 30% 40%, ${th.accent}12 0%, transparent 55%)`,
             }}
           />
 
-          <div className="relative mx-auto flex min-h-[70vh] max-w-7xl flex-col justify-end px-6 py-20 sm:min-h-[85vh] sm:px-8 sm:py-28">
+          <div className="relative mx-auto flex min-h-[65vh] max-w-7xl flex-col justify-end px-5 py-16 sm:min-h-[75vh] sm:px-8 sm:py-24 lg:px-12">
             <div className="max-w-3xl">
-              <div
-                className="mb-6 inline-flex items-center gap-3 rounded-full border px-4 py-2 text-xs font-medium backdrop-blur-sm"
-                style={{ borderColor: `${th.accent}40`, background: `${th.bg}60` }}
-              >
-                <span className="size-2 rounded-full" style={{ background: th.accent }} />
-                <span className="opacity-80">{v.categoryLabel}</span>
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-semibold tracking-[0.14em] uppercase backdrop-blur-sm"
+                  style={{ borderColor: `${th.accent}35`, background: `${th.bg}80`, color: th.ink }}
+                >
+                  <span className="size-1.5 rounded-full" style={{ background: th.accent }} />
+                  {v.categoryLabel}
+                </span>
+                {hasReviews && (
+                  <span className="inline-flex items-center gap-1.5 text-sm opacity-85">
+                    <Star className="size-4 fill-amber-300 text-amber-300" />
+                    <strong>{rating.toFixed(1)}</strong>
+                    <span className="opacity-70">{reviewCount} {reviewCount === 1 ? "review" : "reviews"}</span>
+                  </span>
+                )}
               </div>
 
               <Heading
                 vendor={v}
                 tpl={tpl}
-                className="text-6xl font-light tracking-[-0.04em] sm:text-8xl md:text-9xl"
+                className="mt-5 max-w-2xl text-[clamp(2.8rem,5.5vw,5rem)] font-medium leading-[1.0] tracking-[-0.03em]"
               >
                 {v.name}
               </Heading>
 
-              <p className="mt-6 max-w-xl text-base leading-relaxed opacity-70 sm:text-lg">
-                {v.tagline}
-              </p>
+              {v.tagline && (
+                <p className="mt-4 max-w-xl text-base leading-relaxed opacity-80 sm:text-lg">
+                  {v.tagline}
+                </p>
+              )}
 
-              <div className="mt-8 flex flex-wrap items-center gap-4">
+              {v.about && v.about !== v.tagline && (
+                <p className="mt-4 max-w-xl text-sm leading-7 opacity-65 sm:text-base">
+                  {v.about}
+                </p>
+              )}
+
+              <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button vendor={v}>{cta(v)}</Button>
                 <HeroProof vendor={v} />
               </div>
 
-              <div
-                className="mt-12 flex items-center gap-6 border-t pt-6"
-                style={{ borderColor: `${th.line}60` }}
-              >
+              <div className="mt-8 flex flex-wrap items-center gap-5 border-t pt-6" style={{ borderColor: `${th.line}40` }}>
                 <HeroVerified vendor={v} />
+                {v.location && (
+                  <span className="inline-flex items-center gap-1.5 text-sm opacity-70">
+                    <MapPin className="size-4" style={{ color: th.accent }} />
+                    {v.location.split(",")[0]}
+                  </span>
+                )}
+                {v.hours && (
+                  <span className="inline-flex items-center gap-1.5 text-sm opacity-70">
+                    <Clock className="size-4" style={{ color: th.accent }} />
+                    {v.hours.split(".")[0]}
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
           <div
-            className="absolute bottom-0 left-0 right-0 h-24"
+            className="absolute bottom-0 left-0 right-0 h-20"
             style={{ background: `linear-gradient(to top, ${th.bg}, transparent)` }}
           />
         </section>
       );
+    }
 
-    case "poster":
+    /* POSTER – bold, graphic, high contrast */
+    case "poster": {
       return (
         <section
-          className="store-hero store-hero-poster relative overflow-hidden pt-16"
+          className="store-hero store-hero-poster relative overflow-hidden pt-12"
           style={{ background: th.bg }}
         >
-          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
             <div
-              className="grid items-stretch gap-0 overflow-hidden rounded-3xl md:grid-cols-[1.1fr_0.9fr]"
+              className="grid items-stretch gap-0 overflow-hidden rounded-[1.5rem] md:grid-cols-[1.15fr_0.85fr]"
               style={{ background: th.soft }}
             >
-              <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-16">
+              <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-14">
                 <div
-                  className="mb-4 inline-flex w-fit items-center gap-2 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-wider"
+                  className="mb-3 inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
                   style={{ background: th.accent, color: th.accentInk }}
                 >
                   {v.categoryLabel}
@@ -362,106 +414,112 @@ function HeroBlock({ vendor: v, tpl }: P) {
                 <Heading
                   vendor={v}
                   tpl={tpl}
-                  className="text-5xl font-black uppercase tracking-tight sm:text-7xl lg:text-8xl"
+                  className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl"
                 >
                   {v.name}
                 </Heading>
 
-                <p className="mt-4 max-w-md text-base font-medium leading-relaxed opacity-80 sm:text-lg">
-                  {v.tagline}
-                </p>
+                {v.tagline && (
+                  <p className="mt-3 max-w-md text-base font-medium leading-relaxed opacity-85 sm:text-lg">
+                    {v.tagline}
+                  </p>
+                )}
 
-                <div className="mt-6">
+                <div className="mt-6 flex flex-wrap items-center gap-3">
                   <HeroProof vendor={v} />
+                  <HeroVerified vendor={v} />
                 </div>
 
-                <div className="mt-8 flex flex-wrap gap-3">
+                <div className="mt-6 flex flex-wrap gap-3">
                   <Button vendor={v}>{cta(v)}</Button>
                   <Button vendor={v} ghost href="#catalogue">
                     Browse all
                   </Button>
                 </div>
-
-                <div className="mt-8 border-t pt-5" style={{ borderColor: th.line }}>
-                  <HeroVerified vendor={v} />
-                </div>
               </div>
 
-              <div className="group relative min-h-[320px] overflow-hidden md:min-h-[500px]">
+              <div className="group relative min-h-[280px] overflow-hidden md:min-h-[420px]">
                 {heroImage}
                 <div
                   className="absolute inset-0"
                   style={{
-                    background: `linear-gradient(to right, ${th.soft} 0%, transparent 30%)`,
+                    background: `linear-gradient(to right, ${th.soft} 0%, transparent 35%)`,
                   }}
                 />
-                <div
-                  className="absolute bottom-4 right-4 rounded-2xl px-4 py-2 text-xs font-black uppercase tracking-wider"
-                  style={{ background: th.accent, color: th.accentInk }}
-                >
-                  Order now
+                <div className="absolute bottom-4 right-4 rounded-xl px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider" style={{ background: th.accent, color: th.accentInk }}>
+                  {type === "food" ? "View menu" : "Shop now"}
                 </div>
               </div>
             </div>
           </div>
         </section>
       );
+    }
 
-    case "minimal":
+    /* MINIMAL – refined, spacious, sophisticated */
+    case "minimal": {
       return (
         <section
-          className="store-hero store-hero-minimal mx-auto max-w-6xl border-b px-4 pb-16 pt-24 sm:px-6 sm:pb-24 sm:pt-28"
+          className="store-hero store-hero-minimal mx-auto max-w-6xl px-4 pb-14 pt-20 border-b sm:px-6 sm:pb-22 sm:pt-26"
           style={{ borderColor: th.line }}
         >
-          <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
+          <div className="grid gap-10 md:grid-cols-[1fr_auto] md:items-end">
             <div>
               <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
-              <Heading vendor={v} tpl={tpl} className="mt-5 max-w-3xl text-5xl sm:text-7xl">
+
+              <Heading vendor={v} tpl={tpl} className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.06] tracking-[-0.025em] sm:text-5xl lg:text-6xl">
                 {v.name}
               </Heading>
-              <p className="mt-5 max-w-xl text-sm leading-8 opacity-65">{v.about}</p>
+
+              <p className="mt-4 max-w-xl text-sm leading-7 opacity-65 sm:text-base">{v.about || v.tagline}</p>
             </div>
 
-            <div className="flex flex-col items-start gap-5 md:items-end">
+            <div className="flex flex-col items-start gap-4 md:items-end md:w-fit">
               <HeroProof vendor={v} />
               <HeroVerified vendor={v} />
               <Button vendor={v}>{cta(v)}</Button>
             </div>
           </div>
 
-          <div className="group mt-12 overflow-hidden rounded-2xl">
-            <div className="aspect-[16/7]">{heroImage}</div>
+          <div className="group mt-10 overflow-hidden rounded-[1.5rem]">
+            <div className="aspect-[16/7] max-h-[380px]">{heroImage}</div>
           </div>
         </section>
       );
+    }
 
-    case "magazine":
+    /* MAGAZINE – editorial, asymmetric, content-forward */
+    case "magazine": {
       return (
-        <section className="store-hero store-hero-magazine mx-auto max-w-6xl px-4 pb-16 pt-24 sm:px-6 sm:pb-20 sm:pt-28">
+        <section className="store-hero store-hero-magazine mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
           <div
-            className="flex items-center justify-between border-y py-4 text-[9px] font-semibold uppercase tracking-[0.2em] opacity-55"
+            className="flex items-center justify-between border-y py-3 text-[9px] font-semibold uppercase tracking-[0.18em] opacity-50"
             style={{ borderColor: th.line }}
           >
             <span>{v.categoryLabel}</span>
-            <span className="hidden sm:inline">A Peniel feature</span>
+            <span className="hidden sm:inline">Peniel feature</span>
             <span>{v.location.split(",")[0]}</span>
           </div>
 
-          <Heading vendor={v} tpl={tpl} className="mt-10 text-center text-5xl sm:text-8xl">
+          <Heading vendor={v} tpl={tpl} className="mt-8 text-center text-4xl font-semibold leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-7xl">
             {v.name}
           </Heading>
 
-          <div className="mt-12 grid items-center gap-8 md:grid-cols-[0.8fr_1.5fr_0.8fr]">
-            <p className="text-sm leading-8 opacity-65">{v.about}</p>
+          <div className="mt-10 grid items-center gap-8 md:grid-cols-[0.85fr_1.4fr_0.85fr]">
+            <div className="order-2 md:order-1">
+              <p className="text-sm leading-8 opacity-65">{v.about}</p>
+            </div>
 
-            <div className="group overflow-hidden rounded-2xl">
+            <div className="order-1 md:order-2 group overflow-hidden rounded-[1.5rem]">
               <div className="aspect-[4/3]">{heroImage}</div>
             </div>
 
-            <div className="flex flex-col items-start gap-5">
-              <p className="text-2xl leading-tight" style={{ fontFamily: th.heading }}>
-                {v.tagline}
-              </p>
+            <div className="order-3 md:order-3 flex flex-col items-start gap-4">
+              {v.tagline && (
+                <p className="text-xl leading-tight" style={{ fontFamily: th.heading, fontWeight: 500 }}>
+                  {v.tagline}
+                </p>
+              )}
               <HeroProof vendor={v} />
               <HeroVerified vendor={v} />
               <Button vendor={v}>{cta(v)}</Button>
@@ -469,60 +527,79 @@ function HeroBlock({ vendor: v, tpl }: P) {
           </div>
         </section>
       );
+    }
 
-    case "marquee":
+    /* MARQUEE – dynamic, energetic, street-style */
+    case "marquee": {
+      const marqueeStyle = {
+        animation: "marquee 20s linear infinite",
+        WebkitAnimation: "marquee 20s linear infinite",
+      } as React.CSSProperties;
+
       return (
         <>
           <div
-            className="overflow-hidden border-y py-3"
+            className="overflow-hidden border-y py-2.5"
             style={{
               background: th.soft,
               color: th.ink,
               borderColor: th.line,
             }}
           >
-            <div className="whitespace-nowrap text-center text-[9px] font-semibold uppercase tracking-[0.25em]">
+            <div className="whitespace-nowrap text-center text-[8px] font-semibold uppercase tracking-[0.22em]" style={marqueeStyle}>
               {Array.from({ length: 4 }).map((_, i) => (
-                <span key={i} className="mx-8">
-                  {v.tagline} <span style={{ color: th.accent }}>✦</span> {v.categoryLabel}
+                <span key={i} className="mx-6" style={{ color: th.accent }}>
+                  {v.tagline} <span>◆</span> {v.categoryLabel} <span>◆</span>
                 </span>
               ))}
             </div>
           </div>
 
-          <section className="store-hero store-hero-marquee mx-auto grid max-w-6xl items-center gap-9 px-4 py-14 sm:px-6 sm:py-20 md:grid-cols-[1fr_1.1fr]">
+          <section className="store-hero store-hero-marquee mx-auto grid max-w-6xl items-center gap-8 px-4 py-12 sm:px-6 sm:py-18 md:grid-cols-[1fr_1.1fr]">
             <div>
               <Eyebrow color={th.accent}>{v.categoryLabel}</Eyebrow>
-              <Heading vendor={v} tpl={tpl} className="mt-5 text-5xl sm:text-7xl">
+
+              <Heading vendor={v} tpl={tpl} className="mt-4 text-4xl font-semibold leading-[1.06] tracking-[-0.025em] sm:text-5xl lg:text-6xl">
                 {v.name}
               </Heading>
-              <p className="mt-5 max-w-md text-sm leading-8 opacity-65">{v.tagline}</p>
-              <div className="mt-7">
+
+              {v.tagline && (
+                <p className="mt-4 max-w-md text-sm leading-7 opacity-65 sm:text-base">
+                  {v.tagline}
+                </p>
+              )}
+
+              <div className="mt-6 flex flex-col gap-3">
                 <HeroProof vendor={v} />
-              </div>
-              <div className="mt-5">
                 <HeroVerified vendor={v} />
-              </div>
-              <div className="mt-8">
                 <Button vendor={v}>{cta(v)}</Button>
               </div>
             </div>
 
-            <div className="group overflow-hidden rounded-2xl">
+            <div className="group overflow-hidden rounded-[1.5rem]">
               <div className="aspect-[5/4]">{heroImage}</div>
             </div>
           </section>
+
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes marquee {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+          ` }} />
         </>
       );
+    }
 
+    /* SPLIT – classic two-column, balanced composition */
     case "split":
-    default:
+    default: {
       return (
-        <section className="store-hero store-hero-split mx-auto grid max-w-7xl items-center gap-10 px-5 pb-20 pt-24 sm:gap-12 sm:px-8 sm:pb-28 sm:pt-28 md:grid-cols-2 md:gap-20">
+        <section className="store-hero store-hero-split mx-auto grid max-w-7xl items-center gap-8 px-4 pb-16 pt-20 sm:gap-10 sm:px-6 sm:pb-24 sm:pt-24 md:grid-cols-2 md:gap-14">
           <div className="order-2 md:order-1">
             <div
-              className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold"
-              style={{ background: th.soft, color: th.accent }}
+              className="mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
+              style={{ background: `${th.accent}12`, color: th.accent }}
             >
               <span className="size-1.5 rounded-full" style={{ background: th.accent }} />
               {v.categoryLabel}
@@ -531,91 +608,93 @@ function HeroBlock({ vendor: v, tpl }: P) {
             <Heading
               vendor={v}
               tpl={tpl}
-              className="max-w-xl text-[clamp(2.5rem,6vw,5rem)] font-semibold leading-[1.05] tracking-[-0.03em]"
+              className="max-w-xl text-[clamp(2.4rem,5vw,4.5rem)] font-semibold leading-[1.05] tracking-[-0.03em]"
             >
               {v.name}
             </Heading>
 
-            <p className="mt-6 max-w-lg text-base leading-relaxed opacity-60 sm:text-lg">
-              {v.tagline}
-            </p>
-            <div className="mt-6">
-              <StoreMeta vendor={v} />
-            </div>
-            <div className="mt-5">
+            {v.tagline && (
+              <p className="mt-5 max-w-lg text-base leading-relaxed opacity-65 sm:text-lg">
+                {v.tagline}
+              </p>
+            )}
+
+            <div className="mt-5"><StoreMeta vendor={v} /></div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3">
               <HeroProof vendor={v} />
+              <HeroVerified vendor={v} />
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Button vendor={v}>{cta(v)}</Button>
               <Button vendor={v} ghost href="#catalogue">
                 Browse all
               </Button>
             </div>
 
-            <div
-              className="mt-10 flex flex-wrap items-center gap-6 border-t pt-6"
-              style={{ borderColor: th.line }}
-            >
-              <HeroVerified vendor={v} />
-              <div className="flex items-center gap-2 text-sm opacity-60">
-                <Star className="size-4" fill={th.accent} stroke={th.accent} />
-                <span>
-                  {v.rating} ({v.reviews})
-                </span>
-              </div>
+            <div className="mt-8 flex flex-wrap items-center gap-5 border-t pt-5" style={{ borderColor: `${th.line}40` }}>
+              {hasReviews ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-widest opacity-50">Customer rating</p>
+                    <p className="text-2xl font-semibold tabular-nums">{rating.toFixed(1)}<span className="ml-1 text-xs opacity-45">/ 5.0</span></p>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star key={n} className="size-3.5" fill={n <= Math.round(rating) ? th.accent : "transparent"} stroke={th.accent} />
+                    ))}
+                  </div>
+                  <p className="text-[10px] opacity-50">Based on {reviewCount} {reviewCount === 1 ? "review" : "reviews"}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium">New on Peniel</p>
+                  <p className="text-[10px] opacity-60">Be the first to leave a review</p>
+                </>
+              )}
             </div>
           </div>
 
           <div className="group relative order-1 md:order-2">
             <div
-              className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem]"
+              className="relative overflow-hidden rounded-[1.5rem] sm:rounded-[2rem]"
               style={{ background: th.soft }}
             >
               <div className="aspect-[4/5] sm:aspect-[3/4]">{heroImage}</div>
-              <div
-                className="absolute inset-0"
-                style={{ background: `linear-gradient(to top, ${th.bg}40, transparent 40%)` }}
-              />
+              <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${th.bg}35, transparent 45%)` }} />
             </div>
 
             <div
-              className="absolute -bottom-6 -left-4 rounded-2xl border p-4 backdrop-blur-sm sm:-left-8 sm:w-[280px]"
-              style={{
-                background: `${th.bg}f0`,
-                borderColor: th.line,
-              }}
+              className="absolute -bottom-5 -left-3 rounded-xl border p-3.5 backdrop-blur-sm sm:-left-6 sm:w-[260px]"
+              style={{ background: `${th.bg}f0`, borderColor: th.line }}
             >
-              {Number(v.reviews) > 0 && Number(v.rating) > 0 ? (
+              {hasReviews ? (
                 <>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[9px] font-semibold uppercase tracking-widest opacity-50">
-                        Customer rating
-                      </p>
-                      <p className="mt-1 text-2xl font-semibold tabular-nums">
-                        {Number(v.rating).toFixed(1)}
-                        <span className="ml-1 text-xs opacity-45">/ 5.0</span>
-                      </p>
+                      <p className="text-[9px] font-semibold uppercase tracking-widest opacity-50">Customer rating</p>
+                      <p className="mt-1 text-2xl font-semibold tabular-nums">{rating.toFixed(1)}<span className="ml-1 text-xs opacity-45">/ 5.0</span></p>
                     </div>
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <Star key={n} className="size-3" fill={n <= Math.round(Number(v.rating)) ? th.accent : "transparent"} stroke={th.accent} />
+                        <Star key={n} className="size-3" fill={n <= Math.round(rating) ? th.accent : "transparent"} stroke={th.accent} />
                       ))}
                     </div>
                   </div>
-                  <p className="mt-2 text-[10px] opacity-50">Based on {v.reviews} customer reviews</p>
+                  <p className="mt-2 text-[10px] opacity-50">Based on {reviewCount} {reviewCount === 1 ? "review" : "reviews"}</p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-semibold">New on Peniel</p>
-                  <p className="mt-1 text-[10px] opacity-60">Be the first customer to leave a review</p>
+                  <p className="text-sm font-medium">New on Peniel</p>
+                  <p className="mt-1 text-[10px] opacity-60">Be the first to leave a review</p>
                 </>
               )}
             </div>
           </div>
         </section>
       );
+    }
   }
 }
 
